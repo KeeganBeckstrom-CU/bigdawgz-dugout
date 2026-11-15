@@ -1431,6 +1431,10 @@ function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};(items||
   else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});
   Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
 
+/* --- coaches: unlimited packs, collection saved on this device --- */
+function coachP(){if(!CP){CP=blankP({id:"coach-play",name:"Coach",num:0,pos:""});CP.tmp=1;try{const d=JSON.parse(localStorage.getItem("dz-coach-cards")||"null");if(d){CP.cards=d.cards||[];CP.squad=d.squad||{}}}catch(e){}}return CP}
+function saveCoachCards(){if(!CP)return;try{localStorage.setItem("dz-coach-cards",JSON.stringify({cards:CP.cards||[],squad:CP.squad||{}}))}catch(e){}}
+const unl=()=>isCoach()&&!S.peek;
 /* --- packs, odds and rarities --- */
 const RAR={C:["Common","#B9C0CC"],R:["Rare","#5CC8FF"],A:["All-Star","#C792EA"],S:["Superstar","#E0BE58"],L:["Legend","#FF6B3D"]};
 const PAR={base:["Base",0,0,""],purple:["Purple",1,299,"#A66CFF"],gold:["Gold",2,50,"#F5C542"],orange:["Orange",3,25,"#FF8A3D"],red:["Red",4,5,"#F0484B"],black:["Black 1/1",5,1,"#111"]};
@@ -1474,11 +1478,11 @@ function canPlay(b,slot){const o=["LF","CF","RF"];if(slot==="SP")return b.pos===
 function squadOVR(p){const sq=p.squad||{},cs=p.cards||[];const v=SLOTS.map(s=>{const c=cs.find(x=>x.u===sq[s[0]]);return c?covr(c):40});return Math.round(v.reduce((a,b)=>a+b,0)/v.length)}
 function bestSquad(p){const cs=(p.cards||[]).slice().sort((a,b)=>covr(b)-covr(a)),used=new Set(),sq={},taken=new Set();
   ["C","SS","2B","3B","1B","CF","LF","RF","SP","RP","DH"].forEach(s=>{const c=cs.find(x=>!used.has(x.u)&&!taken.has(x.id)&&canPlay(CARD[x.id],s));if(c){sq[s]=c.u;used.add(c.u);taken.add(c.id)}});return sq}
-function cardsHTML(){const p=me();if(!p)return homeHTML();const tab=window._ct2||"shop",coins=p.coins||0,e=coinDay(p),own=new Set((p.cards||[]).map(c=>c.id));
-  const head=`<section class="coinbar"><div><small>Your coins</small><b>🪙 ${coins.toLocaleString("en-US")}</b></div><div class="cbr"><small>Today</small><span>${e.coins} earned · free drills ${Math.max(0,ECON.freeDrills-e.free)} left · games ${Math.max(0,ECON.freeGames-e.games)} left</span></div></section>
+function cardsHTML(){const p=isCoach()?coachP():me();if(!p)return homeHTML();const tab=window._ct2||"shop",coins=unl()?Infinity:p.coins||0,e=coinDay(p),own=new Set((p.cards||[]).map(c=>c.id));
+  const head=`<section class="coinbar"><div><small>Your coins</small><b>🪙 ${unl()?"Unlimited":coins.toLocaleString("en-US")}</b></div><div class="cbr"><small>${unl()?"Coach":"Today"}</small><span>${unl()?"Open as many packs as you want. Your cards stay on this device.":e.coins+" earned · free drills "+Math.max(0,ECON.freeDrills-e.free)+" left · games "+Math.max(0,ECON.freeGames-e.games)+" left"}</span></div></section>
    <div class="seg three">${[["shop","🛒","Shop"],["binder","📒","Binder"],["squad","⚾","Squad"]].map(x=>`<button class="${tab===x[0]?"on":""}" data-a="xct2:${x[0]}"><span>${x[1]}</span>${x[2]}</button>`).join("")}</div>`;
   let body="";
-  if(tab==="shop"){const dailyOk=p.daily!==today()&&(p.act||{})[today()];
+  if(tab==="shop"){const dailyOk=unl()||p.daily!==today()&&(p.act||{})[today()];
    body=`<button class="daily ${dailyOk?"":"off"}" data-a="xdaily" ${dailyOk?"":"disabled"}><span>🎁</span><span class="dtx"><b>Daily Dugout Pull</b><small>${p.daily===today()?"Collected today. Come back tomorrow.":dailyOk?"1 free card. Tap to pull!":"Finish a drill or game today to unlock 1 free card."}</small></span></button>
    ${PACKS.map(pk=>`<div class="pack" style="--pc:${pk.c}"><div class="pkart"><b>${pk.n.split(" ")[0]}</b><small>${pk.n.split(" ").slice(1).join(" ")}</small><i>DUGOUT 2026</i></div><div class="dtx"><b>${pk.n}</b><small>${pk.sub}</small><span class="pkc">🪙 ${pk.cost.toLocaleString("en-US")}</span></div>
      <button class="cta sm" data-a="xbuy:${pk.k}" ${coins>=pk.cost?"":"disabled"}>${coins>=pk.cost?"Open":"Need "+(pk.cost-coins).toLocaleString("en-US")}</button></div>`).join("")}
@@ -1492,11 +1496,11 @@ function cardsHTML(){const p=me();if(!p)return homeHTML();const tab=window._ct2|
     <div class="sqg">${SLOTS.map(s=>{const c=cs.find(x=>x.u===sq[s[0]]);return `<button class="sqs" data-a="xslot:${s[0]}"><span class="sqp">${s[0]}</span>${c?`<span class="sqc">${tcard(c)}</span>`:`<span class="sqe">＋</span>`}</button>`}).join("")}</div>
     <p class="pgs">Every slot counts. Empty slots count as 40. Parallels add up to +5 and autos +2 to a card's rating.</p>`}
   return topbar("Dugout Cards","Earn coins, open packs, build your squad")+`<main>${head}${body}</main>`+nav()}
-function cardSheet(u){const p=me(),c=(p.cards||[]).find(x=>x.u===u);if(!c)return"";const b=CARD[c.id],dup=(p.cards||[]).filter(x=>x.id===c.id).length,inSq=Object.values(p.squad||{}).includes(u);
+function cardSheet(u){const p=isCoach()?coachP():me(),c=(p.cards||[]).find(x=>x.u===u);if(!c)return"";const b=CARD[c.id],dup=(p.cards||[]).filter(x=>x.id===c.id).length,inSq=Object.values(p.squad||{}).includes(u);
   return `<div class="sheet csheet"><button class="x" data-a="close" aria-label="Close">✕</button><div class="cbig">${tcard(c,1)}</div>
    <p class="pgs ctr">${RAR[b.r][0]}${c.par!=="base"?" · "+PAR[c.par][0]+" parallel":""}${c.auto?" · Autograph":""}${c.sn?" · #"+c.sn:""} · pulled ${nice(c.at)}${dup>1?` · you have ${dup}`:""}</p>
    <div class="two">${inSq?`<button class="ghost" disabled>✓ In your squad</button>`:`<button class="cta sm" data-a="xadd:${u}">Add to squad</button>`}<button class="ghost ${window._qs===u?"warn":""}" data-a="xsell:${u}">${window._qs===u?"Tap again: sell for 🪙 "+cval(c):"Quick sell 🪙 "+cval(c)}</button></div></div>`}
-function slotSheet(slot){const p=me(),cs=(p.cards||[]).filter(c=>CARD[c.id]&&canPlay(CARD[c.id],slot)).sort((a,b)=>covr(b)-covr(a));
+function slotSheet(slot){const p=isCoach()?coachP():me(),cs=(p.cards||[]).filter(c=>CARD[c.id]&&canPlay(CARD[c.id],slot)).sort((a,b)=>covr(b)-covr(a));
   return `<div class="sheet"><button class="x" data-a="close" aria-label="Close">✕</button><h2 class="pvh">Pick your ${slot}</h2>
    ${cs.length?`<div class="tgrid">${cs.map(c=>`<button class="tcb" data-a="xput:${slot}:${c.u}">${tcard(c)}</button>`).join("")}</div>`:`<div class="empty">No cards that can play ${slot} yet. Keep opening packs!</div>`}
    ${(p.squad||{})[slot]?`<button class="ghost" data-a="xput:${slot}:">Empty this slot</button>`:""}</div>`}
@@ -1553,20 +1557,20 @@ function liveHTML(){if(!NET)return topbar("Dugout Live")+`<main><div class="empt
     ${host?`<p class="pgs ctr">Coins are on their way: 150 / 100 / 75, and 25 for everyone else.</p><button class="cta" data-a="xlnew">New game</button>`:S_.me?`<section class="lvres ok"><b>You finished ${ordinal(S_.me.rank)}!</b><small>${S_.me.score.toLocaleString("en-US")} points · coins land in your Cards tab</small></section><button class="ghost" data-a="xlnew">Done</button>`:""}`;
   return topbar("Dugout Live")+`<main class="lvm">${top}${h}</main>`+(ph==="question"||ph==="reveal"?"":nav())}
 const ordinal=n=>n+(["th","st","nd","rd"][(n%100-20)%10]||["th","st","nd","rd"][n%100]||"th");
-function liveCard(){return isParent()?"":`<button class="lvcard" data-a="xlive"><span>🔴</span><span class="dtx"><b>Dugout Live</b><small>${isCoach()?"Host team trivia. Everyone plays on their phone.":"Join Coach's live trivia game"}</small></span><span class="arr">›</span></button>`}
+function liveCard(){return isParent()?"":(isCoach()?`<button class="rowb" data-a="go:cards"><span>🃏</span><span class="dtx"><b>Dugout Cards</b><small>Coach mode: open unlimited packs</small></span><span class="arr">›</span></button>`:"")+`<button class="lvcard" data-a="xlive"><span>🔴</span><span class="dtx"><b>Dugout Live</b><small>${isCoach()?"Host team trivia. Everyone plays on their phone.":"Join Coach's live trivia game"}</small></span><span class="arr">›</span></button>`}
 
 /* --- taps --- */
-document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(k[0]!=="x")return;const p=me();
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(k[0]!=="x")return;const p=isCoach()?coachP():me();if(isCoach()&&/^x(buy|daily|flip|pdone|sell|add|put|best)/.test(k))setTimeout(saveCoachCards,0);
   if(k==="xvclose"){sheet=sheet&&sheet[0]==="vid"?sheet[3]||null:null;render();return}
   if(k==="xct2"){window._ct2=v;render();return}if(k==="xbf"){window._bf=v;render();return}
   if(k==="xodds"){sheet=["odds"];render();return}
-  if(k==="xbuy"){const pk=PACKS.find(x=>x.k===v);if(!p||!pk||(p.coins||0)<pk.cost)return;p.coins-=pk.cost;p.opened=(p.opened||0)+1;const cs=openPack(p,pk);window._pack={name:pk.n,cards:cs,open:cs.map(()=>false)};(p.cards=p.cards||[]).push(...cs);save();sheet=["pack"];render();return}
-  if(k==="xdaily"){if(!p||p.daily===today()||!(p.act||{})[today()])return;p.daily=today();const c=makeCard(p,wpick(SLOTW.n),rollPar(1),Math.random()<.01);(p.cards=p.cards||[]).push(c);save();window._pack={name:"Daily Dugout Pull",cards:[c],open:[false]};sheet=["pack"];render();return}
+  if(k==="xbuy"){const pk=PACKS.find(x=>x.k===v);if(!p||!pk||(!unl()&&(p.coins||0)<pk.cost))return;if(!unl())p.coins-=pk.cost;p.opened=(p.opened||0)+1;const cs=openPack(p,pk);window._pack={name:pk.n,cards:cs,open:cs.map(()=>false)};(p.cards=p.cards||[]).push(...cs);save();sheet=["pack"];render();return}
+  if(k==="xdaily"){if(!p||!unl()&&(p.daily===today()||!(p.act||{})[today()]))return;if(!unl())p.daily=today();const c=makeCard(p,wpick(SLOTW.n),rollPar(1),Math.random()<.01);(p.cards=p.cards||[]).push(c);save();window._pack={name:"Daily Dugout Pull",cards:[c],open:[false]};sheet=["pack"];render();return}
   if(k==="xflip"){window._pack.open[+v]=true;const c=window._pack.cards[+v],b=CARD[c.id];if(b.r==="L"||b.r==="S"||c.auto||["red","black","orange"].includes(c.par))burst();render();return}
   if(k==="xflipall"){window._pack.open=window._pack.open.map(()=>true);render();return}
   if(k==="xpdone"){window._pack=null;sheet=null;window._ct2="binder";window._bf="all";render();return}
   if(k==="xcard"){window._qs="";sheet=["card",v];render();return}
-  if(k==="xsell"){if(window._qs!==v){window._qs=v;render();return}const c=(p.cards||[]).find(x=>x.u===v);if(!c)return;p.coins=(p.coins||0)+cval(c);p.cards=p.cards.filter(x=>x.u!==v);Object.keys(p.squad||{}).forEach(s=>{if(p.squad[s]===v)delete p.squad[s]});save();toast("Sold for 🪙 "+cval(c));sheet=null;render();return}
+  if(k==="xsell"){if(window._qs!==v){window._qs=v;render();return}const c=(p.cards||[]).find(x=>x.u===v);if(!c)return;if(!unl())p.coins=(p.coins||0)+cval(c);p.cards=p.cards.filter(x=>x.u!==v);Object.keys(p.squad||{}).forEach(s=>{if(p.squad[s]===v)delete p.squad[s]});save();toast("Sold for 🪙 "+cval(c));sheet=null;render();return}
   if(k==="xadd"){const c=(p.cards||[]).find(x=>x.u===v),b=CARD[c.id];p.squad=p.squad||{};const open=SLOTS.map(s=>s[0]).filter(s=>canPlay(b,s));const s=open.find(s=>!p.squad[s])||open.sort((x,y)=>{const cx=p.cards.find(z=>z.u===p.squad[x]),cy=p.cards.find(z=>z.u===p.squad[y]);return (cx?covr(cx):0)-(cy?covr(cy):0)})[0];if(!s){toast("No spot for this card");return}
     Object.keys(p.squad).forEach(x=>{const cx=p.cards.find(z=>z.u===p.squad[x]);if(cx&&cx.id===c.id)delete p.squad[x]});p.squad[s]=v;save();toast(b.n+" is your "+s);sheet=null;window._ct2="squad";render();return}
   if(k==="xslot"){sheet=["slot",v];render();return}
