@@ -2505,4 +2505,14 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   return h.replace("</main>",`<datalist id="tgl">${tags.map(t=>`<option value="${esc(t)}">`).join("")}</datalist></main>`)}}
 document.addEventListener("input",e=>{const t=e.target;if(view!=="inbox"||!t.dataset||t.dataset.ibf!=="tgs")return;const c=t.closest("[data-ib]"),x=(S.inbox||[]).find(y=>y.id===c.dataset.ib);if(x){x.tg=t.value.split(",").map(s=>s.trim().replace(/^#/,"")).filter(Boolean)}},true);
 
+/* ===== players and parents can't leave the app for social media ===== */
+const SOCIAL_RE=/(^|\.)(tiktok\.com|instagram\.com|facebook\.com|fb\.com|fb\.watch|fb\.me|youtube\.com|youtu\.be|snapchat\.com|twitter\.com|x\.com|threads\.net)$/i;
+const isSocial=u=>{try{return SOCIAL_RE.test(new URL(u,location.href).hostname)}catch(e){return false}};
+const lockedDown=()=>!isCoach()||!!S.peek;
+{const _v=vidSheet;vidSheet=function(id,title){let h=_v(id,title);if(!lockedDown())return h;
+  h=h.replace(/<iframe /g,'<iframe sandbox="allow-scripts allow-same-origin allow-presentation" referrerpolicy="strict-origin" ');
+  return h.replace(/<p class="pgs">Video won't play here\?[^]*?<\/p>/,`<p class="pgs">Video won't play? Tell your coach.</p>`)}}
+document.addEventListener("click",e=>{if(!lockedDown())return;const a=e.target.closest&&e.target.closest("a[href]");if(!a)return;const h=a.getAttribute("href");if(!isSocial(h))return;
+  if(ytId(h)||sEmbed(h))return;e.preventDefault();e.stopImmediatePropagation();toast("That video opens in another app. Ask your coach.")},true);
+{const _wo=window.open;window.open=function(u){if(lockedDown()&&u&&isSocial(u)){toast("That video opens in another app. Ask your coach.");return null}return _wo.apply(window,arguments)}}
 </script></body></html>
