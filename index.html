@@ -2452,7 +2452,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   if(k==="ibyes"){const n=(x.n||"").trim();if(!n){toast("Give it a name first");return}const y=(x.y||"").trim(),d={id:"u"+Date.now().toString(36),c:x.c||"field",n,t:Math.max(1,Math.min(60,+x.t||5)),lv:+x.lv||1,who:x.who||"solo",where:x.where||"yard",tg:(x.tg||[]).slice(),eq:"See the video",why:y||x.d||"Watch the video, then do it.",steps:["Watch the video.","Do it the way it's shown."],cues:y?[y]:[],game:"",v:x.v,cl:"",ib:1,f:x.f||"",by:x.by||""};
     S.custom=S.custom||[];S.custom.push(d);addCustom(d);if(d.tg.length)S.tagList=[...new Set([...(S.tagList||[]),...d.tg])];S.inbox=S.inbox.filter(z=>z!==x);save();toast("✅ "+n+" added to the Library");render();return}},true);
 /* ===== DRILL TAGS + FILTERS: coach edits any drill's details and tags; Library filters by them ===== */
-const WHO_L={solo:"By myself",partner:"2 people",p3:"3 people",p4:"4 people",p5:"5 people",p6:"6 people",p7:"7 people",p8:"8 people",p9:"9 people",p10:"10+ people",team:"Full team"},WHERE_L={inside:"Indoors",driveway:"Driveway",yard:"Backyard",field:"Field"},LV_L={1:"Beginner",2:"Middle",3:"Advanced"};
+const WHO_L={solo:"By myself",partner:"2+ people",p3:"3+ people",p4:"4+ people",p5:"5+ people",p6:"6+ people",p7:"7+ people",p8:"8+ people",p9:"9+ people",p10:"10+ people",team:"Full team"},WHERE_L={inside:"Indoors",driveway:"Driveway",yard:"Backyard",field:"Field"},LV_L={1:"Beginner",2:"Middle",3:"Advanced"};
 var libX={lv:0,where:[],who:[],tags:[],cats:[]};
 /* built-in drills: the coach's changes are saved as overrides and laid on top */
 function applyDTags(){const o=S.dtags||{},sig=JSON.stringify(o);if(window._dtSig===sig)return;window._dtSig=sig;
