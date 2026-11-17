@@ -1086,7 +1086,7 @@ function save(){if(NET){netSave();return}try{localStorage.setItem(LS,JSON.string
 /* ===== HELPERS ===== */
 const P=id=>S.players.find(p=>p.id===id),isCoach=()=>S.who==="coach",isParent=()=>S.who==="parent",me=()=>P(S.who)||(isCoach()&&/^(game|play|film)$/.test(view)?coachP():undefined);
 function level(xp){let i=0;LEVELS.forEach((l,k)=>{if(xp>=l[0])i=k});const nx=LEVELS[i+1];return{i,n:LEVELS[i][1],lo:LEVELS[i][0],hi:nx?nx[0]:null,pct:nx?Math.min(100,(xp-LEVELS[i][0])/(nx[0]-LEVELS[i][0])*100):100,next:nx?nx[1]:""}}
-const total=p=>Object.values(p.done).reduce((a,b)=>a+b,0),hwOpen=p=>p.hw.filter(h=>!h.done),hwDone=p=>p.hw.filter(h=>h.done);
+const total=p=>Object.values(p.done).reduce((a,b)=>a+b,0),hwOpen=p=>p.hw.filter(h=>!h.done&&!hwOff(p,h)),hwDone=p=>p.hw.filter(h=>h.done);
 function checkBadges(p,quiet){const has=k=>p.badges.includes(k),c=k=>p.cats[k]||0,got=[];const add=k=>{if(!has(k)){p.badges.push(k);got.push(k)}};
   if(total(p)>=1)add("first");if(p.streak>=3)add("s3");if(p.streak>=7)add("s7");if(hwDone(p).length>=5)add("hw5");if(c("arm")>=5)add("arm5");if(c("throw")>=10)add("thr10");
   if(c("field")+c("of")>=10)add("fld10");if(c("hit")>=10)add("hit10");if(c("run")>=5)add("run5");if(p.tri[0]>=20)add("tri20");if((p.best.swing||0)>=20)add("bb20");if(p.best.playP)add("play");
@@ -1121,7 +1121,7 @@ function pickHTML(){return `<div class="pick"><div class="glow"></div><div class
   <button class="pc coachc" data-a="who:coach"><span class="av big coach"><b>C</b></span><b>Coach</b><small>Assign and track</small></button><button class="pc coachc" data-a="who:parent"><span class="av big coach"><b>P</b></span><b>Parent</b><small>Sample parent of Player 3 and 7</small></button></div>
   <p class="fine">Mock profiles for preview. Progress saves on this device only.</p></div>`}
 /* ===== HOME ===== */
-function homeHTML(){const p=me(),L=level(p.xp),w=WEEK[dayIdx()],dt=DAYTYPES[w[1]],t=today(),openAll=hwOpen(p),open=openAll.filter(h=>!h.on||h.on<=t),later=openAll.filter(h=>h.on&&h.on>t);
+function homeHTML(){const p=me(),L=level(p.xp),w=WEEK[dayIdx()],dt=DAYTYPES[w[1]],t=today(),openAll=hwOpen(p),open=openAll.filter(h=>(!h.on||h.on<=t)&&!(isPhys(DR[h.id])&&busyOn(p,t).length)),later=openAll.filter(h=>h.on&&h.on>t);
   const dd=DV()[hash(t+p.id)%DV().length],tq=hash(t+"q")%TRIVIA.length,sh=p.shouts.slice(-2).reverse();
   return topbar()+`<main>
    <div class="todo-box"><h3 class="sec todo">To do today <span>${p.hw.filter(h=>h.done===t).length} of ${p.hw.filter(h=>h.done===t).length+open.length} done</span></h3>
@@ -1149,7 +1149,7 @@ function libHTML(){const L=libList(),f=(k,t)=>`<button class="fchip ${libF[k]?"o
    <h3 class="sec">${libCat?CAT[libCat].n:"All drills"} <span>${L.length}</span></h3><div id="list">${L.map(x=>drillRow(x)).join("")||`<div class="empty">Nothing matches. Try clearing a filter.</div>`}</div></main>`+nav()}
 function drillSheet(id){const x=DR[id],c=CAT[x.c],p=me(),v=vid(x),n=p?(p.done[id]||0):0,hwI=p?p.hw.findIndex(h=>h.id===id&&!h.done):-1;
   return `<div class="sheet" style="--c:${c.c}"><button class="x" data-a="close" aria-label="Close">✕</button><div class="shd"><span class="big">${c.e}</span><div><small>${c.n}${x.cl?" · Cleary: "+esc(x.cl):""}</small><h2>${esc(x.n)}</h2></div></div>
-   <div class="tags">${chip(x.t+" min",c.c)}${chip("Level "+x.lv)}${chip({solo:"By myself",partner:"With a partner",team:"Team"}[x.who])}${chip({inside:"Indoors",yard:"Backyard",field:"Field"}[x.where])}</div>
+   <div class="tags">${chip(x.t+" min",c.c)}${chip("Level "+x.lv)}${chip({solo:"By myself",partner:"With a partner",team:"Team"}[x.who])}${chip([x.where].concat(x.wh||[]).map(w=>WHERE_L[w]||w).join(" · "))}</div>
    <h4>Purpose</h4><p class="why">${esc(x.why)}</p>${x.eq?`<p class="eq"><b>You need:</b> ${esc(x.eq)}</p>`:""}
    ${v?`<a class="vbtn vth" href="${esc(v)}" target="_blank" rel="noopener noreferrer">${thumb(v)?`<span class="thw"><img class="thimg" src="${thumb(v)}" alt="" loading="lazy"><i>▶</i></span>`:`<span>▶</span>`}<b>Watch a how-to video<small>${S.vids[x.id]?"Picked by your coach":(ytId(v)||sEmbed(v))?"Plays right here"+(sPlat(v)&&sPlat(v)!=="YouTube"?" · "+sPlat(v):""):"Opens in a new tab"}</small></b></a>`:""}
    <h4>How to do it</h4><ol>${x.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>
@@ -1301,7 +1301,7 @@ function teamHTML(){const t=today(),act=S.players.filter(p=>p.last===t).length,o
   const ct=window._ct||"players";if(NET&&ct==="players"&&!window._tref){window._tref=1;setTimeout(()=>{netPull(false)},50)}return topbar("Coach's View","Players, program, assigning and settings")+`<main>${(()=>{ibMerge();const n=(S.inbox||[]).length;return `<button class="rowb vadd ibbtn" data-a="go:inbox"><span>📥</span><span class="dtx"><b>Drill inbox${n?" · "+n+" to review":""}</b><small>Your saved TikTok, Instagram and Facebook videos. Watch, then approve or deny</small></span><span class="arr">›</span></button>`})()}${vrevBtn()}<button class="rowb vadd" data-a="go:qdrill"><span>🎬</span><span class="dtx"><b>Add a drill from a video</b><small>Paste a YouTube, TikTok, Instagram or Facebook link</small></span><span class="arr">›</span></button>${coachCardsBtn()}<div class="seg six">${[["players","👥","Players"],["master","🗂️","Masterfile"],["money","💵","Money"],["program","📅","Program"],["assign","📝","Assign"],["settings","⚙️","Team"]].map(x=>`<button class="${ct===x[0]?"on":""}" data-a="ct:${x[0]}"><span>${x[1]}</span>${x[2]}</button>`).join("")}</div>
    ${ct==="players"?`<div class="tiles"><div><b>${S.players.length}</b><small>Players</small></div><div><b>${act}</b><small>Active today</small></div><div><b>${dn}/${dn+open}</b><small>Homework done</small></div></div>${nudgeHTML()}<h3 class="sec">Progress <span>${NET?`<button class="lnk" data-a="nref">↻ Refresh</button>`:"tap a player"}</span></h3>${NET&&!S.players.length?`<div class="empty">No players yet. Give the team the join code in Settings and have them create accounts.</div>`:""}<div class="fr">${[["xp","Most XP"],["week","Most active this week"],["hw","Most homework left"],["last","Longest since active"]].map(s=>`<button class="fchip ${(window._ts||"xp")===s[0]?"on":""}" data-a="tsort:${s[0]}">${s[1]}</button>`).join("")}</div>
    ${rows.map((p,i)=>{const o=hwOpen(p).length,dd=hwDone(p).length,r=restInfo(p),tot=o+dd;return `<button class="prow2" data-a="player:${p.id}" style="--c:${p.col}"><div class="pr1"><span class="rk">${i+1}</span>${avatar(p)}<span class="dtx"><b>${esc(p.n)}</b><small>${level(p.xp).n} · ${p.pos} · last active ${ago(p)}</small></span><span class="pm"><em class="${p.streak?"":"cold"}">🔥 ${p.streak}</em>${r.ok?"":'<small class="rest">resting</small>'}</span></div>
-     <div class="pr2"><span>XP</span><div class="xp"><i style="width:${p.xp/mx*100}%"></i></div><b>${p.xp}</b><span>Homework</span><div class="xp hwx"><i style="width:${tot?dd/tot*100:0}%"></i></div><b>${dd}/${tot}</b><span>Drills</span><div class="dots">${CATS.filter(c=>c.k!=="fun").map(c=>`<i title="${c.n}" style="--c:${c.c};opacity:${p.cats[c.k]?1:.18}"></i>`).join("")}</div><b>${total(p)}</b><span>Week</span><div class="wk7">${weekDays().map(d=>`<i class="${(p.act||{})[d]?"on":""}"></i>`).join("")}</div><b>${wkN(p)}/7</b></div></button>`}).join("")}`:ct==="master"?masterPanel():ct==="money"?moneyPanel():ct==="families"?familiesPanel():ct==="program"?progPanel()+offPanel():ct==="assign"?`<h3 class="sec">Quick assign <span>one drill</span></h3><div class="form"><label>Drill<select id="qd"><option value="">Choose a drill or game…</option><optgroup label="App games">${GD.map(x=>`<option value="${x.id}" ${qa.id===x.id?"selected":""}>🎮 ${esc(x.n)}</option>`).join("")}</optgroup>${CATS.map(c=>{const L=D.filter(x=>x.c===c.k&&(!qa.lr||x.where==="inside"));return L.length?`<optgroup label="${c.n}">${L.map(x=>`<option value="${x.id}" ${qa.id===x.id?"selected":""}>${esc(x.n)}</option>`).join("")}</optgroup>`:""}).join("")}</select></label><div class="fr"><button class="fchip ${qa.lr?"on":""}" data-a="qlr">🛋️ Living room only</button></div>
+     <div class="pr2"><span>XP</span><div class="xp"><i style="width:${p.xp/mx*100}%"></i></div><b>${p.xp}</b><span>Homework</span><div class="xp hwx"><i style="width:${tot?dd/tot*100:0}%"></i></div><b>${dd}/${tot}</b><span>Drills</span><div class="dots">${CATS.filter(c=>c.k!=="fun").map(c=>`<i title="${c.n}" style="--c:${c.c};opacity:${p.cats[c.k]?1:.18}"></i>`).join("")}</div><b>${total(p)}</b><span>Week</span><div class="wk7">${weekDays().map(d=>`<i class="${(p.act||{})[d]?"on":""}"></i>`).join("")}</div><b>${wkN(p)}/7</b></div></button>`}).join("")}`:ct==="master"?masterPanel():ct==="money"?moneyPanel():ct==="families"?familiesPanel():ct==="program"?progPanel()+offPanel()+tpPanel():ct==="assign"?`<h3 class="sec">Quick assign <span>one drill</span></h3><div class="form"><label>Drill<select id="qd"><option value="">Choose a drill or game…</option><optgroup label="App games">${GD.map(x=>`<option value="${x.id}" ${qa.id===x.id?"selected":""}>🎮 ${esc(x.n)}</option>`).join("")}</optgroup>${CATS.map(c=>{const L=D.filter(x=>x.c===c.k&&(!qa.lr||x.where==="inside"));return L.length?`<optgroup label="${c.n}">${L.map(x=>`<option value="${x.id}" ${qa.id===x.id?"selected":""}>${esc(x.n)}</option>`).join("")}</optgroup>`:""}).join("")}</select></label><div class="fr"><button class="fchip ${qa.lr?"on":""}" data-a="qlr">🛋️ Living room only</button></div>
     <div class="fr"><button class="fchip ${qa.who==="all"?"on":""}" data-a="qwho:all">Everyone</button><button class="fchip ${qa.who==="some"?"on":""}" data-a="qwho:some">Pick players</button></div>
     ${qa.who==="some"?`<div class="who2">${S.players.map(p=>`<button class="fchip ${qa.sel.includes(p.id)?"on":""}" data-a="qsel:${p.id}" style="--c:${p.col}">${p.num} · ${esc(p.n)}</button>`).join("")}</div>`:""}
     <div class="fr">${[1,3,7].map(n=>`<button class="fchip ${qa.due===n?"on":""}" data-a="qdue:${n}">Due in ${n} day${n>1?"s":""}</button>`).join("")}</div>
@@ -1345,7 +1345,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   if(k==="ct"){window._ct=v;render();scrollTo(0,0);return}if(k==="pvopen"){sheet=["pv"];render();return}if(k==="pv"){const id=v||($("#pvs")||{}).value||"sample";sheet=null;if(id==="sample"){const t=today(),p=blankP({id:"preview",name:"Sample Player",num:0,pos:"SS"});p.tmp=1;["a1","h1","g_pos"].forEach(d=>p.hw.push({id:d,reps:"",note:"",due:t,on:t,at:t,done:""}));S.players=S.players.filter(x=>!x.tmp).concat(p)}setWho(id==="sample"?"preview":id,true);return}if(k==="dsave"){drillSave();return}if(k==="ddel"){drillDel(v);return}
   if(k==="who"){setWho(v);return}if(k==="peek"){setWho(v,true);return}if(k==="pick"){go(NET?"acct":"pick");return}if(k==="aurole"){auth.role=v;auth.msg="";keepAuth();render();return}if(k==="aukid"){keepAuth();auth.kids=(auth.kids||1)+1;render();return}if(k==="aumode"){keepAuth();auth.mode=v;auth.msg="";render();return}if(k==="auin"){netAuth(false);return}if(k==="auup"){netAuth(true);return}if(k==="auout"){netOut();return}if(k==="nref"){netPull(true);return}if(k==="adrole"){netAdmin("role",v,a[2]);return}if(k==="adpw"){netAdmin("pw",v,($("#pw_"+v).value||""));return}if(k==="adrm"){if(netRm!==v){netRm=v;render();return}netRm="";netAdmin("remove",v,"");return}if(k==="adcode"){netAdmin("code",null,($("#jc").value||""));return}if(k==="go"){libQ="";libCat="";go(v);return}if(k==="close"){sheet=null;render();return}
   if(k==="drill"){sheet=["drill",v];render();return}if(k==="player"){sheet=["player",v];render();return}
-  if(k==="cat"){libCat=libCat===v?"":v;render();return}if(k==="f"){libF[v]=!libF[v];render();return}
+  if(k==="cat"){if(view==="lib"){const i=libX.cats.indexOf(v);i<0?libX.cats.push(v):libX.cats.splice(i,1);render();return}libCat=libCat===v?"":v;render();return}if(k==="f"){libF[v]=!libF[v];render();return}
   if(k==="prog"){prog=v;view="prog";sheet=null;render();scrollTo(0,0);return}
   if(k==="did"){doDrill(me(),v,+a[2]>=0?+a[2]:null);sheet=null;render();return}
   if(k==="hw"){doDrill(me(),me().hw[+v].id,+v);render();return}
@@ -1485,7 +1485,7 @@ function planItems(t){return t.d.map(d=>d.split(" ").map(s=>{const[id,lv]=s.spli
 function progStart(){const nm=addDays(weekDays()[0],7),last=TPL.filter(t=>t.wn&&(S.sent||{})[t.k]).map(t=>S.sent[t.k]).sort().pop();return last&&addDays(last,7)>nm?addDays(last,7):nm}
 function planStart(){if(pl.date)return pl.date;const mon=weekDays()[0];return pl.st==="this"?mon:addDays(mon,7)}
 function planSend(){const t=TPL.find(x=>x.k===pl.k);if(!t)return;const td=today(),st=planStart(),ids=pl.who==="all"?S.players.map(p=>p.id):pl.sel;if(!ids.length)return;let n=0;
-  ids.forEach(pid=>{const p=P(pid);if(pl.rep)p.hw=p.hw.filter(h=>h.done);planItems(t).forEach((day,i)=>{const on=addDays(st,i);if(on<td)return;day.forEach(it=>{p.hw.push({id:it.id,reps:(t.r&&t.r[it.id])||"",note:"",due:on,on,at:td,done:"",wk:t.k});n++})})});
+  ids.forEach(pid=>{const p=P(pid);if(pl.rep)p.hw=p.hw.filter(h=>h.done);planItems(t).forEach((day,i)=>{const on=addDays(st,i);if(on<td)return;day.forEach(it=>{if(isPhys(it.x)&&busyOn(p,on).length)return;p.hw.push({id:it.id,reps:(t.r&&t.r[it.id])||"",note:"",due:on,on,at:td,done:"",wk:t.k});n++})})});
   S.plan={k:t.k,start:st,at:td};S.sent=S.sent||{};S.sent[t.k]=st;save();toast("Sent "+t.n+" to "+(pl.who==="all"?"everyone":ids.length+" player"+(ids.length===1?"":"s")));pl={k:null,who:"all",sel:[],st:"next",rep:false};window._ct="program";view="team";render();scrollTo(0,0)}
 function plansHTML(){const DN=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],mon=weekDays()[0],td=today(),nxt=progNext();
   const card=t=>{const days=planItems(t),mins=days.map(d=>d.reduce((a,i)=>a+i.x.t,0)),open=pl.k===t.k,st=planStart(),left=days.filter((_,i)=>addDays(st,i)>=td).length;
@@ -1518,7 +1518,7 @@ function newDrillHTML(){const o=(a,sel)=>a.map(v=>`<option value="${v[0]}" ${v[0
    <label>Drill name<input id="dn" maxlength="50" placeholder="Example: Wall Ball Backhands"></label>
    <label>Category<select id="dc">${o(CATS.map(c=>[c.k,c.e+" "+c.n]),"field")}</select></label>
    <div class="two"><label>Minutes<input id="dt" type="number" min="1" max="60" value="5"></label><label>Level<select id="dl">${o([[1,"● Beginner"],[2,"●● Middle"],[3,"●●● Advanced"]],1)}</select></label></div>
-   <div class="two"><label>Where<select id="dw">${o([["inside","🛋️ Living room"],["yard","Yard or driveway"],["field","Field"]],"inside")}</select></label><label>Who<select id="dwho">${o([["solo","By myself"],["partner","With a partner"]],"solo")}</select></label></div>
+   <div class="two"><label>Where<select id="dw">${o([["inside","🛋️ Living room"],["driveway","🚗 Driveway"],["yard","🌳 Backyard"],["field","⚾ Field"]],"inside")}</select></label><label>Who<select id="dwho">${o([["solo","By myself"],["partner","With a partner"]],"solo")}</select></label></div>
    <label>Equipment<input id="de" maxlength="80" placeholder="Glove, tennis ball, wall"></label>
    <label>Purpose (why do it?)<input id="dy" maxlength="140" placeholder="Builds a quick, clean backhand."></label>
    <label>Steps, one per line<textarea id="ds" rows="4" placeholder="Stand 10 feet from the wall.&#10;Throw low and field the backhand.&#10;20 reps."></textarea></label>
@@ -1875,7 +1875,7 @@ function coachCardsBtn(){return `<button class="cardsbtn" data-a="go:cards"><spa
 
 /* --- program: 2 off days a week --- */
 const DNAME=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],offDays=()=>Array.isArray(S.off)&&S.off.length===2?S.off:[2,6];
-function planItems(t){const off=offDays();return t.d.map((d,i)=>off.includes(i)?[]:d.split(" ").map(s=>{const[id,lv]=s.split("@");return{id,lv:+lv||0,x:DR[id]}}).filter(i=>i.x))}
+function planItems(t){const off=offDays(),tp=(S.tprac&&S.tprac.days)||[];return t.d.map((d,i)=>off.includes(i)?[]:d.split(" ").map(s=>{const[id,lv]=s.split("@");return{id,lv:+lv||0,x:DR[id]}}).filter(it=>it.x&&!(tp.includes(i)&&isPhys(it.x))))}
 function offPanel(){const off=offDays(),sel=window._off||off;return `<h3 class="sec">😴 Off days <span>${off.map(i=>DNAME[i]).join(" + ")}</span></h3><div class="form"><p class="pgs">Every weekly plan skips these two days. Nothing is assigned, so players get real rest. Pick two.</p>
   <div class="wkpick">${DNAME.map((d,i)=>`<button class="${sel.includes(i)?"on":""}" data-a="xoff:${i}">${d}</button>`).join("")}</div>${sel.length===2&&sel.join()!==off.join()?`<button class="cta" data-a="xoffsave">Save off days</button>`:""}<p class="pgs">Applies to weeks you send from now on.</p></div>`}
 /* --- Dugout Live: team trivia, coach hosts, players join on their phones --- */
@@ -2025,12 +2025,12 @@ function demoApply(fn,a){const v=a.p_val,A=dAccts(),L=S.links,M=dMoney();
 Object.assign(NERR,{bad_login:"Wrong email or password.",taken:"There's already an account with that email. Sign in instead.",bad_email:"That doesn't look like an email address.",claimed:"Someone already picked that name. Tell Coach if that's you.",already_claimed:"Your account already has a player. Ask Coach to change it.",not_coach:"Only a coach can do that.",bad_amount:"Type an amount like 150.",bad_plan:"Pick how often and how many payments.",no_login:"That player hasn't made an account yet.",no_player:"That player isn't on the roster.",need_name:"Add a name."});
 
 /* --- server data in --- */
-function teamDoc(){return{team:S.team,vids:S.vids,fadd:S.fadd||[],fhide:S.fhide||[],custom:S.custom||[],plan:S.plan||null,sent:S.sent||{},throwOpen:!!S.throwOpen,ann:S.ann||[],sched:S.sched||null,dues:S.dues||null,fund:S.fund||null,off:S.off||null,duelsOff:!!S.duelsOff,inbox:S.inbox||[],inboxNo:S.inboxNo||[],inboxSeed:S.inboxSeed||[],dtags:S.dtags||{},tagList:S.tagList||[],vt:S.vt||{}}}
-function teamDocOf(b){return{team:b.team,vids:b.vids,fadd:b.fadd,fhide:b.fhide,custom:b.custom,plan:b.plan,sent:b.sent,throwOpen:b.throwOpen,ann:b.ann,sched:b.sched,dues:b.dues||null,fund:b.fund||null,off:b.off||null,duelsOff:!!b.duelsOff,inbox:b.inbox||[],inboxNo:b.inboxNo||[],inboxSeed:b.inboxSeed||[],dtags:b.dtags||{},tagList:b.tagList||[],vt:b.vt||{}}}
+function teamDoc(){return{team:S.team,vids:S.vids,fadd:S.fadd||[],fhide:S.fhide||[],custom:S.custom||[],plan:S.plan||null,sent:S.sent||{},throwOpen:!!S.throwOpen,ann:S.ann||[],sched:S.sched||null,dues:S.dues||null,fund:S.fund||null,off:S.off||null,duelsOff:!!S.duelsOff,inbox:S.inbox||[],inboxNo:S.inboxNo||[],inboxSeed:S.inboxSeed||[],dtags:S.dtags||{},tagList:S.tagList||[],vt:S.vt||{},dnote:S.dnote||{},tprac:S.tprac||null}}
+function teamDocOf(b){return{team:b.team,vids:b.vids,fadd:b.fadd,fhide:b.fhide,custom:b.custom,plan:b.plan,sent:b.sent,throwOpen:b.throwOpen,ann:b.ann,sched:b.sched,dues:b.dues||null,fund:b.fund||null,off:b.off||null,duelsOff:!!b.duelsOff,inbox:b.inbox||[],inboxNo:b.inboxNo||[],inboxSeed:b.inboxSeed||[],dtags:b.dtags||{},tagList:b.tagList||[],vt:b.vt||{},dnote:b.dnote||{},tprac:b.tprac||null}}
 function applyServer(r){ME=r.user;LINKS=r.links||[];WAIT=r.waiting||[];MYPAR=r.parents||[];RLIST=r.roster||[];ACCTS=r.accounts||[];ROSTER=ACCTS;
   const m0=r.money||{};MONEY={pay:(m0.pay||[]).map(x=>Object.assign({},x,{amt:+x.amt})),plans:Object.fromEntries((m0.plans||[]).map(p=>[p.player,p]))};
   if(ME.status==="pending"){S=emptyS();S.who="pending";window._mig=1;return false}
-  const T=r.team||{},base=Object.assign(emptyS(),{team:T.team||"BigDawgz 12U",vids:T.vids||{},fadd:T.fadd||[],fhide:T.fhide||[],custom:T.custom||[],plan:T.plan||null,sent:T.sent||{},throwOpen:!!T.throwOpen,ann:T.ann||[],sched:T.sched||null,dues:T.dues||null,fund:T.fund||null,off:T.off||null,duelsOff:!!T.duelsOff,inbox:T.inbox||[],inboxNo:T.inboxNo||[],inboxSeed:T.inboxSeed||[],dtags:T.dtags||{},tagList:T.tagList||[],vt:T.vt||{}});
+  const T=r.team||{},base=Object.assign(emptyS(),{team:T.team||"BigDawgz 12U",vids:T.vids||{},fadd:T.fadd||[],fhide:T.fhide||[],custom:T.custom||[],plan:T.plan||null,sent:T.sent||{},throwOpen:!!T.throwOpen,ann:T.ann||[],sched:T.sched||null,dues:T.dues||null,fund:T.fund||null,off:T.off||null,duelsOff:!!T.duelsOff,inbox:T.inbox||[],inboxNo:T.inboxNo||[],inboxSeed:T.inboxSeed||[],dtags:T.dtags||{},tagList:T.tagList||[],vt:T.vt||{},dnote:T.dnote||{},tprac:T.tprac||null});
   const mk=(u,doc,inbox)=>{const p=Object.assign(blankP(u),doc||{});p.id=u.id;p.n=u.name;p.num=u.num||0;p.pos=u.pos||"";const ch=mergeInbox(p,inbox);return[p,ch]};let dirty=false;
   if(ME.role==="coach"){base.who="coach";base.players=(r.players||[]).map(x=>{const p=mk(x,x.doc,x.inbox)[0];p.claimed=x.claimed_by||"";p.sample=!!x.sample;return p});netLast=JSON.stringify(T&&T.team?teamDocOf(base):null)}
   else if(ME.role==="parent"){base.who="parent";base.players=(r.kids||[]).map(x=>mk(x,x.doc,x.inbox)[0]);base.kids=base.players.map(p=>p.id)}
@@ -2452,19 +2452,20 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   if(k==="ibyes"){const n=(x.n||"").trim();if(!n){toast("Give it a name first");return}const y=(x.y||"").trim(),d={id:"u"+Date.now().toString(36),c:x.c||"field",n,t:Math.max(1,Math.min(60,+x.t||5)),lv:+x.lv||1,who:x.who||"solo",where:x.where||"yard",tg:(x.tg||[]).slice(),eq:"See the video",why:y||x.d||"Watch the video, then do it.",steps:["Watch the video.","Do it the way it's shown."],cues:y?[y]:[],game:"",v:x.v,cl:"",ib:1,f:x.f||"",by:x.by||""};
     S.custom=S.custom||[];S.custom.push(d);addCustom(d);if(d.tg.length)S.tagList=[...new Set([...(S.tagList||[]),...d.tg])];S.inbox=S.inbox.filter(z=>z!==x);save();toast("✅ "+n+" added to the Library");render();return}},true);
 /* ===== DRILL TAGS + FILTERS: coach edits any drill's details and tags; Library filters by them ===== */
-const WHO_L={solo:"By myself",partner:"With a partner",team:"Team"},WHERE_L={inside:"Indoors",yard:"Backyard",field:"Field"},LV_L={1:"Beginner",2:"Middle",3:"Advanced"};
-var libX={lv:0,where:"",who:"",tags:[]};
+const WHO_L={solo:"By myself",partner:"With a partner",team:"Team"},WHERE_L={inside:"Indoors",driveway:"Driveway",yard:"Backyard",field:"Field"},LV_L={1:"Beginner",2:"Middle",3:"Advanced"};
+var libX={lv:0,where:[],who:[],tags:[],cats:[]};
 /* built-in drills: the coach's changes are saved as overrides and laid on top */
 function applyDTags(){const o=S.dtags||{},sig=JSON.stringify(o);if(window._dtSig===sig)return;window._dtSig=sig;
   Object.keys(DR).forEach(id=>{const x=DR[id];if(x._o){Object.assign(x,x._o);delete x._o}});
   Object.keys(o).forEach(id=>{const x=DR[id];if(!x||x.custom)return;const ch=o[id],orig={};Object.keys(ch).forEach(k=>orig[k]=x[k]);x._o=orig;Object.assign(x,ch)})}
 function allTags(){const t=new Set(S.tagList||[]);D.forEach(x=>(x.tg||[]).forEach(g=>t.add(g)));return [...t].sort((a,b)=>a.localeCompare(b))}
-{const _ll=libList;libList=function(){applyDTags();return _ll().filter(x=>(!libX.lv||x.lv===libX.lv)&&(!libX.where||x.where===libX.where)&&(!libX.who||x.who===libX.who)&&libX.tags.every(t=>(x.tg||[]).includes(t)))}}
-{const _lh=libHTML;libHTML=function(){applyDTags();const h=_lh(),tags=allTags(),n=(libX.lv?1:0)+(libX.where?1:0)+(libX.who?1:0)+libX.tags.length,c=(k,v,t)=>`<button class="fchip ${libX[k]===v?"on":""}" data-a="lx:${k}:${v}">${t}</button>`;
+{const _ll=libList;libList=function(){applyDTags();if(view==="lib")libCat="";return _ll().filter(x=>(!libX.lv||x.lv===libX.lv)&&(!libX.where.length||[x.where].concat(x.wh||[]).some(w=>libX.where.includes(w)))&&(!libX.who.length||libX.who.includes(x.who))&&(!libX.cats.length||libX.cats.includes(x.c))&&libX.tags.every(t=>(x.tg||[]).includes(t)))}}
+{const _lh=libHTML;libHTML=function(){applyDTags();const h=_lh(),tags=allTags(),n=(libX.lv?1:0)+libX.where.length+libX.who.length+libX.tags.length+libX.cats.length,c=(k,v,t)=>`<button class="fchip ${(Array.isArray(libX[k])?libX[k].includes(v):libX[k]===v)?"on":""}" data-a="lx:${k}:${v}">${t}</button>`;
   const more=`<details class="lfx" ${n||window._lfo?"open":""}><summary>More filters${n?" · "+n+" on":""}</summary>
    <p class="lfl">Level</p><div class="fr">${[1,2,3].map(v=>c("lv",v,"●".repeat(v)+" "+LV_L[v])).join("")}</div>
-   <p class="lfl">Where</p><div class="fr">${Object.keys(WHERE_L).map(k=>c("where",k,WHERE_L[k])).join("")}</div>
-   <p class="lfl">Who</p><div class="fr">${Object.keys(WHO_L).map(k=>c("who",k,WHO_L[k])).join("")}</div>
+   <p class="lfl">Type of instruction <span>pick as many as you want</span></p><div class="fr">${CATS.filter(x=>tOpen()||x.k!=="throw").map(x=>c("cats",x.k,x.e+" "+x.n)).join("")}</div>
+   <p class="lfl">Where <span>pick as many as you want</span></p><div class="fr">${Object.keys(WHERE_L).map(k=>c("where",k,WHERE_EMO[k]+" "+WHERE_L[k])).join("")}</div>
+   <p class="lfl">Who <span>pick as many as you want</span></p><div class="fr">${Object.keys(WHO_L).map(k=>c("who",k,WHO_L[k])).join("")}</div>
    ${tags.length?`<p class="lfl">Tags</p><div class="fr">${tags.map(t=>`<button class="fchip tg ${libX.tags.includes(t)?"on":""}" data-a="lxt:${encodeURIComponent(t)}">#${esc(t)}</button>`).join("")}</div>`:""}
    ${n?`<button class="ghost sm" data-a="lxclear">Clear these filters</button>`:""}${isCoach()?`<p class="fine">Coach: open any drill and tap ✏️ Edit details & tags to change how it's sorted.</p>`:""}</details>`;
   return h.replace(/(<div class="fr">[^]*?f:cl[^]*?<\/div>)/,"$1"+more)}}
@@ -2477,12 +2478,13 @@ function deditHTML(){if(!isCoach()||!DE)return homeHTML();const x=DR[DE.id];if(!
    ${x.custom?`<label>Drill name<input data-de="n" maxlength="50" value="${esc(f.n)}"></label>`:`<p class="pgs"><b>${esc(x.n)}</b> · built-in drill. Your changes only change how it's sorted and shown.</p>`}
    <div class="two"><label>Category<select data-de="c">${CATS.map(c=>`<option value="${c.k}" ${f.c===c.k?"selected":""}>${c.e} ${c.n}</option>`).join("")}</select></label><label>Minutes<input data-de="t" type="number" min="1" max="60" value="${esc(f.t)}"></label></div>
    <div class="two"><label>Level<select data-de="lv">${sel("lv",{1:"● Beginner",2:"●● Middle",3:"●●● Advanced"})}</select></label><label>Who<select data-de="who">${sel("who",WHO_L)}</select></label></div>
-   <div class="two"><label>Where<select data-de="where">${sel("where",WHERE_L)}</select></label><label>Equipment<input data-de="eq" maxlength="80" value="${esc(f.eq)}"></label></div>
+   <div class="two"><label>Equipment<input data-de="eq" maxlength="80" value="${esc(f.eq)}"></label></div>
+   <p class="lfl">Where <span>tap every place it works</span></p><div class="fr">${Object.keys(WHERE_L).map(k=>`<button class="fchip ${(f.locs||[f.where]).includes(k)?"on":""}" data-a="zloc:${k}">${WHERE_EMO[k]} ${WHERE_L[k]}</button>`).join("")}</div>
    <p class="lfl">Tags <span>tap to add or remove</span></p><div class="fr">${tags.map(t=>`<button class="fchip tg ${f.tg.includes(t)?"on":""}" data-a="detg:${encodeURIComponent(t)}">#${esc(t)}</button>`).join("")||`<span class="pgs">No tags yet. Make one below.</span>`}</div>
    <div class="two"><input id="detn" maxlength="24" placeholder="New tag, like Warmup or Cooperstown"><button class="ghost" data-a="denew">Add tag</button></div>
    <button class="cta" data-a="desave">Save changes</button>${!x.custom&&(S.dtags||{})[x.id]?`<button class="ghost" data-a="dereset">Reset to original</button>`:""}</div></main>`+nav()}
-function deOpen(id){applyDTags();const x=DR[id];if(!x)return;DE={id,f:{n:x.n,c:x.c,t:x.t,lv:x.lv,who:x.who||"solo",where:x.where||"yard",eq:x.eq||"",tg:(x.tg||[]).slice()}};sheet=null;view="dedit";render();scrollTo(0,0)}
-function deSave(){const x=DR[DE.id],f=DE.f,v={c:f.c,t:Math.max(1,Math.min(60,+f.t||x.t)),lv:+f.lv||1,who:f.who,where:f.where,eq:(f.eq||"").trim()||"None",tg:f.tg.slice()};
+function deOpen(id){applyDTags();const x=DR[id];if(!x)return;DE={id,f:{n:x.n,c:x.c,t:x.t,lv:x.lv,who:x.who||"solo",where:x.where||"yard",locs:[x.where||"yard"].concat(x.wh||[]),eq:x.eq||"",tg:(x.tg||[]).slice()}};sheet=null;view="dedit";render();scrollTo(0,0)}
+function deSave(){const x=DR[DE.id],f=DE.f,v={c:f.c,t:Math.max(1,Math.min(60,+f.t||x.t)),lv:+f.lv||1,who:f.who,where:(f.locs||[])[0]||f.where,wh:(f.locs||[]).slice(1),eq:(f.eq||"").trim()||"None",tg:f.tg.slice()};
   S.tagList=[...new Set([...(S.tagList||[]),...v.tg])];
   if(x.custom){v.n=(f.n||"").trim()||x.n;const c=(S.custom||[]).find(y=>y.id===x.id);if(c)Object.assign(c,v);Object.assign(x,v)}
   else{S.dtags=S.dtags||{};const keep={};Object.keys(v).forEach(k=>{const base=x._o&&k in x._o?x._o[k]:x[k];if(JSON.stringify(base)!==JSON.stringify(v[k])||k==="tg"&&v.tg.length)keep[k]=v[k]});if(!v.tg.length&&(!x._o||!("tg" in x._o)))delete keep.tg;S.dtags[x.id]=keep;if(!Object.keys(keep).length)delete S.dtags[x.id];window._dtSig=null;applyDTags()}
@@ -2490,9 +2492,9 @@ function deSave(){const x=DR[DE.id],f=DE.f,v={c:f.c,t:Math.max(1,Math.min(60,+f.
 document.addEventListener("input",e=>{const t=e.target,k=t.dataset&&t.dataset.de;if(k&&DE)DE.f[k]=t.value},true);
 document.addEventListener("change",e=>{const t=e.target,k=t.dataset&&t.dataset.de;if(k&&DE)DE.f[k]=t.value},true);
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(!/^(lx|lxt|lxclear|dedit|dex|detg|denew|desave|dereset)$/.test(k))return;e.stopPropagation();
-  if(k==="lx"){const val=a[1]==="lv"?+a[2]:a[2];libX[a[1]]=libX[a[1]]===val?(a[1]==="lv"?0:""):val;window._lfo=1;render();return}
+  if(k==="lx"){const val=a[1]==="lv"?+a[2]:a[2];if(Array.isArray(libX[a[1]])){const L=libX[a[1]],i=L.indexOf(val);i<0?L.push(val):L.splice(i,1)}else libX[a[1]]=libX[a[1]]===val?0:val;window._lfo=1;render();return}
   if(k==="lxt"){const tg=decodeURIComponent(v),i=libX.tags.indexOf(tg);i<0?libX.tags.push(tg):libX.tags.splice(i,1);window._lfo=1;render();return}
-  if(k==="lxclear"){libX={lv:0,where:"",who:"",tags:[]};render();return}
+  if(k==="lxclear"){libX={lv:0,where:[],who:[],tags:[],cats:[]};render();return}
   if(!isCoach())return;
   if(k==="dedit"){deOpen(v);return}if(!DE)return;
   if(k==="dex"){const id=DE.id;DE=null;view="lib";sheet=["drill",id];render();return}
@@ -2588,4 +2590,80 @@ setInterval(()=>{const f=document.getElementById("ytp");if(f&&f.dataset.js&&f.co
 .vrok{font-size:12px;font-weight:900}.vrok.good{color:#3DDC84}.vrok.bad{color:#FF5C5C}
 .vrwhat{background:#0B0B0D;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;gap:4px}.vrwhat small{color:var(--amber);font-weight:900;font-size:11px;letter-spacing:.06em;text-transform:uppercase}.vrwhat p{margin:0;font-size:13.5px}.vrcue{color:var(--mute)}.vrchk{color:#FFE08A;font-weight:700}
 .vrc .two button.on{outline:2px solid var(--amber)}.vrnow{margin-top:4px}`;document.head.appendChild(st)})();
+
+/* ===== OTHER SPORTS + TEAM PRACTICE DAYS: on those days physical baseball work comes off; quizzes and games stay ===== */
+var WHERE_EMO={inside:"🛋️",driveway:"🚗",yard:"🌳",field:"⚾"};
+var OSPORTS=[["Soccer","⚽"],["Basketball","🏀"],["Football","🏈"],["Flag Football","🏈"],["Hockey","🏒"],["Lacrosse","🥍"],["Volleyball","🏐"],["Softball","🥎"],["Tennis","🎾"],["Golf","⛳"],["Swimming","🏊"],["Wrestling","🤼"],["Track","🏃"],["Cross Country","🏃"],["Gymnastics","🤸"],["Dance","💃"],["Cheer","📣"],["Martial Arts","🥋"],["Boxing","🥊"],["Figure Skating","⛸️"],["Skiing","⛷️"],["Snowboarding","🏂"],["Rugby","🏉"],["Bowling","🎳"],["Cycling","🚴"],["Badminton","🏸"],["Table Tennis","🏓"],["Ultimate Frisbee","🥏"],["Water Polo","🤽"],["Rowing","🚣"],["Climbing","🧗"],["Skateboarding","🛹"],["Fishing","🎣"],["Archery","🏹"],["Fencing","🤺"],["Horseback Riding","🏇"],["Surfing","🏄"],["Weightlifting","🏋️"],["Esports","🎮"]];
+var SPORT_KW=[[/soccer|futbol|fútbol/i,"⚽"],[/basket|hoops/i,"🏀"],[/flag|football/i,"🏈"],[/hockey/i,"🏒"],[/lacrosse|lax/i,"🥍"],[/volley/i,"🏐"],[/softball/i,"🥎"],[/tennis/i,"🎾"],[/golf/i,"⛳"],[/swim|dive|diving/i,"🏊"],[/wrestl/i,"🤼"],[/track|cross ?country|run/i,"🏃"],[/gymnast|tumbl/i,"🤸"],[/danc|ballet/i,"💃"],[/cheer/i,"📣"],[/karate|taekwon|jiu|judo|martial|mma/i,"🥋"],[/box/i,"🥊"],[/skat/i,"⛸️"],[/ski/i,"⛷️"],[/snowboard/i,"🏂"],[/rugby/i,"🏉"],[/bowl/i,"🎳"],[/bik|cycl|bmx/i,"🚴"],[/badminton/i,"🏸"],[/ping|table tennis/i,"🏓"],[/frisbee|ultimate/i,"🥏"],[/water polo/i,"🤽"],[/row|crew|kayak/i,"🚣"],[/climb/i,"🧗"],[/skateboard/i,"🛹"],[/fish/i,"🎣"],[/archery/i,"🏹"],[/fenc/i,"🤺"],[/horse|riding|rodeo/i,"🏇"],[/surf/i,"🏄"],[/lift|weights/i,"🏋️"],[/esport|gaming/i,"🎮"],[/pickle/i,"🏓"],[/curl/i,"🥌"],[/sled|luge/i,"🛷"]];
+function sportEmo(n){n=String(n||"").trim();const s=OSPORTS.find(x=>x[0].toLowerCase()===n.toLowerCase());if(s)return s[1];const k=SPORT_KW.find(x=>x[0].test(n));return k?k[1]:"🏅"}
+function isPhys(x){return !!x&&!x.gk&&x.c!=="iq"&&x.c!=="game"}
+function dowOf(d){return(new Date(d+"T12:00:00").getDay()+6)%7}
+function sportsOn(p,d){return((p&&p.sports)||[]).filter(s=>s.rec?(s.days||[]).includes(dowOf(d))&&(!s.from||d>=s.from)&&(!s.until||d<=s.until):s.date===d)}
+function teamPracOn(d){const t=S.tprac||{};return(t.days||[]).includes(dowOf(d))||(t.dates||[]).includes(d)}
+function busyOn(p,d){const L=sportsOn(p,d).map(s=>({e:s.e,n:s.n+" practice"}));if(teamPracOn(d))L.unshift({e:"⚾",n:"Team practice",team:1});return L}
+function hwOff(p,h){return !!h.on&&isPhys(DR[h.id])&&busyOn(p,h.on).length>0}
+function spWhen(s){return s.rec?((s.days||[]).length===7?"Every day":(s.days||[]).slice().sort().map(i=>DNAME[i]).join(", "))+(s.until?" until "+nice(s.until):""):nice(s.date)}
+function busyBanner(p,d){const L=busyOn(p,d);if(!L.length)return"";const team=L.some(x=>x.team);
+  return `<div class="busy"><span class="bse">${L.map(x=>x.e).join(" ")}</span><span class="dtx"><b>${esc(L.map(x=>x.n).join(" + "))} today</b><small>${team?"Save your body for practice. ":""}Baseball workouts are off today. Quizzes and games still count.</small></span></div>`}
+/* home: banner + other sports button */
+{const _h=homeHTML;homeHTML=function(){let h=_h();const p=me();if(!p)return h;const n=(p.sports||[]).length;
+  const btn=isParent()?"":`<button class="rowb osbtn" data-a="go:osp"><span>🏅</span><span class="dtx"><b>My other sports${n?" · "+n:""}</b><small>${n?(p.sports.map(s=>s.e).join(" "))+" On those days, baseball workouts come off":"Play another sport? Add it so your baseball work fits around it"}</small></span><span class="arr">›</span></button>`;
+  return h.replace('<div class="todo-box">',busyBanner(p,today())+'<div class="todo-box">').replace("</main>",btn+"</main>")}}
+{const _m=meHTML;meHTML=function(){const h=_m(),p=me();if(!p||isParent())return h;return h.replace('<h3 class="sec">Badges',`<button class="rowb osbtn" data-a="go:osp"><span>🏅</span><span class="dtx"><b>My other sports</b><small>${(p.sports||[]).length?esc(p.sports.map(s=>s.e+" "+s.n).join(" · ")):"Add soccer, hoops, anything"}</small></span><span class="arr">›</span></button><h3 class="sec">Badges`)}}
+var OS={n:"",o:"",rec:true,days:[],date:"",until:""};
+function ospHTML(){const p=me();if(!p||isParent())return homeHTML();const L=p.sports||[],nm=OS.n==="__other"?OS.o:OS.n,em=sportEmo(nm),t=today(),nx=[];
+  for(let i=0;i<14&&nx.length<6;i++){const d=addDays(t,i),b=busyOn(p,d);if(b.length)nx.push([d,b])}
+  return topbar("My other sports","Baseball work fits around them")+`<main><button class="back" data-a="go:home">‹ Home</button>
+   <p class="pgs">On days you have another sport (or team practice), your baseball workouts come off the list. Quizzes and games still count, so you can keep your streak.</p>
+   ${L.length?`<h3 class="sec">Your sports <span>${L.length}</span></h3>${L.map(s=>`<div class="osr"><span class="ose">${s.e}</span><span class="dtx"><b>${esc(s.n)}</b><small>${s.rec?"🔁 ":"📅 "}${esc(spWhen(s))}</small></span><button class="ghost sm" data-a="zodel:${s.id}">Remove</button></div>`).join("")}`:""}
+   <h3 class="sec">Add a practice</h3><div class="form">
+    <label>Sport<select id="osn"><option value="">Pick a sport…</option>${OSPORTS.map(s=>`<option value="${esc(s[0])}" ${OS.n===s[0]?"selected":""}>${s[1]} ${s[0]}</option>`).join("")}<option value="__other" ${OS.n==="__other"?"selected":""}>🏅 Something else…</option></select></label>
+    ${OS.n==="__other"?`<label>What sport?<input id="oso" maxlength="30" value="${esc(OS.o)}" placeholder="Type the sport"></label>`:""}
+    <div class="osprev" ${nm?"":"hidden"}><span>${em}</span><b>${esc(nm)}</b></div>
+    <div class="seg vrseg"><button class="${OS.rec?"on":""}" data-a="zorec:1">🔁 Every week</button><button class="${OS.rec?"":"on"}" data-a="zorec:0">📅 Just one day</button></div>
+    ${OS.rec?`<p class="lfl">Which days?</p><div class="wkpick">${DNAME.map((d,i)=>`<button class="${OS.days.includes(i)?"on":""}" data-a="zoday:${i}">${d}</button>`).join("")}</div>
+     <label>Season ends (optional)<input id="osu" type="date" value="${esc(OS.until)}" min="${t}"></label>`
+    :`<label>Date<input id="osd" type="date" value="${esc(OS.date)}" min="${t}"></label>`}
+    <button class="cta" data-a="zoadd">Add ${nm?esc(em+" "+nm):"it"}</button></div>
+   ${nx.length?`<h3 class="sec">Next two weeks <span>baseball workouts off</span></h3>${nx.map(([d,b])=>`<div class="osr"><span class="ose">${b.map(x=>x.e).join("")}</span><span class="dtx"><b>${nice(d)}</b><small>${esc(b.map(x=>x.n).join(" + "))}</small></span></div>`).join("")}`:""}
+   </main>`+nav()}
+function osKeep(){const g=id=>{const e=$("#"+id);return e?e.value:null},n=g("osn"),o=g("oso"),d=g("osd"),u=g("osu");if(n!==null)OS.n=n;if(o!==null)OS.o=o;if(d!==null)OS.date=d;if(u!==null)OS.until=u}
+document.addEventListener("change",e=>{if(view==="osp"&&e.target.id==="osn"){osKeep();render()}},true);
+document.addEventListener("input",e=>{if(view==="osp"&&e.target.id==="oso"){OS.o=e.target.value;const pv=$(".osprev");if(pv){pv.hidden=!OS.o.trim();pv.innerHTML=`<span>${sportEmo(OS.o)}</span><b>${esc(OS.o)}</b>`}}},true);
+/* coach: team practice days */
+function tpPanel(){const t=S.tprac||{},days=t.days||[],dates=(t.dates||[]).filter(d=>d>=today()).sort();
+  return `<h3 class="sec">⚾ Team practice days <span>${days.length?days.map(i=>DNAME[i]).join(" + "):"none set"}</span></h3><div class="form"><p class="pgs">On practice days, weekly plans only send quizzes and games, and any workout already on that day comes off. Players save their bodies for practice.</p>
+   <p class="lfl">Every week</p><div class="wkpick">${DNAME.map((d,i)=>`<button class="${days.includes(i)?"on":""}" data-a="ztday:${i}">${d}</button>`).join("")}</div>
+   <p class="lfl">Extra one-time practices</p><div class="two"><input id="tpd" type="date" min="${today()}"><button class="ghost" data-a="ztadd">Add date</button></div>
+   ${dates.length?`<div class="fr">${dates.map(d=>`<button class="fchip on" data-a="ztdel:${d}">${nice(d)} ✕</button>`).join("")}</div>`:""}</div>`}
+/* coach: see a player's other sports */
+{const _ps=playerSheet;playerSheet=function(id){const h=_ps(id),p=P(id);if(!p||!(p.sports||[]).length)return h;
+  return h.replace(/<\/div>$/,`<h4>Other sports</h4>${p.sports.map(s=>`<div class="osr"><span class="ose">${s.e}</span><span class="dtx"><b>${esc(s.n)}</b><small>${esc(spWhen(s))}</small></span></div>`).join("")}</div>`)}}
+/* coach's notes on every drill */
+{const _ds=drillSheet;drillSheet=function(id){let h=_ds(id);const x=DR[id];if(!x)return h;const nt=(S.dnote||{})[id]||"";
+  const box=isCoach()&&!S.peek?`<div class="cnote"><small>📝 Coach's notes <span>players see these</span></small><textarea id="dnt" rows="3" maxlength="600" placeholder="What to watch for, how many reps, who it's for…">${esc(nt)}</textarea><button class="ghost sm" data-a="znsave:${id}">Save notes</button></div>`
+    :nt?`<div class="cnote"><small>📝 Coach's notes</small><p>${esc(nt).replace(/\n/g,"<br>")}</p></div>`:"";
+  return box?h.replace("<h4>How to do it</h4>",box+"<h4>How to do it</h4>"):h}}
+/* library rows: show a note marker */
+{const _dr=drillRow;drillRow=function(x,extra){const h=_dr(x,extra);return (S.dnote||{})[x.id]?h.replace(/(<b[^>]*>)([^<]*)(<\/b>)/,"$1$2 📝$3"):h}}
+{const _lh2=libHTML;libHTML=function(){return _lh2().replace(/class="cat ([^"]*)" data-a="cat:(\w+)"/g,(m,c,k)=>`class="cat ${libX.cats.includes(k)?"on":""}" data-a="cat:${k}"`)}}
+{const _r=render;render=function(){if(view==="osp"){const m=$("#app");if(!me()||isParent()){view="home";return _r()}m.innerHTML=ospHTML();$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.remove("lock");return}return _r()}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(!/^z[otnl]/.test(k))return;e.stopPropagation();
+  if(k==="zloc"&&DE){const L=DE.f.locs=DE.f.locs||[DE.f.where],i=L.indexOf(v);if(i<0)L.push(v);else if(L.length>1)L.splice(i,1);else{toast("Pick at least one place");return}DE.f.where=L[0];render();return}
+  if(k==="znsave"){if(!isCoach())return;const tx=(($("#dnt")||{}).value||"").trim();S.dnote=S.dnote||{};if(tx)S.dnote[v]=tx;else delete S.dnote[v];save();toast(tx?"Notes saved":"Notes cleared");render();return}
+  if(k==="ztday"&&isCoach()){S.tprac=Object.assign({days:[],dates:[]},S.tprac||{});const L=S.tprac.days,i=L.indexOf(+v);i<0?L.push(+v):L.splice(i,1);L.sort();save();render();return}
+  if(k==="ztadd"&&isCoach()){const d=(($("#tpd")||{}).value||"");if(!d){toast("Pick a date first");return}S.tprac=Object.assign({days:[],dates:[]},S.tprac||{});if(!S.tprac.dates.includes(d))S.tprac.dates.push(d);save();toast("Practice added: "+nice(d));render();return}
+  if(k==="ztdel"&&isCoach()){S.tprac.dates=(S.tprac.dates||[]).filter(d=>d!==v);save();render();return}
+  const p=me();if(!p||isParent())return;osKeep();
+  if(k==="zorec"){OS.rec=v==="1";render();return}
+  if(k==="zoday"){const i=OS.days.indexOf(+v);i<0?OS.days.push(+v):OS.days.splice(i,1);render();return}
+  if(k==="zodel"){p.sports=(p.sports||[]).filter(s=>s.id!==v);save();toast("Removed");render();return}
+  if(k==="zoadd"){const nm=(OS.n==="__other"?OS.o:OS.n).trim();if(!nm){toast("Pick a sport first");return}if(OS.rec&&!OS.days.length){toast("Pick at least one day");return}if(!OS.rec&&!OS.date){toast("Pick the date");return}
+    const s={id:"s"+Date.now().toString(36),n:(nm[0].toUpperCase()+nm.slice(1)).slice(0,30),e:sportEmo(nm),rec:OS.rec};if(OS.rec){s.days=OS.days.slice().sort();s.from=today();if(OS.until)s.until=OS.until}else s.date=OS.date;
+    (p.sports=p.sports||[]).push(s);save();toast(s.e+" "+s.n+" added");OS={n:"",o:"",rec:true,days:[],date:"",until:""};render();return}},true);
+(()=>{const st=document.createElement("style");st.textContent=`.busy{display:flex;gap:12px;align-items:center;background:#0B0B0D;border:2px solid #CDAE52;border-radius:16px;padding:12px;margin-bottom:12px}.bse{font-size:30px;line-height:1}.busy b{display:block;font-weight:900}.busy small{color:var(--mute);font-weight:700}
+.osbtn{margin-top:12px}.osr{display:flex;gap:12px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}.ose{font-size:28px;line-height:1;flex:none}.osr .dtx{flex:1;min-width:0}.osr b{display:block}.osr small{color:var(--mute);font-weight:700}
+.osprev{display:flex;align-items:center;gap:10px;background:#0B0B0D;border:1.5px solid #CDAE52;border-radius:14px;padding:10px 12px}.osprev[hidden]{display:none}.osprev span{font-size:34px;line-height:1}.osprev b{font-size:18px}
+.cnote{background:#0B0B0D;border:2px solid #CDAE52;border-radius:14px;padding:10px 12px;margin:10px 0;display:grid;gap:6px}.cnote small{color:var(--amber);font-weight:900;font-size:12px;letter-spacing:.05em;text-transform:uppercase}.cnote small span{color:var(--mute);text-transform:none;letter-spacing:0;font-weight:700}.cnote p{margin:0}.cnote textarea{width:100%}
+.lfl span{color:var(--mute);font-weight:700;font-size:12px;margin-left:4px}`;document.head.appendChild(st)})();
 </script></body></html>
