@@ -263,7 +263,7 @@ main>.sec{margin-top:10px;padding-top:12px;border-top:2px solid rgba(224,190,88,
 .fam{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px}.fam .dtx{flex:1}.fam small{display:block;color:var(--mute);font-size:12.5px}.fam.pend{border-color:#CDAE52;background:#3F1D63}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}.pchip{display:inline-flex;align-items:center;gap:6px;background:#3F1D63;border:1.5px solid #CDAE52;border-radius:999px;padding:3px 4px 3px 10px;font-size:13px;font-weight:800}.pchip button{width:22px;height:22px;border-radius:50%;background:#5C2B89;color:#fff;font-size:11px;text-align:center;padding:0}.warnt{color:#FFB3B5!important}
 .hurt{display:flex;align-items:center;gap:10px;background:#5A1A2A;border:1.5px solid #F0484B;border-radius:14px;padding:10px 12px}.hurt small{display:block;color:#FFD0D1;font-size:12.5px}.hurt .dtx{flex:1}
-.hw.pk{width:100%;text-align:left}.hw.dn{opacity:.6}.rsel{background:#3F1D63;border:1.5px solid var(--line);border-radius:10px;padding:6px 8px;color:var(--ink);font-weight:800}
+.hw.phw{width:100%;text-align:left}.hw.dn{opacity:.6}.rsel{background:#3F1D63;border:1.5px solid var(--line);border-radius:10px;padding:6px 8px;color:var(--ink);font-weight:800}
 
 /* ===== v3: sign-in roles, masterfile, payments, Cooperstown ===== */
 .roles{display:grid;gap:10px;width:100%;max-width:420px}
@@ -1543,7 +1543,7 @@ async function rpc(fn,args){let r;try{r=await fetch(NET.url+"/rest/v1/rpc/"+fn,{
 const NERR={bad_login:"Wrong username or password.",taken:"That username is taken. Try another.",bad_code:"That team code isn't right. Ask your coach.",bad_username:"Usernames are 3 to 20 letters or numbers, no spaces.",short_password:"Passwords need at least 6 characters.",need_name:"Add your name.",offline:"Can't reach the team right now. Check your internet.",signed_out:"Please sign in again.",need_kid:"Type your player's username.",bad_role:"Pick player, parent or coach.",not_linked:"That player isn't linked to you yet.",bad_link:"Pick a parent and a player.",last_coach:"There has to be at least one coach.",short_code:"The code needs at least 4 characters.",not_yourself:"You can't remove your own account."};
 const nmsg=e=>/^kid_not_found:/.test(e.message)?"No player with the username \""+e.message.split(":")[1]+"\". Check it on their My Card.":NERR[e.message]||"Something went wrong. Try again.";
 function blankP(u){return{id:u.id,n:u.name,num:u.num||0,pos:u.pos||"",col:COLS[hash(String(u.id))%COLS.length],xp:0,streak:0,last:"",done:{},cats:{},hw:[],badges:[],fav:[],tri:[0,0],best:{},shouts:[],pitch:[],log:[],act:{},got:{}}}
-function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};(items||[]).forEach(it=>{live[it.aid]=1;if(p.got[it.aid])return;p.got[it.aid]=1;ch=true;if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="cheer"&&it.sp)spApply(p,it.sp,it.from);else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
+function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};(items||[]).forEach(it=>{live[it.aid]=1;if(p.got[it.aid])return;p.got[it.aid]=1;ch=true;if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="unhw")unhwApply(p,it);else if(it.kind==="cheer"&&it.sp)spApply(p,it.sp,it.from);else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
 function DRok(id){return true}
 function teamDoc(){return{team:S.team,vids:S.vids,fadd:S.fadd||[],fhide:S.fhide||[],custom:S.custom||[],plan:S.plan||null,sent:S.sent||{},throwOpen:!!S.throwOpen,ann:S.ann||[],sched:S.sched||null}}
 function applyServer(r){ME=r.user;if(ME.status==="pending"){S=emptyS();S.who="pending";window._mig=1;return false}LINKS=r.links||[];WAIT=r.waiting||[];MYPAR=r.parents||[];const T=r.team||{},base=Object.assign(emptyS(),{team:T.team||"BigDawgz 12U",vids:T.vids||{},fadd:T.fadd||[],fhide:T.fhide||[],custom:T.custom||[],plan:T.plan||null,sent:T.sent||{},throwOpen:!!T.throwOpen,ann:T.ann||[],sched:T.sched||null});
@@ -1634,7 +1634,7 @@ function famHTML(){const K=kidsOf(),cur=K.find(p=>p.id===window._kid)||K[0];
    ${NET&&WAIT.length?`<div class="ann"><small>⏳ Waiting on Coach</small><b>${esc(WAIT.join(", "))}</b></div>`:""}
    ${newsHTML()}
    <div class="todo-box"><h3 class="sec todo">${esc(p.n)}'s day <span>${doneT.length} of ${doneT.length+open.length} done</span></h3>
-    ${open.concat(doneT).map(h=>{const x=DR[h.id];if(!x)return"";return `<button class="hw pk ${h.done?"dn":""}" data-a="drill:${x.id}" style="--c:${CAT[x.c].c}"><span class="dic">${CAT[x.c].e}</span><span class="dtx"><b>${esc(x.n)}</b><small>${h.done?"✓ Done":x.t+" min · "+(h.due<t?"overdue":"due "+nice(h.due))} · 🎒 ${esc(x.eq||"Nothing")}</small></span><span class="arr">›</span></button>`}).join("")||`<div class="empty">Nothing assigned for today.</div>`}
+    ${open.concat(doneT).map(h=>{const x=DR[h.id];if(!x)return"";return `<button class="hw phw ${h.done?"dn":""}" data-a="drill:${x.id}" style="--c:${CAT[x.c].c}"><span class="dic">${CAT[x.c].e}</span><span class="dtx"><b>${esc(x.n)}</b><small>${h.done?"✓ Done":x.t+" min · "+(h.due<t?"overdue":"due "+nice(h.due))} · 🎒 ${esc(x.eq||"Nothing")}</small></span><span class="arr">›</span></button>`}).join("")||`<div class="empty">Nothing assigned for today.</div>`}
     <p class="pgs">Tap a drill to see why it matters, what you need, and a how-to video. Let ${esc(p.n)} check it off themselves.</p></div>
    <div class="wkc"><div class="wkh"><b>This week</b><span>${wk.filter(d=>a[d]).length} of 7 days</span></div><div class="wkd">${wk.map((d,i)=>`<div class="${a[d]?"on":""} ${d===t?"td":""}"><i>${a[d]?"✓":""}</i><small>${"MTWTFSS"[i]}</small></div>`).join("")}</div>
     <div class="wks"><div><b>${p.streak}</b><small>day streak</small></div><div><b>${L.n}</b><small>level</small></div><div><b>${hwDone(p).length}</b><small>homework done</small></div></div></div>
@@ -1720,7 +1720,7 @@ function award(p,xp,msg){econ(p);const before=level(p.xp).i;p.act=p.act||{};p.ac
   let pack=false;if(!p.tmp&&msg==="Homework done!"){const t=today(),left=p.hw.filter(h=>!h.done&&(!h.on||h.on<=t));if(!left.length&&p.hw.some(h=>h.done===t)&&p.dayPack!==t){p.dayPack=t;p.freePacks=(p.freePacks||0)+1;pack=true}}
   checkBadges(p);save();burst();toast((msg?msg+" ":"")+"+"+xp+" XP"+(c&&c<xp?" ("+c+" to spend)":""));if(pack)setTimeout(()=>toast("🎁 All of today's work is done! Free Rookie Pack in Cards"),1700);if(level(p.xp).i>before)setTimeout(()=>toast("⬆️ Level up: "+level(p.xp).n+"!"),pack?3400:1600)}
 function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};econ(p);(items||[]).forEach(it=>{live[it.aid]=1;if(p.got[it.aid])return;p.got[it.aid]=1;ch=true;
-  if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="cheer"&&it.sp)spApply(p,it.sp,it.from);else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});
+  if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="unhw")unhwApply(p,it);else if(it.kind==="cheer"&&it.sp)spApply(p,it.sp,it.from);else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});
   else if(it.kind==="coins"){const n=Math.max(0,Math.min(5000,+it.n||0));p.xp+=n;if(!p.tmp)p.bank=(p.bank||0)+n;p.shouts.push({t:"⚡ +"+n+" XP · "+(it.t||"Coach bonus"),at:it.at||today(),aid:it.aid})}
   else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});
   Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
@@ -2078,7 +2078,7 @@ function pickKidsHTML(){const mine=new Set(S.players.map(p=>p.id)),w=new Set(NET
 /* --- parent: My Player (their day and their week) --- */
 const dayOf=h=>h.on||h.due||h.at;
 function hwStat(h,t){const d=dayOf(h);if(h.done)return["ok","✓ Done"+(h.done!==d?" "+new Date(h.done+"T12:00:00").toLocaleDateString("en-US",{weekday:"short"}):"")];if(d<t)return["late","Not done"];if(d===t)return["now","Today"];return["soon","Coming up"]}
-function hwRow(h,t){const x=DR[h.id],st=hwStat(h,t),c=CAT[x.c];return `<button class="hw pk ${h.done?"dn":""}" data-a="drill:${x.id}" style="--c:${c.c}"><span class="dic">${c.e}</span><span class="dtx"><b>${esc(x.n)}</b><small>${x.t} min · ${h.done?"finished "+nice(h.done):"due "+nice(dayOf(h))}${h.reps?" · "+esc(h.reps):""}</small></span><span class="st ${st[0]}">${st[1]}</span></button>`}
+function hwRow(h,t){const x=DR[h.id],st=hwStat(h,t),c=CAT[x.c];return `<button class="hw phw ${h.done?"dn":""}" data-a="drill:${x.id}" style="--c:${c.c}"><span class="dic">${c.e}</span><span class="dtx"><b>${esc(x.n)}</b><small>${x.t} min · ${h.done?"finished "+nice(h.done):"due "+nice(dayOf(h))}${h.reps?" · "+esc(h.reps):""}</small></span><span class="st ${st[0]}">${st[1]}</span></button>`}
 function famHTML(){const K=kidsOf(),cur=K.find(p=>p.id===window._kid)||K[0];
   if(!K.length)return topbar("My Player")+`<main>${WAIT.length?`<div class="empty">⏳ Waiting for Coach to confirm you're ${esc(WAIT.join(" and "))}'s parent. Check back soon.</div>`:`<div class="empty">No player linked yet.</div><button class="cta" data-a="go:pkids">Pick your player</button>`}${newsHTML()}</main>`+nav();
   const p=cur,t=today(),wk=weekDays(),inWk=d=>d>=wk[0]&&d<=wk[6],L=level(p.xp),a=p.act||{},r=restInfo(p);
@@ -2797,4 +2797,109 @@ body.reelson{overflow:hidden}
 .rrail button{display:grid;justify-items:center;gap:2px;background:none;border:0;color:#fff}.rrail span{width:50px;height:50px;border-radius:50%;background:rgba(11,11,13,.7);border:1.5px solid #CDAE52;display:flex;align-items:center;justify-content:center;font-size:22px}
 .rrail button.on span{background:var(--amber);color:#2A1400}.rrail small{font-weight:800;font-size:11px;text-shadow:0 1px 4px #000}
 .reelc{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:12px;background:linear-gradient(135deg,#0B0B0D,#3A1280);border:2px solid #CDAE52;text-align:left}.rce{font-size:38px;line-height:1}.reelc .ct{flex:1}`;document.head.appendChild(st)})();
+
+/* ===== HOMEWORK REMOVAL THAT REACHES THE PLAYER: coach sends an "unhw" note; every copy of the app applies it ===== */
+function hwKey(h){return h.aid||[h.id,h.at||"",h.due||"",h.on||""].join("|")}
+function unhwApply(p,it){if(!p||!it)return;const keys=new Set(it.keys||[]);p.hw=p.hw.filter(h=>{if(it.all)return false;if(it.done&&h.done)return false;return !keys.has(hwKey(h))})}
+async function hwRemove(pid,keys,opts){const p=P(pid);if(!p)return;const it=Object.assign({kind:"unhw",keys:keys||[],at:today()},opts||{});unhwApply(p,it);
+  if(NET){try{await rpc("dz_push",{p_tok:TOK,p_uids:[pid],p_items:[Object.assign({aid:nid()},it)]})}catch(e){toast(nmsg(e))}}else save();render()}
+
+/* ===== APP TUTORIAL: a to-do list that teaches the app, for new players and parents ===== */
+const TUT_P=[["lib","📚","Open the Library","Every drill lives here, with how to do it and a video. Use the filters to find drills for where you are."],
+ ["drill","📋","Open any drill","Each drill shows why it matters, what you need, the steps and Coach's cues."],
+ ["reels","🎬","Swipe through Drill Reels","Every drill video, one after another. Swipe up for the next one."],
+ ["did","✅","Finish a drill and tap “I did it!”","That's how you earn XP and keep your streak going."],
+ ["play","🎮","Play an Arcade game","Baseball IQ games. They count on days you have another sport."],
+ ["me","⭐","Check out your Card","Your level, badges and streak. Replay this tutorial from here any time."],
+ ["osp","🏅","Add your other sports","Play soccer or hoops too? Add it so baseball workouts come off those days. Nothing else? Tap Skip."]];
+const TUT_R=[["fam","👪","See your player's day","What your player has to do today, their week, streak and level."],
+ ["drill","📋","Open one of their drills","Tap any drill to see why it matters, what they need and a how-to video."],
+ ["reels","🎬","Watch Drill Reels","Every drill video in the app. Great for watching together."],
+ ["money","💵","Check Payments","Your family's season fee, payments and plan. Only your family sees it."],
+ ["sched","📅","See the Schedule","Practices, sessions and news from Coach."],
+ ["osp","🏅","Add your player's other sports","Baseball workouts come off days they have another sport. Nothing else? Tap Skip."],
+ ["arm","💪","Find the arm care log","On My Player, log pitches from lessons or other teams, or flag a sore arm so Coach knows."]];
+const tutSteps=()=>isParent()?TUT_R:TUT_P;
+function tutLSKey(){return "dz-tut-"+(NET&&ME?ME.id:"local-parent")}
+function tutGet(){if(isParent()){try{return JSON.parse(localStorage.getItem(tutLSKey())||"null")||{done:[]}}catch(e){return{done:[]}}}const p=me();if(!p||p.tmp)return null;p.tut=p.tut||{done:[]};return p.tut}
+function tutPut(t){if(isParent()){try{localStorage.setItem(tutLSKey(),JSON.stringify(t))}catch(e){}return}save()}
+function tutOn(){if(isCoach()||S.peek&&!isParent())return false;const t=tutGet();return !!t&&!t.skip&&!t.fin}
+function tutMark(k){if(isCoach()||(S.peek&&!isParent()))return;const t=tutGet();if(!t||t.skip||t.fin||t.done.includes(k))return;if(!tutSteps().some(s=>s[0]===k))return;t.done.push(k);
+  const st=tutSteps().find(s=>s[0]===k);window._tutTip=k;window._tutTipV=view;
+  if(tutSteps().every(s=>t.done.includes(s[0]))){t.fin=1;const p=me();if(p&&!isParent()&&!t.paid){t.paid=1;award(p,50,"Tutorial done!")}setTimeout(()=>toast("🎉 Tutorial done! You know the Dugout."),400)}
+  else setTimeout(()=>toast(st[1]+" Tutorial: "+st[2]+" ✓"),200);tutPut(t)}
+function tutCard(){if(!tutOn())return"";const t=tutGet(),L=tutSteps(),n=L.filter(s=>t.done.includes(s[0])).length,nx=L.find(s=>!t.done.includes(s[0]));
+  return `<div class="tutc"><div class="tuth"><span>👋</span><div><small>To do · new here?</small><b>Learn the Dugout</b></div><em>${n} of ${L.length}</em></div><div class="tutbar"><i style="width:${Math.round(n/L.length*100)}%"></i></div>
+   ${L.map(s=>{const d=t.done.includes(s[0]);return `<div class="tutr ${d?"dn":""} ${nx&&nx[0]===s[0]?"nx":""}"><span class="tuti">${d?"✅":s[1]}</span><span class="dtx"><b>${esc(s[2])}</b>${!d&&nx&&nx[0]===s[0]?`<small>${esc(s[3])}</small>`:""}</span>${d?"":`<button class="cta sm" data-a="ztgo:${s[0]}">Show me</button>`}</div>`}).join("")}
+   <div class="tutf">${nx&&nx[0]==="osp"?`<button class="ghost sm" data-a="ztskip1:osp">No other sports · skip this one</button>`:""}<button class="lnk" data-a="ztoff">Skip the tutorial</button></div></div>`}
+function tutTip(){const k=window._tutTip;if(!k)return"";const s=tutSteps().find(x=>x[0]===k);if(!s)return"";return `<div class="tuttip"><span>${s[1]}</span><span class="dtx"><b>Tutorial ✓ ${esc(s[2])}</b><small>${esc(s[3])}</small></span><button class="x2" data-a="zttipx" aria-label="Got it">Got it</button></div>`}
+function tutGo(k){if(k==="drill"){const p=isParent()?(kidsOf()[0]):me(),h=p&&hwOpen(p)[0],id=h?h.id:(DV()[hash(today())%DV().length]||{}).id;view=isParent()?"fam":"lib";sheet=["drill",id];render();tutMark("drill");return}
+  if(k==="did"){const p=me(),h=p&&hwOpen(p).find(h=>!h.on||h.on<=today());go(h?"home":"lib");toast(h?"Open a drill on your to-do list, do it, then tap “I did it!”":"Open any drill, do it, then tap “I did it!”");return}
+  if(k==="arm"){go("fam");setTimeout(()=>{const el=[...document.querySelectorAll("h3.sec")].find(h=>/arm care/i.test(h.textContent));if(el)el.scrollIntoView({behavior:"smooth",block:"start"});tutMark("arm")},150);return}
+  if(k==="osp"&&isParent()){const K=kidsOf();window._osk=K[0]&&K[0].id}
+  go(k)}
+/* mark steps as the person moves around the app */
+{const _r=render;render=function(){_r();if(isCoach())return;if(["lib","reels","play","me","fam","money","sched","osp"].includes(view))tutMark(view);if(view==="game")tutMark("play");if(sheet&&sheet[0]==="drill")tutMark("drill");
+  const m=document.querySelector("#app main");if(window._tutTip&&window._tutTipV===view&&tutGet()&&!tutGet().skip&&m&&!m.querySelector(".tuttip")&&view!=="reels")m.insertAdjacentHTML("afterbegin",tutTip())}}
+{const _d=doDrill;doDrill=function(p,id,hwI){_d(p,id,hwI);if(p===me())tutMark("did")}}
+/* where it shows: player Home, parent My Player; replay from My Card and Account */
+{const _h=homeHTML;homeHTML=function(){const h=_h();return h.replace(/(<button class="card reelc")/,tutCard()+"$1")}}
+{const _f=famHTML;famHTML=function(){const h=_f();return h.replace("<main>","<main>"+tutCard())}}
+const tutReplayBtn=()=>`<button class="rowb osbtn" data-a="ztreplay"><span>🎓</span><span class="dtx"><b>App tutorial</b><small>Walk through the Dugout again, step by step</small></span><span class="arr">›</span></button>`;
+{const _m=meHTML;meHTML=function(){const h=_m();if(isParent()||!me())return h;return h.replace('<h3 class="sec">Badges',tutReplayBtn()+'<h3 class="sec">Badges')}}
+{const _a=parentAcctHTML;parentAcctHTML=function(){const h=_a();return h.replace('<h3 class="sec">My players</h3>',tutReplayBtn()+'<h3 class="sec">My players</h3>')}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(!/^zt(go|skip1|off|replay|tipx)$/.test(k))return;e.stopPropagation();
+  if(k==="zttipx"){window._tutTip="";const el=document.querySelector(".tuttip");if(el)el.remove();return}
+  if(k==="ztgo"){tutGo(v);return}
+  const T=tutGet();if(!T)return;
+  if(k==="ztskip1"){if(!T.done.includes(v)){T.done.push(v)}if(tutSteps().every(s=>T.done.includes(s[0]))){T.fin=1;const p=me();if(p&&!isParent()&&!T.paid){T.paid=1;award(p,50,"Tutorial done!")}}tutPut(T);render();return}
+  if(k==="ztoff"){T.skip=1;tutPut(T);toast("Tutorial hidden. Replay it from "+(isParent()?"Account":"My Card")+".");render();return}
+  if(k==="ztreplay"){T.done=[];T.skip=0;T.fin=0;tutPut(T);window._tutTip="";go(isParent()?"fam":"home");toast("Tutorial is back on your "+(isParent()?"My Player page":"Home screen"));return}},true);
+
+/* ===== COACH: a player's activity at a glance ===== */
+function agoTxt(d){if(!d)return"never";const n=Math.round((new Date(today()+"T12:00:00")-new Date(d+"T12:00:00"))/864e5);return n<=0?"today":n===1?"yesterday":n+" days ago"}
+playerSheet=function(id){const p=P(id);if(!p)return"";const t=today(),r=restInfo(p),L=level(p.xp),a=p.act||{},days=[...Array(14)].map((_,i)=>addDays(t,i-13));
+  const open=p.hw.filter(h=>!h.done&&!hwOff(p,h)),late=open.filter(h=>h.due&&h.due<t),now=open.filter(h=>!(h.due&&h.due<t)&&(!h.on||h.on<=t)),later=open.filter(h=>h.on&&h.on>t),done=p.hw.filter(h=>h.done).sort((x,y)=>x.done<y.done?1:-1),off=p.hw.filter(h=>!h.done&&hwOff(p,h));
+  const wk=days.slice(7),wkActive=wk.filter(d=>a[d]).length,wkDrills=(p.log||[]).filter(l=>l.d>=wk[0]).length,wkHw=p.hw.filter(h=>h.done&&h.done>=wk[0]).length,wkDue=p.hw.filter(h=>(h.due||"")>=wk[0]&&(h.due||"")<=t).length;
+  const inact=p.last?Math.round((new Date(t+"T12:00:00")-new Date(p.last+"T12:00:00"))/864e5):99,pit7=(p.pitch||[]).filter(o=>o.d>=addDays(t,-6)),pitN=pit7.reduce((s,o)=>s+(+o.n||0),0),sp=sportsOn(p,t);
+  const alerts=[p.pain?`<div class="pal red">🚩 <b>Arm pain reported ${nice(p.pain.at)}</b>${p.pain.note?" · "+esc(p.pain.note):""}</div>`:"",late.length?`<div class="pal red">⚠️ <b>${late.length} overdue</b> homework</div>`:"",inact>=3?`<div class="pal amb">💤 Not active for <b>${inact>=99?"a while":inact+" days"}</b></div>`:"",!r.ok?`<div class="pal amb">😴 Pitching rest until <b>${nice(r.until)}</b></div>`:"",sp.length?`<div class="pal blu">${sp.map(s=>s.e).join("")} <b>${esc(sp.map(s=>s.n).join(" + "))}</b> today · baseball workouts off</div>`:""].join("");
+  const row=(h,cls)=>{const x=DR[h.id];if(!x)return"";return `<div class="phr ${cls}" style="--c:${CAT[x.c].c}"><span class="phe">${CAT[x.c].e}</span><span class="dtx"><b>${esc(x.n)}</b><small>${h.done?"✓ done "+nice(h.done):cls==="late"?"was due "+nice(h.due):cls==="off"?"off: other sport or practice day":h.on&&h.on>t?"starts "+nice(h.on):"due "+nice(h.due)}${h.reps?" · "+esc(h.reps):""}</small></span><button class="phx" data-a="zhdel:${id}:${encodeURIComponent(hwKey(h))}" aria-label="Remove">✕</button></div>`};
+  const grp=(title,list,cls,emp)=>list.length?`<p class="phg">${title} <span>${list.length}</span></p>${list.map(h=>row(h,cls)).join("")}`:(emp?`<p class="phg">${title}</p><p class="fine">${emp}</p>`:"");
+  const logD={};(p.log||[]).slice(0,14).forEach(l=>{(logD[l.d]=logD[l.d]||[]).push(l.id)});
+  const cats=Object.entries(p.cats||{}).filter(c=>CAT[c[0]]).sort((x,y)=>y[1]-x[1]).slice(0,5),cmax=cats.length?cats[0][1]:1;
+  const tri=p.tri||[0,0];
+  return `<div class="sheet psh" style="--c:${p.col}"><button class="x" data-a="close" aria-label="Close">✕</button>
+   <div class="phd"><span class="phn" style="background:${p.col}">${p.num||"–"}</span><div class="dtx"><h2>${esc(p.n)}</h2><small>${esc(p.pos||"No position")} · ${L.n} · ${p.xp} XP</small><small class="${inact===0?"ok":inact>=3?"bad":""}">Last active ${agoTxt(p.last)} · 🔥 ${p.streak||0} day streak</small></div></div>
+   ${alerts?`<div class="pals">${alerts}</div>`:`<div class="pals"><div class="pal grn">✅ <b>On track.</b> No overdue work, no arm flags.</div></div>`}
+   <div class="pst"><div><b>${wkActive}/7</b><small>active days</small></div><div><b>${wkDrills}</b><small>drills done</small></div><div><b>${wkHw}${wkDue?"/"+Math.max(wkDue,wkHw):""}</b><small>homework done</small></div><div><b>${open.length}</b><small>still open</small></div></div>
+   <p class="phg">Last 14 days <span>darker = more done</span></p><div class="pheat">${days.map(d=>{const n=a[d]||0;return `<div class="${n?"l"+Math.min(3,n):""} ${d===t?"td":""}" title="${nice(d)}: ${n}"><small>${"MTWTFSS"[dowOf(d)]}</small></div>`}).join("")}</div>
+   <h4>Homework</h4><div class="phl">${grp("⚠️ Overdue",late,"late")}${grp("📌 Due now",now,"now",late.length?"":"Nothing due right now.")}${grp("🗓️ Coming up",later,"soon")}${grp("🏅 Off for another sport or practice",off,"off")}${grp("✅ Done",done.slice(0,8),"done")}</div>
+   ${p.hw.length?`<div class="two"><button class="ghost sm" data-a="zhclr:${id}:done" ${done.length?"":"disabled"}>Clear finished</button><button class="ghost sm warn" data-a="zhclr:${id}:all">${window._zhc===id?"Tap again to clear all "+p.hw.length:"Clear all homework"}</button></div>`:""}
+   <button class="cta" data-a="asgto:${id}">＋ Assign drills to ${esc(p.n)}</button>
+   <h4>Recent activity</h4>${Object.keys(logD).length?Object.keys(logD).map(d=>`<div class="pact"><small>${d===t?"Today":nice(d)}</small><span>${logD[d].map(i=>DR[i]?CAT[DR[i].c].e+" "+esc(DR[i].n):"").filter(Boolean).join(" · ")}</span></div>`).join(""):`<p class="fine">No drills logged yet.</p>`}
+   ${cats.length?`<h4>What they work on most</h4>${cats.map(([k,n])=>`<div class="pcat"><span>${CAT[k].e} ${CAT[k].n}</span><i><b style="width:${Math.round(n/cmax*100)}%;background:${CAT[k].c}"></b></i><em>${n}</em></div>`).join("")}`:""}
+   ${tri[1]?`<p class="fine">🧠 Trivia: ${tri[0]} of ${tri[1]} right (${Math.round(tri[0]/tri[1]*100)}%)</p>`:""}
+   <h4>Arm</h4><p class="fine">${r.ok?"✅ Available to pitch today.":"😴 Resting. Can pitch again "+nice(r.until)+"."} Last 7 days: <b>${pitN}</b> pitches${pit7.length?" ("+pit7.slice(-3).reverse().map(o=>nice(o.d)+": "+o.n+(o.what?" · "+esc(o.what):"")).join("; ")+")":""}.</p>
+   ${(p.sports||[]).length?`<h4>Other sports</h4>${p.sports.map(s=>`<div class="osr"><span class="ose">${s.e}</span><span class="dtx"><b>${esc(s.n)}</b><small>${esc(spWhen(s))}</small></span></div>`).join("")}`:""}
+   <details class="pdet"><summary>📣 Send a shout-out</summary><div class="shq">${SHOUTS.map((s,i)=>`<button data-a="shout:${id}:${i}">${esc(s)}</button>`).join("")}</div></details>
+   <button class="ghost" data-a="peek:${id}">👀 See the app as ${esc(p.n)}</button></div>`};
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0];if(!/^zh(del|clr)$/.test(k))return;e.stopPropagation();if(!isCoach())return;
+  if(k==="zhdel"){hwRemove(a[1],[decodeURIComponent(a.slice(2).join(":"))]);toast("Removed");return}
+  if(k==="zhclr"){if(a[2]==="all"&&window._zhc!==a[1]){window._zhc=a[1];render();return}window._zhc="";hwRemove(a[1],[],a[2]==="all"?{all:1}:{done:1});toast(a[2]==="all"?"All homework cleared":"Finished homework cleared");return}},true);
+(()=>{const st=document.createElement("style");st.textContent=`
+.tutc{background:linear-gradient(135deg,#0B0B0D,#3A1280);border:2px solid #CDAE52;border-radius:18px;padding:12px;margin-bottom:12px;display:grid;gap:8px}
+.tuth{display:flex;align-items:center;gap:10px}.tuth>span{font-size:30px}.tuth div{flex:1}.tuth small{color:var(--amber);font-weight:900;font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block}.tuth b{font:400 24px/1 var(--fd)}.tuth em{font-style:normal;font-weight:900;color:var(--amber)}
+.tutbar{height:8px;border-radius:99px;background:#0B0B0D;border:1px solid var(--line);overflow:hidden}.tutbar i{display:block;height:100%;background:var(--amber)}
+.tutr{display:flex;align-items:center;gap:10px;padding:6px 4px;border-radius:12px}.tutr.nx{background:rgba(205,174,82,.12);outline:1.5px solid rgba(205,174,82,.5)}.tutr.dn{opacity:.6}.tutr.dn b{text-decoration:line-through}.tuti{font-size:20px;width:28px;text-align:center}.tutr .dtx{flex:1;min-width:0}.tutr b{display:block;font-size:14.5px}.tutr small{color:var(--mute);font-weight:700;font-size:12.5px}.tutr .cta{width:auto;flex:none;min-height:36px;padding:6px 12px}
+.tutf{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.tutf .lnk{background:none;border:0;color:var(--mute);font-weight:800;text-decoration:underline}
+.tuttip{display:flex;align-items:center;gap:10px;background:#0B0B0D;border:2px solid #CDAE52;border-radius:14px;padding:10px 12px;margin-bottom:12px}.tuttip>span:first-child{font-size:26px}.tuttip .dtx{flex:1}.tuttip b{display:block}.tuttip small{color:var(--mute);font-weight:700}.tuttip .x2{background:var(--amber);color:#2A1400;border:0;border-radius:10px;font-weight:900;padding:8px 10px}
+.psh{gap:10px}.phd{display:flex;gap:12px;align-items:center;padding-right:40px}.phn{flex:none;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:400 30px/1 var(--fd);color:#0B0B0D;border:3px solid #CDAE52}.phd h2{margin:0;font:400 28px/1 var(--fd)}.phd small{display:block;color:var(--mute);font-weight:800;font-size:12.5px}.phd small.ok{color:#3DDC84}.phd small.bad{color:#FF8A8A}
+.pals{display:grid;gap:6px}.pal{border-radius:12px;padding:8px 10px;font-size:13.5px;background:#0B0B0D;border:1.5px solid var(--line)}.pal.red{border-color:#FF5C5C}.pal.amb{border-color:#FFC53D}.pal.blu{border-color:#5CC8FF}.pal.grn{border-color:#3DDC84}
+.pst{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.pst div{background:#0B0B0D;border:1.5px solid #CDAE52;border-radius:12px;text-align:center;padding:8px 2px}.pst b{display:block;font:400 22px/1 var(--fd)}.pst small{color:var(--amber);font-weight:900;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.pheat{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}.pheat div{aspect-ratio:1;border-radius:5px;background:#0B0B0D;border:1px solid var(--line);display:flex;align-items:flex-end;justify-content:center}.pheat small{font-size:9px;color:var(--mute);font-weight:800}.pheat .l1{background:#2E6B3F}.pheat .l2{background:#3DAE62}.pheat .l3{background:#3DDC84}.pheat .l1 small,.pheat .l2 small,.pheat .l3 small{color:#0B0B0D}.pheat .td{outline:2px solid #CDAE52}
+.phg{margin:8px 0 2px;font-weight:900;font-size:13px;color:var(--amber)}.phg span{color:var(--mute);margin-left:4px}.phl{display:grid;gap:5px}
+.phr{display:flex;align-items:center;gap:10px;background:#0B0B0D;border:1.5px solid var(--line);border-left:5px solid var(--c);border-radius:12px;padding:7px 8px}.phr.late{border-color:#FF5C5C;border-left-color:#FF5C5C}.phr.done{opacity:.65}.phr.off{opacity:.75;border-style:dashed}.phe{font-size:20px}.phr .dtx{flex:1;min-width:0}.phr b{display:block;font-size:14px}.phr small{color:var(--mute);font-weight:700;font-size:12px}.phx{flex:none;width:34px;height:34px;border-radius:10px;background:transparent;border:1.5px solid var(--line);color:#fff;font-weight:900}
+.pact{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);font-size:13px}.pact small{flex:none;width:70px;color:var(--amber);font-weight:900}
+.pcat{display:grid;grid-template-columns:120px 1fr 28px;align-items:center;gap:8px;font-size:13px;font-weight:800;margin:3px 0}.pcat i{height:10px;border-radius:99px;background:#0B0B0D;overflow:hidden}.pcat i b{display:block;height:100%}.pcat em{font-style:normal;text-align:right;color:var(--mute)}
+.pdet summary{font-weight:900;cursor:pointer;padding:8px 0}`;document.head.appendChild(st)})();
 </script></body></html>
