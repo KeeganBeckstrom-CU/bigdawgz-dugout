@@ -2726,4 +2726,75 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   if(k==="vrsave"){const box=t.closest(".vref");if(box)vrSaveDrill(a[1],box);return}
   if(k==="vrreset"){if(S.dtags)delete S.dtags[a[1]];window._dtSig=null;applyDTags();save();toast("Back to the original listing");render();return}},true);
 (()=>{const st=document.createElement("style");st.textContent=`.vredit{background:#0B0B0D;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px}.vredit summary{font-weight:900;cursor:pointer;color:var(--amber)}.vref{display:grid;gap:8px;margin-top:8px}.vref label{display:grid;gap:4px;font-size:13px;font-weight:800}.vref textarea{width:100%}.vrchk{display:inline-flex!important;align-items:center;gap:6px;cursor:pointer}.vrchk input{width:auto;margin:0}`;document.head.appendChild(st)})();
+
+/* ===== REELS: swipe-up feed of every drill video, TikTok style ===== */
+var RL={cat:"",snd:false,list:[],cur:-1,seed:""};
+function reelList(){const t=today(),p=me(),hw=new Set(p?hwOpen(p).map(h=>h.id):[]),seed=t+(p?p.id:"c");
+  const L=DV().filter(x=>!x.gk).map(x=>{const u=S.vids[x.id]||x.v||"";if(!u)return null;const y=ytId(u),em=y?null:sEmbed(u);if(!y&&!em)return null;
+    const r=vtGet("d:"+x.id);if(r.ok==="bad")return null;return{x,u,y,em,s:r.s||0,e:r.e||0,hw:hw.has(x.id),tall:y?/\/shorts\//.test(u):!!(em&&em.tall)}}).filter(Boolean)
+    .filter(i=>!RL.cat||catsOf(i.x).includes(RL.cat));
+  return L.sort((a,b)=>(b.hw-a.hw)||(hash(seed+a.x.id)%997)-(hash(seed+b.x.id)%997))}
+function reelsHTML(){const L=RL.list=reelList(),p=me(),cats=CATS.filter(c=>DV().some(x=>catsOf(x).includes(c.k)&&(S.vids[x.id]||x.v)));
+  return `<div class="reels" id="reels">
+   <div class="rltop"><button class="rback" data-a="go:${homeView()}" aria-label="Back">‹</button><div class="rcats"><button class="${RL.cat?"":"on"}" data-a="rlcat:">All</button>${cats.map(c=>`<button class="${RL.cat===c.k?"on":""}" data-a="rlcat:${c.k}">${c.e} ${c.n}</button>`).join("")}</div></div>
+   ${L.length?L.map((it,i)=>{const x=it.x,c=CAT[x.c],th=it.y?"https://i.ytimg.com/vi/"+it.y+"/hqdefault.jpg":"",nt=(S.dnote||{})[x.id];
+    return `<section class="reel" data-i="${i}" style="--c:${c.c}">${th?`<img class="rbg" src="${th}" alt="" loading="lazy">`:""}
+     <div class="rbox ${it.tall?"tall":""}" id="rb${i}">${th?`<img class="rth" src="${th}" alt="" loading="lazy">`:""}<span class="rplay">▶</span></div>
+     <div class="rcap"><span class="rlchip">${c.e} ${esc(c.n)}${it.hw?" · 📝 Homework":""}</span><b>${esc(x.n)}</b>${(x.cues||[]).length?`<small>Coach says: ${esc(x.cues.slice(0,2).join(" · "))}</small>`:""}${nt?`<small class="rnote">📝 ${esc(nt)}</small>`:""}</div>
+     <div class="rrail">${p&&!isParent()?`<button data-a="rlfav:${x.id}" class="${p.fav.includes(x.id)?"on":""}"><span>${p.fav.includes(x.id)?"★":"☆"}</span><small>Save</small></button>`:""}
+      <button data-a="drill:${x.id}"><span>📋</span><small>Drill</small></button>
+      <button data-a="rlsnd"><span class="rsi">${RL.snd?"🔊":"🔇"}</span><small>Sound</small></button></div></section>`}).join("")
+   :`<section class="reel"><div class="rcap"><b>No videos here yet.</b><small>Try All.</small></div></section>`}
+   ${L.length?`<section class="reel rend"><div class="rcap"><b>That's every ${RL.cat?CAT[RL.cat].n+" ":""}video 🎉</b><small>Now go do one of them.</small></div></section>`:""}</div>`+nav()}
+function reelSrc(it){if(!it.y)return it.em.src;return "https://www.youtube-nocookie.com/embed/"+it.y+"?autoplay=1&mute="+(RL.snd?0:1)+"&playsinline=1&rel=0&modestbranding=1&controls=1&enablejsapi=1&origin="+encodeURIComponent(location.origin)+(it.s?"&start="+it.s:"")+(it.e?"&end="+it.e:"")}
+function reelPlay(i){if(RL.cur===i)return;const old=RL.cur;RL.cur=i;
+  if(old>=0){const b=document.getElementById("rb"+old),it=RL.list[old];if(b&&it){const th=it.y?"https://i.ytimg.com/vi/"+it.y+"/hqdefault.jpg":"";b.innerHTML=(th?`<img class="rth" src="${th}" alt="">`:"")+`<span class="rplay">▶</span>`}}
+  const b=document.getElementById("rb"+i),it=RL.list[i];if(!b||!it)return;
+  b.innerHTML=`<iframe id="rlf" src="${esc(reelSrc(it))}" title="${esc(it.x.n)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen ${lockedDown()?'sandbox="allow-scripts allow-same-origin allow-presentation" referrerpolicy="strict-origin"':""}></iframe>`}
+function reelCmd(func,args){const f=document.getElementById("rlf");if(f&&f.contentWindow)try{f.contentWindow.postMessage(JSON.stringify({event:"command",func,args:args||[]}),"*")}catch(e){}}
+function reelsInit(){const box=$("#reels");if(!box)return;RL.cur=-1;
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&e.intersectionRatio>.6){const i=+e.target.dataset.i;if(!isNaN(i))reelPlay(i)}}),{root:box,threshold:[.6]});
+  box.querySelectorAll(".reel[data-i]").forEach(s=>io.observe(s));
+  box.addEventListener("click",e=>{const b=e.target.closest(".rbox");if(b&&!b.querySelector("iframe")){const i=+b.id.slice(2);RL.cur=-1;reelPlay(i)}})}
+/* loop each clip back to its start, and keep sound on once turned on */
+window.addEventListener("message",e=>{if(view!=="reels")return;let h="";try{h=new URL(e.origin).hostname}catch(x){return}if(!/youtube(-nocookie)?\.com$/.test(h))return;let d=e.data;try{if(typeof d==="string")d=JSON.parse(d)}catch(x){return}
+  const it=RL.list[RL.cur];if(!d||!d.info||!it)return;if(d.info.playerState===0){reelCmd("seekTo",[it.s||0,true]);reelCmd("playVideo")}if(d.info.playerState===1&&RL.snd)reelCmd("unMute")});
+setInterval(()=>{if(view!=="reels")return;const f=document.getElementById("rlf");if(f&&f.contentWindow)try{f.contentWindow.postMessage(JSON.stringify({event:"listening",id:"rlf",channel:"widget"}),"*")}catch(x){}},1000);
+document.addEventListener("keydown",e=>{if(view!=="reels"||sheet)return;const box=$("#reels");if(!box)return;if(e.key==="ArrowDown"||e.key==="j"){box.scrollBy({top:box.clientHeight,behavior:"smooth"});e.preventDefault()}if(e.key==="ArrowUp"||e.key==="k"){box.scrollBy({top:-box.clientHeight,behavior:"smooth"});e.preventDefault()}});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(!/^rl/.test(k))return;e.stopPropagation();
+  if(k==="rlcat"){RL.cat=v||"";render();return}
+  if(k==="rlsnd"){RL.snd=!RL.snd;document.querySelectorAll(".rsi").forEach(s=>s.textContent=RL.snd?"🔊":"🔇");reelCmd(RL.snd?"unMute":"mute");if(RL.snd)reelCmd("playVideo");return}
+  if(k==="rlfav"){const p=me();if(!p)return;const i=p.fav.indexOf(v);i<0?p.fav.push(v):p.fav.splice(i,1);save();const on=p.fav.includes(v);t.classList.toggle("on",on);t.querySelector("span").textContent=on?"★":"☆";toast(on?"Saved to your drills":"Removed");return}},true);
+/* keep the feed playing behind a drill sheet; tidy up when closing it */
+{const _r=render;render=function(){if(view==="reels"){if(!S.who||(NET&&!ME)){view=homeView();return _r()}
+    const keep=$("#reels");if(keep&&sheet){$("#sheet").innerHTML=sheet[0]==="drill"?drillSheet(sheet[1]):sheet[0]==="vid"?vidSheet(sheet[1],sheet[2]):"";$("#sheet").className=sheet?"on":"";document.body.classList.toggle("lock",!!sheet);return}
+    if(keep&&!sheet&&keep.dataset.cat===RL.cat){$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.remove("lock");return}
+    $("#app").innerHTML=reelsHTML();$("#reels").dataset.cat=RL.cat;$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.add("reelson");reelsInit();return}
+  document.body.classList.remove("reelson");return _r()}}
+/* get there: a tab for players and parents, a big card on Home and in the Library */
+{const _n=nav;nav=function(){let h=_n();if(isCoach())return h;const on=view==="reels"?"on":"";
+  return h.replace(/(<button class="[^"]*" data-a="go:(home|fam)">[^]*?<\/button>)/,`$1<button class="${on}" data-a="go:reels"><span>🎬</span><small>Reels</small></button>`)}}
+function reelsCard(){return `<button class="card reelc" data-a="go:reels"><span class="rce">🎬</span><div class="ct"><small>Swipe up for the next one</small><h2>Drill Reels</h2><p>Every drill video in the app, one after another.</p></div><span class="arr">›</span></button>`}
+{const _h=homeHTML;homeHTML=function(){return _h().replace('<div class="todo-box">',reelsCard()+'<div class="todo-box">')}}
+{const _l=libHTML;libHTML=function(){return _l().replace("<main>","<main>"+reelsCard())}}
+(()=>{const st=document.createElement("style");st.textContent=`
+body.reelson{overflow:hidden}
+.reels{position:fixed;inset:0;z-index:15;overflow-y:scroll;scroll-snap-type:y mandatory;background:#0B0B0D;overscroll-behavior:contain;scrollbar-width:none}.reels::-webkit-scrollbar{display:none}
+.reel{position:relative;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0B0B0D}
+.rbg{position:absolute;inset:-40px;width:calc(100% + 80px);height:calc(100% + 80px);object-fit:cover;filter:blur(28px) brightness(.35) saturate(1.3);pointer-events:none}
+.rbox{position:relative;z-index:1;width:min(100%,640px);aspect-ratio:16/9;background:#0B0B0D;border-top:2px solid var(--c);border-bottom:2px solid var(--c);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:-60px}
+.rbox.tall{aspect-ratio:9/16;width:auto;height:min(72dvh,calc(100vw * 16 / 9));border:2px solid var(--c);border-radius:16px;overflow:hidden}
+.rbox iframe{background:#0B0B0D}.rbox iframe,.rth{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}.rplay{position:relative;width:64px;height:64px;border-radius:50%;background:var(--amber);color:#2A1400;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 0 var(--gold)}
+.rltop{position:sticky;top:0;z-index:5;height:0;display:flex}.rltop>*{pointer-events:auto}
+.rback{position:fixed;top:calc(10px + env(safe-area-inset-top));left:10px;width:42px;height:42px;border-radius:50%;background:rgba(11,11,13,.7);border:1.5px solid #CDAE52;color:#fff;font-size:24px;font-weight:900;z-index:6}
+.rcats{position:fixed;top:calc(10px + env(safe-area-inset-top));left:60px;right:8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;z-index:6;padding-bottom:4px}.rcats::-webkit-scrollbar{display:none}
+.rcats button{flex:none;padding:8px 12px;border-radius:999px;background:rgba(11,11,13,.7);border:1.5px solid rgba(205,174,82,.5);color:#fff;font-weight:800;font-size:13px;white-space:nowrap}.rcats button.on{background:var(--amber);color:#2A1400;border-color:var(--amber)}
+.rcap{position:absolute;z-index:2;left:14px;right:84px;bottom:calc(108px + env(safe-area-inset-bottom));display:grid;gap:5px;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+.reel:not([data-i]) .rcap{position:static;text-align:center;right:auto}
+.rcap b{font:400 30px/1.05 var(--fd);color:#fff}.rcap small{color:#FFE08A;font-weight:800;font-size:13.5px}.rcap .rnote{color:#fff;font-weight:700}
+.rlchip{justify-self:start;background:var(--c);color:#0B0B0D;font-weight:900;font-size:12px;padding:4px 10px;border-radius:999px;text-shadow:none}
+.rrail{position:absolute;z-index:2;right:10px;bottom:calc(112px + env(safe-area-inset-bottom));display:grid;gap:14px}
+.rrail button{display:grid;justify-items:center;gap:2px;background:none;border:0;color:#fff}.rrail span{width:50px;height:50px;border-radius:50%;background:rgba(11,11,13,.7);border:1.5px solid #CDAE52;display:flex;align-items:center;justify-content:center;font-size:22px}
+.rrail button.on span{background:var(--amber);color:#2A1400}.rrail small{font-weight:800;font-size:11px;text-shadow:0 1px 4px #000}
+.reelc{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:12px;background:linear-gradient(135deg,#0B0B0D,#3A1280);border:2px solid #CDAE52;text-align:left}.rce{font-size:38px;line-height:1}.reelc .ct{flex:1}`;document.head.appendChild(st)})();
 </script></body></html>
