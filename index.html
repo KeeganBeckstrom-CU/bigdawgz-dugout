@@ -273,7 +273,7 @@ main>.sec{margin-top:10px;padding-top:12px;border-top:2px solid rgba(224,190,88,
 .authp h2{font-size:24px}.authp .ah{font-size:22px;margin-top:-4px}.authp .back{justify-self:start;width:100%;max-width:420px}
 .lgp.sm{padding:10px 16px 8px;border-radius:20px}.lgp.sm img{height:96px}
 .pc.taken{opacity:.45}.pc.on{border-color:var(--amber);background:#3F1D63;box-shadow:0 0 0 2px var(--amber)}
-.claimc{width:100%;max-width:420px;text-align:center}
+.claimc{width:100%;max-width:420px;text-align:center}.mkp{margin-top:14px}.mkf{text-align:left}.mkf .pgn,.mkf .pgs{text-align:center}
 .st{flex:none;align-self:center;font-size:11.5px;font-weight:900;border-radius:999px;padding:4px 9px;white-space:nowrap;background:rgba(255,255,255,.12)}
 .st.ok{background:rgba(61,220,132,.2);color:#7CFFAE}.st.late{background:rgba(240,72,75,.22);color:#FFB4B5}.st.now{background:var(--amber);color:#1B1026}.st.soon{color:var(--mute)}
 .phero{--c:var(--amber);display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,#3F1D63),#3F1D63);border:1.5px solid var(--line);border-radius:22px;padding:14px}
@@ -2022,7 +2022,7 @@ function demoApply(fn,a){const v=a.p_val,A=dAccts(),L=S.links,M=dMoney();
     case"role":if(acc){if(acc.role==="coach"&&v!=="coach"&&A.filter(x=>x.role==="coach"&&x.status==="active").length<=1){toast(NERR.last_coach);return false}if(v!=="player")S.players.forEach(p=>{if(p.claimed===acc.id)delete p.claimed});if(v!=="parent")S.links=L.filter(l=>l.parent!==acc.id);acc.role=v}break;
     case"remove":S.accts=A.filter(x=>x.id!==a.p_uid);S.players.forEach(p=>{if(p.claimed===a.p_uid)delete p.claimed});S.links=L.filter(l=>l.parent!==a.p_uid);break;
     case"pw":break}}
-Object.assign(NERR,{bad_login:"Wrong email or password.",taken:"There's already an account with that email. Sign in instead.",bad_email:"That doesn't look like an email address.",claimed:"Someone already picked that name. Tell Coach if that's you.",already_claimed:"Your account already has a player. Ask Coach to change it.",not_coach:"Only a coach can do that.",bad_amount:"Type an amount like 150.",bad_plan:"Pick how often and how many payments.",no_login:"That player hasn't made an account yet.",no_player:"That player isn't on the roster.",need_name:"Add a name."});
+Object.assign(NERR,{bad_login:"Wrong email or password.",taken:"There's already an account with that email. Sign in instead.",bad_email:"That doesn't look like an email address.",claimed:"Someone already picked that name. Tell Coach if that's you.",already_claimed:"Your account already has a player. Ask Coach to change it.",not_coach:"Only a coach can do that.",bad_amount:"Type an amount like 150.",bad_plan:"Pick how often and how many payments.",no_login:"That player hasn't made an account yet.",no_player:"That player isn't on the roster.",need_name:"Add a name.",on_roster:"Your name is already on the team list. Tap it there instead.",bad_num:"Numbers are 0 to 99."});
 
 /* --- server data in --- */
 function teamDoc(){return{team:S.team,vids:S.vids,fadd:S.fadd||[],fhide:S.fhide||[],custom:S.custom||[],plan:S.plan||null,sent:S.sent||{},throwOpen:!!S.throwOpen,ann:S.ann||[],sched:S.sched||null,dues:S.dues||null,fund:S.fund||null,off:S.off||null,duelsOff:!!S.duelsOff,inbox:S.inbox||[],inboxNo:S.inboxNo||[],inboxSeed:S.inboxSeed||[],dtags:S.dtags||{},tagList:S.tagList||[],vt:S.vt||{},dnote:S.dnote||{},tprac:S.tprac||null}}
@@ -2062,9 +2062,14 @@ async function netAuth(up){if(auth.busy)return;keepAuth();const em=auth.keep.ae,
 /* --- player: pick your name --- */
 function claimHTML(){const L=RLIST,c=window._cl,pc=L.find(x=>x.id===c);
   return `<div class="pick authp"><div class="glow"></div><div class="lgp sm"><img src="${LOGOF}" alt="BigDawgz"></div><h2>Which one is you, ${esc(ME.name)}?</h2><p class="tag">Pick your name. It links to ${esc(ME.email)} and only Coach can change it.</p>
-  ${pc?`<div class="form claimc"><b class="pgn">You're ${esc(pc.name)}${pc.num?" · #"+pc.num:""}?</b><button class="cta" data-a="xclaimok:${pc.id}">Yes, that's me</button><button class="ghost" data-a="xclaim:">Pick again</button></div>`:
-  `<div class="pgrid">${L.map(x=>`<button class="pc ${x.taken?"taken":""}" ${x.taken?"disabled":""} data-a="xclaim:${x.id}"><span class="av big" style="--c:${COLS[hash(String(x.id))%COLS.length]}"><b>${x.num||"?"}</b></span><b>${esc(x.name)}</b><small>${x.taken?"Taken":"Pick me"}</small></button>`).join("")||`<div class="empty">Coach hasn't added the team yet. Check back soon.</div>`}</div>`}
-  <p class="fine">Don't see your name, or someone took it? Tell Coach.</p><button class="ghost" data-a="auout">Sign out</button></div>`}
+  ${window._mk?mkProfHTML():pc?`<div class="form claimc"><b class="pgn">You're ${esc(pc.name)}${pc.num?" · #"+pc.num:""}?</b><button class="cta" data-a="xclaimok:${pc.id}">Yes, that's me</button><button class="ghost" data-a="xclaim:">Pick again</button></div>`:
+  `<div class="pgrid">${L.map(x=>`<button class="pc ${x.taken?"taken":""}" ${x.taken?"disabled":""} data-a="xclaim:${x.id}"><span class="av big" style="--c:${COLS[hash(String(x.id))%COLS.length]}"><b>${x.num||"?"}</b></span><b>${esc(x.name)}</b><small>${x.taken?"Taken":"Pick me"}</small></button>`).join("")||`<div class="empty">Coach hasn't added the team yet. Check back soon.</div>`}</div><div class="form claimc mkp"><b class="pgn">Not on the list?</b><button class="cta" data-a="xmk:1">➕ Make my profile</button></div>`}
+  <p class="fine">Someone took your name? Tell Coach.</p><button class="ghost" data-a="auout">Sign out</button></div>`}
+function mkProfHTML(){const m=window._mkv||{};return `<div class="form claimc mkf"><b class="pgn">Make your profile</b>
+  <label>Name<input id="mkn" maxlength="40" placeholder="First name and last initial" value="${esc(m.n||ME.name||"")}"></label>
+  <div class="two"><label>Number<input id="mkm" inputmode="numeric" maxlength="2" placeholder="7" value="${esc(m.m||"")}"></label><label>Position<input id="mkp" maxlength="20" placeholder="SS / P" value="${esc(m.p||"")}"></label></div>
+  <button class="cta" data-a="xmkok" ${m.busy?"disabled":""}>${m.busy?"Saving…":"Create my profile"}</button><button class="ghost" data-a="xmk:">Back to the list</button>
+  <p class="pgs">Coach can fix your name, number or position later.</p></div>`}
 
 /* --- parent: pick your player(s) --- */
 function pickKidsHTML(){const mine=new Set(S.players.map(p=>p.id)),w=new Set(NET?[]:[]),R=NET?RLIST:S.players.filter(p=>!p.tmp).map(p=>({id:p.id,name:p.n,num:p.num})),sel=window._pk||[];
@@ -2215,7 +2220,11 @@ function render(){const clr=()=>{$("#sheet").innerHTML="";$("#sheet").className=
 const num=v=>{const n=parseFloat(String(v||"").replace(/[$,\s]/g,""));return isFinite(n)?n:0};
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(k[0]!=="x")return;
   if(k==="xrole"){keepAuth();auth.role=v||null;auth.mode=auth.mode||"in";auth.msg="";render();scrollTo(0,0);return}
-  if(k==="xclaim"){window._cl=v;render();scrollTo(0,0);return}
+  if(k==="xclaim"){window._cl=v;window._mk=false;render();scrollTo(0,0);return}
+  if(k==="xmk"){window._mk=!!v;window._mkv={};window._cl="";render();scrollTo(0,0);return}
+  if(k==="xmkok"){const g=id=>(($(id)||{}).value||"").trim(),m=window._mkv={n:g("#mkn"),m:g("#mkm"),p:g("#mkp")};
+    if(!m.n){toast("Add your name.");return}if(m.m&&!/^\d{1,2}$/.test(m.m)){toast("Numbers are 0 to 99.");return}
+    m.busy=true;render();(async()=>{try{await rpc("dz_selfadd",{p_tok:TOK,p_name:m.n,p_num:m.m,p_pos:m.p});window._mk=false;window._mkv={};const dirty=applyServer(await rpc("dz_sync",{p_tok:TOK}));view=homeView();render();if(dirty)netSave();toast("Welcome to the Dugout!")}catch(err){m.busy=false;toast(nmsg(err));if(err.message==="on_roster"){window._mk=false;try{applyServer(await rpc("dz_sync",{p_tok:TOK}))}catch(x){}}render()}})();return}
   if(k==="xclaimok"){(async()=>{try{await rpc("dz_claim",{p_tok:TOK,p_player:v});window._cl="";const dirty=applyServer(await rpc("dz_sync",{p_tok:TOK}));view=homeView();render();if(dirty)netSave();toast("Welcome to the Dugout!")}catch(err){window._cl="";toast(nmsg(err));try{applyServer(await rpc("dz_sync",{p_tok:TOK}))}catch(x){}render()}})();return}
   if(k==="xpk"){const s=window._pk=window._pk||[],i=s.indexOf(v);i<0?s.push(v):s.splice(i,1);render();return}
   if(k==="xpksend"){const s=window._pk||[];if(!s.length)return;(async()=>{if(NET){for(const id of s){try{await rpc("dz_parent",{p_tok:TOK,p_action:"pick",p_kid:id,p_val:null})}catch(err){toast(nmsg(err));return}}window._pk=[];await netPull(false);view="fam";render();toast("Sent. Coach will confirm.")}else{s.forEach(id=>demoApply("dz_parent",{p_action:"pick",p_kid:id}));window._pk=[];save();go("fam");toast("Sent. Coach will confirm.")}})();return}
