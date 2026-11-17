@@ -1543,7 +1543,7 @@ async function rpc(fn,args){let r;try{r=await fetch(NET.url+"/rest/v1/rpc/"+fn,{
 const NERR={bad_login:"Wrong username or password.",taken:"That username is taken. Try another.",bad_code:"That team code isn't right. Ask your coach.",bad_username:"Usernames are 3 to 20 letters or numbers, no spaces.",short_password:"Passwords need at least 6 characters.",need_name:"Add your name.",offline:"Can't reach the team right now. Check your internet.",signed_out:"Please sign in again.",need_kid:"Type your player's username.",bad_role:"Pick player, parent or coach.",not_linked:"That player isn't linked to you yet.",bad_link:"Pick a parent and a player.",last_coach:"There has to be at least one coach.",short_code:"The code needs at least 4 characters.",not_yourself:"You can't remove your own account."};
 const nmsg=e=>/^kid_not_found:/.test(e.message)?"No player with the username \""+e.message.split(":")[1]+"\". Check it on their My Card.":NERR[e.message]||"Something went wrong. Try again.";
 function blankP(u){return{id:u.id,n:u.name,num:u.num||0,pos:u.pos||"",col:COLS[hash(String(u.id))%COLS.length],xp:0,streak:0,last:"",done:{},cats:{},hw:[],badges:[],fav:[],tri:[0,0],best:{},shouts:[],pitch:[],log:[],act:{},got:{}}}
-function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};(items||[]).forEach(it=>{live[it.aid]=1;if(p.got[it.aid])return;p.got[it.aid]=1;ch=true;if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
+function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};(items||[]).forEach(it=>{live[it.aid]=1;if(p.got[it.aid])return;p.got[it.aid]=1;ch=true;if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="cheer"&&it.sp)spApply(p,it.sp,it.from);else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
 function DRok(id){return true}
 function teamDoc(){return{team:S.team,vids:S.vids,fadd:S.fadd||[],fhide:S.fhide||[],custom:S.custom||[],plan:S.plan||null,sent:S.sent||{},throwOpen:!!S.throwOpen,ann:S.ann||[],sched:S.sched||null}}
 function applyServer(r){ME=r.user;if(ME.status==="pending"){S=emptyS();S.who="pending";window._mig=1;return false}LINKS=r.links||[];WAIT=r.waiting||[];MYPAR=r.parents||[];const T=r.team||{},base=Object.assign(emptyS(),{team:T.team||"BigDawgz 12U",vids:T.vids||{},fadd:T.fadd||[],fhide:T.fhide||[],custom:T.custom||[],plan:T.plan||null,sent:T.sent||{},throwOpen:!!T.throwOpen,ann:T.ann||[],sched:T.sched||null});
@@ -1720,7 +1720,7 @@ function award(p,xp,msg){econ(p);const before=level(p.xp).i;p.act=p.act||{};p.ac
   let pack=false;if(!p.tmp&&msg==="Homework done!"){const t=today(),left=p.hw.filter(h=>!h.done&&(!h.on||h.on<=t));if(!left.length&&p.hw.some(h=>h.done===t)&&p.dayPack!==t){p.dayPack=t;p.freePacks=(p.freePacks||0)+1;pack=true}}
   checkBadges(p);save();burst();toast((msg?msg+" ":"")+"+"+xp+" XP"+(c&&c<xp?" ("+c+" to spend)":""));if(pack)setTimeout(()=>toast("🎁 All of today's work is done! Free Rookie Pack in Cards"),1700);if(level(p.xp).i>before)setTimeout(()=>toast("⬆️ Level up: "+level(p.xp).n+"!"),pack?3400:1600)}
 function mergeInbox(p,items){let ch=false;p.got=p.got||{};const live={};econ(p);(items||[]).forEach(it=>{live[it.aid]=1;if(p.got[it.aid])return;p.got[it.aid]=1;ch=true;
-  if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});
+  if(it.kind==="shout")p.shouts.push({t:it.t,at:it.at,aid:it.aid});else if(it.kind==="cheer"&&it.sp)spApply(p,it.sp,it.from);else if(it.kind==="cheer")p.shouts.push({t:it.t,at:it.at,aid:it.aid,from:it.from});
   else if(it.kind==="coins"){const n=Math.max(0,Math.min(5000,+it.n||0));p.xp+=n;if(!p.tmp)p.bank=(p.bank||0)+n;p.shouts.push({t:"⚡ +"+n+" XP · "+(it.t||"Coach bonus"),at:it.at||today(),aid:it.aid})}
   else if(it.kind==="plog")(p.pitch=p.pitch||[]).push({d:it.d,n:+it.n||0,what:it.what,from:it.from,aid:it.aid});else if(it.kind==="pain")p.pain={at:it.at,note:it.note||"",from:it.from,aid:it.aid};else if(it.kind==="painok"){if(p.pain&&p.pain.aid===it.ref)delete p.pain}else if(it.kind==="pitch")p.pitch.push({d:it.d,n:it.n,aid:it.aid});else if(it.hw&&DRok(it.hw.id))p.hw.push(Object.assign({},it.hw,{aid:it.aid}))});
   Object.keys(p.got).forEach(k=>{if(!live[k])delete p.got[k]});return ch}
@@ -2525,7 +2525,7 @@ document.addEventListener("click",e=>{if(!lockedDown())return;const a=e.target.c
 /* ===== start times checked against each video's transcript (Nov 2026). Coach changes on the review screen override these. ===== */
 var VT0={"d:a9":{"s":69},"d:a11":{"s":20},"d:t8":{"s":42},"d:g9":{"s":42},"d:t9":{"s":41},"d:t12":{"s":99,"chk":"Video is general throwing-accuracy drills, no bucket toss shown. Drills start here."},"d:p6":{"chk":"A talk about pitching command, not a 3x3 zone drill."},"d:p8":{"s":650},"d:p10":{"s":40,"chk":"Shows several must-do pitching drills, no mirror work."},"d:h1":{"s":36},"d:h14":{"s":36,"chk":"At-home hitting drills. No sock-ball hand bat drill in it."},"d:h2":{"s":26},"d:h9":{"s":49,"chk":"Bunting technique (pivot, square). No cone targets shown."},"d:h12":{"s":49},"d:h11":{"s":16},"d:h13":{"s":19},"d:f2":{"s":8,"chk":"Infield footwork drills (right-left, momentum). No knee triangle drill in it."},"d:f3":{"s":8,"chk":"Infield footwork drills (right-left, momentum). No hat drill in it."},"d:g6":{"s":8,"chk":"Infield footwork drills. Not a knockout grounders game."},"d:f6":{"s":237},"d:f15":{"s":24},"d:r6":{"s":190,"chk":"Shows the turn at a base; does not show a full first-to-third."},"d:r2":{"s":8},"d:r4":{"s":97,"chk":"Base-running reads drill. No ball-in-the-dirt read shown."},"d:x2":{"chk":"A speed-training overview for youth players, not only 3-step starts."},"d:x3":{"s":54},"d:q1":{"chk":"Shows the infield prep step (being ready before the pitch), not a full checklist."},"d:q7":{"s":486,"chk":"Guided mental-game session. The picture-your-at-bat part starts here."},"d:g5":{"s":18,"chk":"At-home pitching drills. Not the chalk-zone strikeout game."},"d:c5":{"s":18},"d:f13":{"s":38,"chk":"Long infield drill video (15 min). No pick-ups drill; first drill starts here."},"d:o6":{"s":12},"d:h10":{"s":10},"d:o3":{"s":17},"d:t1":{"s":18},"d:a10":{"s":32},"d:r5":{"s":169},"d:r7":{"s":26},"d:g10":{"s":144,"chk":"Fielding transfers drill. Not a glove-tap race, but the transfer work starts here."},"d:f14":{"s":24,"chk":"Glove drills for infielders. No glove-flip drill, but the hand work starts here."},"d:x11":{"s":25}};
 /* ===== VIDEO REVIEW: coach watches every drill and Film Room video, checks it against the drill, sets where it starts and stops ===== */
-var vrF={st:"todo",ty:"drill",q:""},_ytNow=null;
+var vrF={st:"todo",ty:"drill",q:"",cats:[],where:[],who:[],lv:[],flag:[]},_ytNow=null;
 function parseT(v){v=String(v||"").trim();if(!v)return 0;if(/^\d+$/.test(v))return +v;const m=v.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})$/);if(m)return(+(m[1]||0))*3600+(+m[2])*60+(+m[3]);const h=v.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/i);if(h&&(h[1]||h[2]||h[3]))return(+(h[1]||0))*3600+(+(h[2]||0))*60+(+(h[3]||0));return -1}
 function fmtT(n){n=Math.max(0,Math.floor(+n||0));const h=Math.floor(n/3600),m=Math.floor(n%3600/60),s=n%60;return(h?h+":"+String(m).padStart(2,"0"):m)+":"+String(s).padStart(2,"0")}
 function vtGet(k){return Object.assign({},(typeof VT0!=="undefined"&&VT0[k])||{},(S.vt||{})[k]||{})}
@@ -2545,7 +2545,7 @@ function vrItems(){const out=[],seen={};
   films().forEach(f=>{const y=ytId(f[3]);if(!y)return;out.push({k:"y:"+y,ty:"film",id:f[0],u:f[3],y,n:f[1],cat:{e:"🎬",n:"Film Room",c:"#C792EA"},src:f[2],why:f[4]||"",cues:[],chk:[],flag:""})});
   out.forEach(it=>{it.dup=it.ty==="drill"&&it.y?(seen[it.y]||[]).filter(n=>n!==it.n):[];it.r=vtGet(it.k)});return out}
 function vrevBtn(){const L=vrItems(),n=L.filter(i=>!i.r.ok).length;return `<button class="rowb vadd ibbtn" data-a="go:vrev"><span>🎞️</span><span class="dtx"><b>Video review${n?" · "+n+" to review":""}</b><small>Watch every drill video, check it fits, set where it starts</small></span><span class="arr">›</span></button>`}
-function vrevHTML(){if(!isCoach())return homeHTML();const all=vrItems(),q=vrF.q.trim().toLowerCase();
+function vrevHTML(){if(!isCoach())return homeHTML();applyDTags();const all=vrItems().filter(vrPass),q=vrF.q.trim().toLowerCase();
   const cnt=st=>all.filter(i=>i.ty===vrF.ty&&(st==="all"||(st==="todo"?!i.r.ok:i.r.ok===st))).length;
   const L=all.filter(i=>i.ty===vrF.ty&&(vrF.st==="all"||(vrF.st==="todo"?!i.r.ok:i.r.ok===vrF.st))&&(!q||(i.n+" "+i.cat.n+" "+i.src).toLowerCase().includes(q)));
   const seg=(k,o)=>`<div class="seg vrseg">${o.map(([v,t])=>`<button class="${vrF[k]===v?"on":""}" data-a="vrf:${k}:${v}">${t}</button>`).join("")}</div>`;
@@ -2553,7 +2553,7 @@ function vrevHTML(){if(!isCoach())return homeHTML();const all=vrItems(),q=vrF.q.
    <section class="ibh"><div><b>${cnt("todo")}</b><small>To review</small></div><div><b>${cnt("good")}</b><small>Good fit</small></div><div><b>${cnt("bad")}</b><small>Wrong video</small></div></section>
    ${seg("ty",[["drill","⚾ Drill videos"],["film","🎬 Film Room"]])}
    ${seg("st",[["todo","To review"],["good","✅ Good"],["bad","✖ Wrong"],["all","All"]])}
-   <input class="search" id="vrq" value="${esc(vrF.q)}" placeholder="Search by drill or category">
+   <input class="search" id="vrq" value="${esc(vrF.q)}" placeholder="Search by drill or category">${vrFilters()}
    ${L.length?L.map(vrCard).join(""):`<div class="empty">${vrF.st==="todo"?"Nothing left to review here. 🎉":"Nothing here yet."}</div>`}
    <p class="fine">Start and stop times work on YouTube videos. Players see the video open right at the start you set.</p></main>`+nav()}
 function vrCard(i){const r=i.r,href=vStart(i.u,i.k),th=thumb(i.u),pl=sPlat(i.u)||"Link";
@@ -2566,6 +2566,7 @@ function vrCard(i){const r=i.r,href=vStart(i.u,i.k),th=thumb(i.u),pl=sPlat(i.u)|
    ${i.y?`<div class="two"><label>Start at<input data-vt="s" value="${r.s?fmtT(r.s):""}" placeholder="0:00" inputmode="numeric"></label><label>Stop at (optional)<input data-vt="e" value="${r.e?fmtT(r.e):""}" placeholder="End" inputmode="numeric"></label></div>`:`<p class="fine">Start times only work on YouTube links.</p>`}
    ${i.ty==="drill"?`<label>Swap in a different video<input data-vt="link" value="${esc(S.vids[i.id]||"")}" placeholder="Paste a better link (leave blank to keep this one)"></label>`:""}
    <label>Your notes<input data-vt="n" value="${esc(r.n||"")}" placeholder="Example: good, but skip the sales pitch at the end"></label>
+   ${i.ty==="drill"?vrEditor(i.x):""}
    <div class="two"><button class="ghost ${r.ok==="bad"?"on":""}" data-a="vrok:bad">✖ Wrong video</button><button class="cta ${r.ok==="good"?"on":""}" data-a="vrok:good">✅ Good fit</button></div></article>`}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0];if(!/^vr/.test(k))return;e.stopPropagation();
   if(k==="vrf"){vrF[a[1]]=a[2];render();return}
@@ -2613,11 +2614,12 @@ function busyBanner(p,d){const L=busyOn(p,d);if(!L.length)return"";const team=L.
   return h.replace('<div class="todo-box">',busyBanner(p,today())+'<div class="todo-box">').replace("</main>",btn+"</main>")}}
 {const _m=meHTML;meHTML=function(){const h=_m(),p=me();if(!p||isParent())return h;return h.replace('<h3 class="sec">Badges',`<button class="rowb osbtn" data-a="go:osp"><span>🏅</span><span class="dtx"><b>My other sports</b><small>${(p.sports||[]).length?esc(p.sports.map(s=>s.e+" "+s.n).join(" · ")):"Add soccer, hoops, anything"}</small></span><span class="arr">›</span></button><h3 class="sec">Badges`)}}
 var OS={n:"",o:"",rec:true,days:[],date:"",until:""};
-function ospHTML(){const p=me();if(!p||isParent())return homeHTML();const L=p.sports||[],nm=OS.n==="__other"?OS.o:OS.n,em=sportEmo(nm),t=today(),nx=[];
+function ospHTML(){const p=osTarget();if(!p)return isParent()?famHTML():homeHTML();const K=kidsOf();const L=p.sports||[],nm=OS.n==="__other"?OS.o:OS.n,em=sportEmo(nm),t=today(),nx=[];
   for(let i=0;i<14&&nx.length<6;i++){const d=addDays(t,i),b=busyOn(p,d);if(b.length)nx.push([d,b])}
-  return topbar("My other sports","Baseball work fits around them")+`<main><button class="back" data-a="go:home">‹ Home</button>
+  return topbar("My other sports","Baseball work fits around them")+`<main><button class="back" data-a="go:${isParent()?"fam":"home"}">‹ ${isParent()?"My Players":"Home"}</button>
+   ${isParent()&&K.length>1?`<div class="seg vrseg">${K.map(k=>`<button class="${k.id===p.id?"on":""}" data-a="zokid:${k.id}">${esc(k.n)}</button>`).join("")}</div>`:""}${isParent()?`<p class="pgs"><b>${esc(p.n)}</b>'s other sports. They show up on ${esc(p.n)}'s app the next time it opens.</p>`:""}
    <p class="pgs">On days you have another sport (or team practice), your baseball workouts come off the list. Quizzes and games still count, so you can keep your streak.</p>
-   ${L.length?`<h3 class="sec">Your sports <span>${L.length}</span></h3>${L.map(s=>`<div class="osr"><span class="ose">${s.e}</span><span class="dtx"><b>${esc(s.n)}</b><small>${s.rec?"🔁 ":"📅 "}${esc(spWhen(s))}</small></span><button class="ghost sm" data-a="zodel:${s.id}">Remove</button></div>`).join("")}`:""}
+   ${L.length?`<h3 class="sec">${isParent()?esc(p.n)+"'s":"Your"} sports <span>${L.length}</span></h3>${L.map(s=>`<div class="osr"><span class="ose">${s.e}</span><span class="dtx"><b>${esc(s.n)}</b><small>${s.rec?"🔁 ":"📅 "}${esc(spWhen(s))}</small></span><button class="ghost sm" data-a="zodel:${s.id}">Remove</button></div>`).join("")}`:""}
    <h3 class="sec">Add a practice</h3><div class="form">
     <label>Sport<select id="osn"><option value="">Pick a sport…</option>${OSPORTS.map(s=>`<option value="${esc(s[0])}" ${OS.n===s[0]?"selected":""}>${s[1]} ${s[0]}</option>`).join("")}<option value="__other" ${OS.n==="__other"?"selected":""}>🏅 Something else…</option></select></label>
     ${OS.n==="__other"?`<label>What sport?<input id="oso" maxlength="30" value="${esc(OS.o)}" placeholder="Type the sport"></label>`:""}
@@ -2649,23 +2651,73 @@ function tpPanel(){const t=S.tprac||{},days=t.days||[],dates=(t.dates||[]).filte
 /* library rows: show a note marker */
 {const _dr=drillRow;drillRow=function(x,extra){const h=_dr(x,extra);return (S.dnote||{})[x.id]?h.replace(/(<b[^>]*>)([^<]*)(<\/b>)/,"$1$2 📝$3"):h}}
 {const _lh2=libHTML;libHTML=function(){return _lh2().replace(/class="cat ([^"]*)" data-a="cat:(\w+)"/g,(m,c,k)=>`class="cat ${libX.cats.includes(k)?"on":""}" data-a="cat:${k}"`)}}
-{const _r=render;render=function(){if(view==="osp"){const m=$("#app");if(!me()||isParent()){view="home";return _r()}m.innerHTML=ospHTML();$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.remove("lock");return}return _r()}}
+{const _r=render;render=function(){if(view==="osp"){const m=$("#app");if(!osTarget()){view=homeView();return _r()}m.innerHTML=ospHTML();$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.remove("lock");return}return _r()}}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];if(!/^z[otnl]/.test(k))return;e.stopPropagation();
   if(k==="zloc"&&DE){const L=DE.f.locs=DE.f.locs||[DE.f.where],i=L.indexOf(v);if(i<0)L.push(v);else if(L.length>1)L.splice(i,1);else{toast("Pick at least one place");return}DE.f.where=L[0];render();return}
   if(k==="znsave"){if(!isCoach())return;const tx=(($("#dnt")||{}).value||"").trim();S.dnote=S.dnote||{};if(tx)S.dnote[v]=tx;else delete S.dnote[v];save();toast(tx?"Notes saved":"Notes cleared");render();return}
   if(k==="ztday"&&isCoach()){S.tprac=Object.assign({days:[],dates:[]},S.tprac||{});const L=S.tprac.days,i=L.indexOf(+v);i<0?L.push(+v):L.splice(i,1);L.sort();save();render();return}
   if(k==="ztadd"&&isCoach()){const d=(($("#tpd")||{}).value||"");if(!d){toast("Pick a date first");return}S.tprac=Object.assign({days:[],dates:[]},S.tprac||{});if(!S.tprac.dates.includes(d))S.tprac.dates.push(d);save();toast("Practice added: "+nice(d));render();return}
   if(k==="ztdel"&&isCoach()){S.tprac.dates=(S.tprac.dates||[]).filter(d=>d!==v);save();render();return}
-  const p=me();if(!p||isParent())return;osKeep();
+  if(k==="zokid"){window._osk=v;render();return}
+  const p=osTarget();if(!p)return;osKeep();
   if(k==="zorec"){OS.rec=v==="1";render();return}
   if(k==="zoday"){const i=OS.days.indexOf(+v);i<0?OS.days.push(+v):OS.days.splice(i,1);render();return}
-  if(k==="zodel"){p.sports=(p.sports||[]).filter(s=>s.id!==v);save();toast("Removed");render();return}
+  if(k==="zodel"){if(isParent()){parentPush(p.id,{kind:"cheer",sp:{id:v,del:1},at:today()}).then(ok=>{if(ok){spApply(p,{id:v,del:1});toast("Removed");render()}});return}p.sports=(p.sports||[]).filter(s=>s.id!==v);save();toast("Removed");render();return}
   if(k==="zoadd"){const nm=(OS.n==="__other"?OS.o:OS.n).trim();if(!nm){toast("Pick a sport first");return}if(OS.rec&&!OS.days.length){toast("Pick at least one day");return}if(!OS.rec&&!OS.date){toast("Pick the date");return}
     const s={id:"s"+Date.now().toString(36),n:(nm[0].toUpperCase()+nm.slice(1)).slice(0,30),e:sportEmo(nm),rec:OS.rec};if(OS.rec){s.days=OS.days.slice().sort();s.from=today();if(OS.until)s.until=OS.until}else s.date=OS.date;
-    (p.sports=p.sports||[]).push(s);save();toast(s.e+" "+s.n+" added");OS={n:"",o:"",rec:true,days:[],date:"",until:""};render();return}},true);
+    OS={n:"",o:"",rec:true,days:[],date:"",until:""};if(isParent()){parentPush(p.id,{kind:"cheer",sp:s,at:today()}).then(ok=>{if(ok){spApply(p,s);toast(s.e+" "+s.n+" added for "+p.n);render()}});return}(p.sports=p.sports||[]).push(s);save();toast(s.e+" "+s.n+" added");render();return}},true);
+function osTarget(){if(isParent()){const K=kidsOf();return K.find(k=>k.id===window._osk)||K.find(k=>k.id===window._kid)||K[0]||null}return me()||null}
+function spApply(p,sp,from){if(!p||!sp||!sp.id)return;p.sports=(p.sports||[]).filter(s=>s.id!==sp.id);if(!sp.del)p.sports.push(Object.assign({},sp,from?{by:from}:{}))}
+{const _f=famHTML;famHTML=function(){const h=_f(),K=kidsOf();if(!K.length)return h;const p=K.find(x=>x.id===window._kid)||K[0],n=(p.sports||[]).length;
+  return h.replace("<main>","<main>"+busyBanner(p,today()).replace("Baseball workouts are off today.",esc(p.n)+"'s baseball workouts are off today.")).replace("</main>",`<button class="rowb osbtn" data-a="zopar:${p.id}"><span>🏅</span><span class="dtx"><b>${esc(p.n)}'s other sports${n?" · "+n:""}</b><small>${n?esc(p.sports.map(s=>s.e+" "+s.n).join(" · ")):"Add soccer, hoops, anything. Baseball workouts come off those days."}</small></span><span class="arr">›</span></button></main>`)}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a^='zopar:']");if(!t)return;e.stopPropagation();window._osk=t.dataset.a.split(":")[1];go("osp")},true);
 (()=>{const st=document.createElement("style");st.textContent=`.busy{display:flex;gap:12px;align-items:center;background:#0B0B0D;border:2px solid #CDAE52;border-radius:16px;padding:12px;margin-bottom:12px}.bse{font-size:30px;line-height:1}.busy b{display:block;font-weight:900}.busy small{color:var(--mute);font-weight:700}
 .osbtn{margin-top:12px}.osr{display:flex;gap:12px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}.ose{font-size:28px;line-height:1;flex:none}.osr .dtx{flex:1;min-width:0}.osr b{display:block}.osr small{color:var(--mute);font-weight:700}
 .osprev{display:flex;align-items:center;gap:10px;background:#0B0B0D;border:1.5px solid #CDAE52;border-radius:14px;padding:10px 12px}.osprev[hidden]{display:none}.osprev span{font-size:34px;line-height:1}.osprev b{font-size:18px}
 .cnote{background:#0B0B0D;border:2px solid #CDAE52;border-radius:14px;padding:10px 12px;margin:10px 0;display:grid;gap:6px}.cnote small{color:var(--amber);font-weight:900;font-size:12px;letter-spacing:.05em;text-transform:uppercase}.cnote small span{color:var(--mute);text-transform:none;letter-spacing:0;font-weight:700}.cnote p{margin:0}.cnote textarea{width:100%}
 .lfl span{color:var(--mute);font-weight:700;font-size:12px;margin-left:4px}`;document.head.appendChild(st)})();
+/* ===== VIDEO REVIEW: filters + edit every part of a drill's listing ===== */
+function vrPass(i){if(i.ty!=="drill")return true;const x=i.x,f=vrF,locs=[x.where].concat(x.wh||[]);
+  return(!f.cats.length||f.cats.includes(x.c))&&(!f.where.length||locs.some(w=>f.where.includes(w)))&&(!f.who.length||f.who.includes(x.who))&&(!f.lv.length||f.lv.includes(String(x.lv)))
+   &&(!f.flag.length||f.flag.every(g=>g==="chk"?!!i.r.chk:g==="start"?!!i.r.s:g==="mine"?!!S.vids[x.id]:g==="notes"?!!(S.dnote||{})[x.id]:g==="edited"?!!((S.dtags||{})[x.id]||x.custom):true))}
+function vrFilters(){if(vrF.ty!=="drill")return"";const f=vrF,n=f.cats.length+f.where.length+f.who.length+f.lv.length+f.flag.length,
+  c=(k,v,t)=>`<button class="fchip ${f[k].includes(String(v))?"on":""}" data-a="vrx:${k}:${v}">${t}</button>`;
+  return `<details class="lfx" ${n||window._vro?"open":""}><summary>Filters${n?" · "+n+" on":""}</summary>
+   <p class="lfl">Type of instruction</p><div class="fr">${CATS.map(x=>c("cats",x.k,x.e+" "+x.n)).join("")}</div>
+   <p class="lfl">Where</p><div class="fr">${Object.keys(WHERE_L).map(k=>c("where",k,WHERE_EMO[k]+" "+WHERE_L[k])).join("")}</div>
+   <p class="lfl">Who</p><div class="fr">${Object.keys(WHO_L).map(k=>c("who",k,WHO_L[k])).join("")}</div>
+   <p class="lfl">Level</p><div class="fr">${[1,2,3].map(v=>c("lv",v,"●".repeat(v)+" "+LV_L[v])).join("")}</div>
+   <p class="lfl">Show only</p><div class="fr">${c("flag","chk","🔎 Video may not match")}${c("flag","start","⏱ Has a start time")}${c("flag","mine","🔗 Your own link")}${c("flag","notes","📝 Has coach's notes")}${c("flag","edited","✏️ Edited by you")}</div>
+   ${n?`<button class="ghost sm" data-a="vrxclear">Clear filters</button>`:""}</details>`}
+function vrEditor(x){const o=(L,sel)=>L.map(([v,t])=>`<option value="${v}" ${String(sel)===String(v)?"selected":""}>${t}</option>`).join(""),locs=[x.where].concat(x.wh||[]),ed=!!((S.dtags||{})[x.id]);
+  return `<details class="vredit"><summary>✏️ Edit this drill's listing</summary><div class="vref" data-did="${x.id}">
+   <label>Drill name<input data-ve="n" maxlength="60" value="${esc(x.n)}"></label>
+   <div class="two"><label>Type of instruction<select data-ve="c">${o(CATS.map(c=>[c.k,c.e+" "+c.n]),x.c)}</select></label><label>Minutes<input data-ve="t" type="number" min="1" max="60" value="${esc(x.t)}"></label></div>
+   <div class="two"><label>Level<select data-ve="lv">${o([[1,"● Beginner"],[2,"●● Middle"],[3,"●●● Advanced"]],x.lv)}</select></label><label>Who<select data-ve="who">${o(Object.entries(WHO_L),x.who)}</select></label></div>
+   <p class="lfl">Where <span>check every place it works</span></p><div class="fr vrlocs">${Object.keys(WHERE_L).map(k=>`<label class="fchip vrchk"><input type="checkbox" data-loc="${k}" ${locs.includes(k)?"checked":""}> ${WHERE_EMO[k]} ${WHERE_L[k]}</label>`).join("")}</div>
+   <label>Equipment<input data-ve="eq" maxlength="80" value="${esc(x.eq||"")}"></label>
+   <label>Purpose (why it matters)<textarea data-ve="why" rows="2" maxlength="300">${esc(x.why||"")}</textarea></label>
+   <label>How to do it <span class="fine">one step per line</span><textarea data-ve="steps" rows="4">${esc((x.steps||[]).join("\n"))}</textarea></label>
+   <label>Coach says (cues) <span class="fine">one per line</span><textarea data-ve="cues" rows="3">${esc((x.cues||[]).join("\n"))}</textarea></label>
+   <label>Make it a game (optional)<textarea data-ve="game" rows="2" maxlength="300">${esc(x.game||"")}</textarea></label>
+   <label>Tags <span class="fine">comma between each</span><input data-ve="tg" value="${esc((x.tg||[]).join(", "))}" placeholder="Warmup, Catchers, Cooperstown"></label>
+   <label>📝 Coach's notes (players see these)<textarea data-ve="note" rows="2" maxlength="600">${esc((S.dnote||{})[x.id]||"")}</textarea></label>
+   <button class="cta" data-a="vrsave:${x.id}">Save drill</button>${ed&&!x.custom?`<button class="ghost sm" data-a="vrreset:${x.id}">Reset to the original listing</button>`:""}</div></details>`}
+function vrSaveDrill(id,box){applyDTags();const x=DR[id];if(!x)return;const g=k=>{const e=box.querySelector(`[data-ve="${k}"]`);return e?e.value:""},lines=k=>g(k).split("\n").map(s=>s.trim()).filter(Boolean);
+  const locs=[...box.querySelectorAll("[data-loc]")].filter(c=>c.checked).map(c=>c.dataset.loc);if(!locs.length){toast("Check at least one place");return}
+  const n=g("n").trim();if(!n){toast("The drill needs a name");return}
+  const v={n,c:g("c"),t:Math.max(1,Math.min(60,+g("t")||x.t)),lv:+g("lv")||1,who:g("who"),where:locs[0],wh:locs.slice(1),eq:g("eq").trim()||"None",why:g("why").trim()||x.why,steps:lines("steps"),cues:lines("cues"),game:g("game").trim(),tg:g("tg").split(",").map(s=>s.trim().replace(/^#/,"")).filter(Boolean)};
+  if(!v.steps.length){toast("Add at least one step");return}
+  const nt=g("note").trim();S.dnote=S.dnote||{};if(nt)S.dnote[id]=nt;else delete S.dnote[id];
+  S.tagList=[...new Set([...(S.tagList||[]),...v.tg])];
+  if(x.custom){const c=(S.custom||[]).find(y=>y.id===id);if(c)Object.assign(c,v);Object.assign(x,v)}
+  else{S.dtags=S.dtags||{};const prev=Object.assign({},S.dtags[id]||{});Object.keys(v).forEach(k=>{let base=x._o&&k in x._o?x._o[k]:x[k];if(base==null)base=Array.isArray(v[k])?[]:"";if(JSON.stringify(base)===JSON.stringify(v[k]))delete prev[k];else prev[k]=v[k]});
+    if(Object.keys(prev).length)S.dtags[id]=prev;else delete S.dtags[id];window._dtSig=null;applyDTags()}
+  save();toast("✅ "+n+" saved");render()}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0];if(!/^vr(x|xclear|save|reset)$/.test(k))return;e.stopPropagation();if(!isCoach())return;
+  if(k==="vrx"){const L=vrF[a[1]],i=L.indexOf(a[2]);i<0?L.push(a[2]):L.splice(i,1);window._vro=1;render();return}
+  if(k==="vrxclear"){Object.assign(vrF,{cats:[],where:[],who:[],lv:[],flag:[]});render();return}
+  if(k==="vrsave"){const box=t.closest(".vref");if(box)vrSaveDrill(a[1],box);return}
+  if(k==="vrreset"){if(S.dtags)delete S.dtags[a[1]];window._dtSig=null;applyDTags();save();toast("Back to the original listing");render();return}},true);
+(()=>{const st=document.createElement("style");st.textContent=`.vredit{background:#0B0B0D;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px}.vredit summary{font-weight:900;cursor:pointer;color:var(--amber)}.vref{display:grid;gap:8px;margin-top:8px}.vref label{display:grid;gap:4px;font-size:13px;font-weight:800}.vref textarea{width:100%}.vrchk{display:inline-flex!important;align-items:center;gap:6px;cursor:pointer}.vrchk input{width:auto;margin:0}`;document.head.appendChild(st)})();
 </script></body></html>
