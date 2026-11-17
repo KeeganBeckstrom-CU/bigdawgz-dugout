@@ -1149,7 +1149,7 @@ function libHTML(){const L=libList(),f=(k,t)=>`<button class="fchip ${libF[k]?"o
    <h3 class="sec">${libCat?CAT[libCat].n:"All drills"} <span>${L.length}</span></h3><div id="list">${L.map(x=>drillRow(x)).join("")||`<div class="empty">Nothing matches. Try clearing a filter.</div>`}</div></main>`+nav()}
 function drillSheet(id){const x=DR[id],c=CAT[x.c],p=me(),v=vid(x),n=p?(p.done[id]||0):0,hwI=p?p.hw.findIndex(h=>h.id===id&&!h.done):-1;
   return `<div class="sheet" style="--c:${c.c}"><button class="x" data-a="close" aria-label="Close">✕</button><div class="shd"><span class="big">${c.e}</span><div><small>${c.n}${x.cl?" · Cleary: "+esc(x.cl):""}</small><h2>${esc(x.n)}</h2></div></div>
-   <div class="tags">${chip(x.t+" min",c.c)}${chip("Level "+x.lv)}${whosOf(x).map(w=>chip({solo:"By myself",partner:"With a partner",team:"Team"}[w])).join("")+(x.cx||[]).filter(k=>CAT[k]).map(k=>chip(CAT[k].e+" "+CAT[k].n,CAT[k].c)).join("")}${chip([x.where].concat(x.wh||[]).map(w=>WHERE_L[w]||w).join(" · "))}</div>
+   <div class="tags">${chip(x.t+" min",c.c)}${chip("Level "+x.lv)}${whosOf(x).map(w=>chip(WHO_L[w]||w)).join("")+(x.cx||[]).filter(k=>CAT[k]).map(k=>chip(CAT[k].e+" "+CAT[k].n,CAT[k].c)).join("")}${chip([x.where].concat(x.wh||[]).map(w=>WHERE_L[w]||w).join(" · "))}</div>
    <h4>Purpose</h4><p class="why">${esc(x.why)}</p>${x.eq?`<p class="eq"><b>You need:</b> ${esc(x.eq)}</p>`:""}
    ${v?`<a class="vbtn vth" href="${esc(v)}" target="_blank" rel="noopener noreferrer">${thumb(v)?`<span class="thw"><img class="thimg" src="${thumb(v)}" alt="" loading="lazy"><i>▶</i></span>`:`<span>▶</span>`}<b>Watch a how-to video<small>${S.vids[x.id]?"Picked by your coach":(ytId(v)||sEmbed(v))?"Plays right here"+(sPlat(v)&&sPlat(v)!=="YouTube"?" · "+sPlat(v):""):"Opens in a new tab"}</small></b></a>`:""}
    <h4>How to do it</h4><ol>${x.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>
@@ -1518,7 +1518,7 @@ function newDrillHTML(){const o=(a,sel)=>a.map(v=>`<option value="${v[0]}" ${v[0
    <label>Drill name<input id="dn" maxlength="50" placeholder="Example: Wall Ball Backhands"></label>
    <label>Category<select id="dc">${o(CATS.map(c=>[c.k,c.e+" "+c.n]),"field")}</select></label>
    <div class="two"><label>Minutes<input id="dt" type="number" min="1" max="60" value="5"></label><label>Level<select id="dl">${o([[1,"● Beginner"],[2,"●● Middle"],[3,"●●● Advanced"]],1)}</select></label></div>
-   <div class="two"><label>Where<select id="dw">${o([["inside","🛋️ Living room"],["driveway","🚗 Driveway"],["yard","🌳 Backyard"],["field","⚾ Field"]],"inside")}</select></label><label>Who<select id="dwho">${o([["solo","By myself"],["partner","With a partner"]],"solo")}</select></label></div>
+   <div class="two"><label>Where<select id="dw">${o([["inside","🛋️ Living room"],["driveway","🚗 Driveway"],["yard","🌳 Backyard"],["field","⚾ Field"]],"inside")}</select></label><label>Who<select id="dwho">${o(Object.entries(WHO_L),"solo")}</select></label></div>
    <label>Equipment<input id="de" maxlength="80" placeholder="Glove, tennis ball, wall"></label>
    <label>Purpose (why do it?)<input id="dy" maxlength="140" placeholder="Builds a quick, clean backhand."></label>
    <label>Steps, one per line<textarea id="ds" rows="4" placeholder="Stand 10 feet from the wall.&#10;Throw low and field the backhand.&#10;20 reps."></textarea></label>
@@ -2452,7 +2452,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   if(k==="ibyes"){const n=(x.n||"").trim();if(!n){toast("Give it a name first");return}const y=(x.y||"").trim(),d={id:"u"+Date.now().toString(36),c:x.c||"field",n,t:Math.max(1,Math.min(60,+x.t||5)),lv:+x.lv||1,who:x.who||"solo",where:x.where||"yard",tg:(x.tg||[]).slice(),eq:"See the video",why:y||x.d||"Watch the video, then do it.",steps:["Watch the video.","Do it the way it's shown."],cues:y?[y]:[],game:"",v:x.v,cl:"",ib:1,f:x.f||"",by:x.by||""};
     S.custom=S.custom||[];S.custom.push(d);addCustom(d);if(d.tg.length)S.tagList=[...new Set([...(S.tagList||[]),...d.tg])];S.inbox=S.inbox.filter(z=>z!==x);save();toast("✅ "+n+" added to the Library");render();return}},true);
 /* ===== DRILL TAGS + FILTERS: coach edits any drill's details and tags; Library filters by them ===== */
-const WHO_L={solo:"By myself",partner:"With a partner",team:"Team"},WHERE_L={inside:"Indoors",driveway:"Driveway",yard:"Backyard",field:"Field"},LV_L={1:"Beginner",2:"Middle",3:"Advanced"};
+const WHO_L={solo:"By myself",partner:"2 people",p3:"3 people",p4:"4 people",p5:"5 people",p6:"6 people",p7:"7 people",p8:"8 people",p9:"9 people",p10:"10+ people",team:"Full team"},WHERE_L={inside:"Indoors",driveway:"Driveway",yard:"Backyard",field:"Field"},LV_L={1:"Beginner",2:"Middle",3:"Advanced"};
 var libX={lv:0,where:[],who:[],tags:[],cats:[]};
 /* built-in drills: the coach's changes are saved as overrides and laid on top */
 function applyDTags(){const o=S.dtags||{},sig=JSON.stringify(o);if(window._dtSig===sig)return;window._dtSig=sig;
