@@ -2911,4 +2911,15 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
 .pact{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);font-size:13px}.pact small{flex:none;width:70px;color:var(--amber);font-weight:900}
 .pcat{display:grid;grid-template-columns:120px 1fr 28px;align-items:center;gap:8px;font-size:13px;font-weight:800;margin:3px 0}.pcat i{height:10px;border-radius:99px;background:#0B0B0D;overflow:hidden}.pcat i b{display:block;height:100%}.pcat em{font-style:normal;text-align:right;color:var(--mute)}
 .pdet summary{font-weight:900;cursor:pointer;padding:8px 0}`;document.head.appendChild(st)})();
+
+/* ===== auto-update: reload when a newer version of the app is on the site ===== */
+(function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
+  try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
+  let last=0;async function chk(){const now=Date.now();if(now-last<60000)return;last=now;
+    try{const r=await fetch(location.pathname+"?c="+now,{cache:"no-store"});if(!r.ok)return;const t=await r.text();
+      if(t.length<1000||t.includes(ME_SRC))return;
+      let lr=0;try{lr=+sessionStorage.getItem("dz-upd")||0}catch(e){}if(now-lr<120000)return;
+      try{sessionStorage.setItem("dz-upd",String(now))}catch(e){}
+      location.replace(location.pathname+"?u="+now+location.hash)}catch(e){}}
+  setTimeout(chk,1500);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")chk()});addEventListener("focus",chk)})();
 </script></body></html>
