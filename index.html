@@ -3009,6 +3009,52 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
 .hst.coach th{cursor:pointer;text-align:center;vertical-align:bottom}.hst.coach th span{display:block;font-size:18px}.hst.coach th small{display:block;font-size:9.5px;max-width:64px;white-space:normal;line-height:1.15}.hst.coach th.on{color:var(--amber);background:rgba(255,201,61,.12)}.hst.coach td{text-align:center}.hst.coach td small{font-size:9px;color:var(--mute);margin-left:2px;font-weight:900}.hst.coach td.best{color:#1B1B1B;background:var(--amber);font-weight:900}.hst.coach td.best small{color:#3a2a00}.hst.coach td.tot{font-weight:900}.hst.coach td i{color:var(--mute);font-style:normal}
 .hst .stk{position:sticky;left:0;background:var(--card2,#2a1060);z-index:1;text-align:left}.hst.coach td.stk button{font-weight:800;color:var(--ink);text-align:left;white-space:nowrap}.hst.coach td.stk small{color:var(--mute)}`;document.head.appendChild(st)}
 
+/* ===== DUGOUT LIVE: coach can hand-pick the questions (or write their own) ===== */
+var LQ={mode:"rand",sel:[],mine:[],q:"",cat:"all",add:false,more:0};
+try{const x=JSON.parse(localStorage.getItem("dz-liveq")||"null");if(x){LQ.sel=x.sel||[];LQ.mine=x.mine||[];LQ.mode=x.mode||"rand"}}catch(e){}
+function lqSave(){try{localStorage.setItem("dz-liveq",JSON.stringify({sel:LQ.sel,mine:LQ.mine,mode:LQ.mode}))}catch(e){}}
+function lqBank(){const B=[];TRIVIA.forEach((t,i)=>B.push({id:"t"+i,q:t[0],o:t[1],a:t[2],why:t[3],cat:t[4]}));
+  QZ.rbook.forEach((r,i)=>{if(r[1].length<=4)B.push({id:"r"+i,q:r[0],o:r[1],a:0,why:r[2],cat:"Rule book"})});
+  QZ.rules.forEach((r,i)=>{if(r[1].length<=4)B.push({id:"u"+i,q:r[0],o:r[1],a:0,why:r[3],cat:"Safe or out"})});
+  LQ.mine.forEach(m=>B.push(Object.assign({},m,{cat:"My questions"})));return B}
+function lqShuf(x){const o=x.o.map((t,i)=>[Math.random(),t,i===x.a]).sort((a,b)=>a[0]-b[0]);return {q:x.q,o:o.map(y=>y[1]),a:o.findIndex(y=>y[2]),why:x.why||"",cat:x.cat}}
+function lqCats(){return ["all",...new Set(TRIVIA.map(t=>t[4])),"Rule book","Safe or out"].concat(LQ.mine.length?["My questions"]:[])}
+function lqListHTML(){const B=lqBank(),q=LQ.q.toLowerCase(),L=B.filter(x=>(LQ.cat==="all"||x.cat===LQ.cat)&&(!q||x.q.toLowerCase().includes(q)||x.o.join(" ").toLowerCase().includes(q))),lim=40+LQ.more*40;
+  return (L.slice(0,lim).map(x=>{const on=LQ.sel.includes(x.id);return `<button class="lqr ${on?"on":""}" data-a="xlqt:${x.id}"><i>${on?"✓":"+"}</i><span class="dtx"><b>${esc(x.q)}</b><small>✅ ${esc(x.o[x.a])} · ${esc(x.cat)}</small></span></button>`}).join("")||`<div class="empty">No questions match.</div>`)+(L.length>lim?`<button class="ghost" data-a="xlqmore">Show more (${L.length-lim} left)</button>`:"")}
+function lqHostHTML(){const k=window._lk||"mix",n=window._ln||10,sec=window._ls||20,cats=["mix",...new Set(TRIVIA.map(t=>t[4]))],B=lqBank(),sel=LQ.sel.map(id=>B.find(x=>x.id===id)).filter(Boolean);
+  const secs=`<p class="pgs">Seconds per question</p><div class="fr">${[10,20,30].map(x=>`<button class="fchip ${sec===x?"on":""}" data-a="xls:${x}">${x}s</button>`).join("")}</div>`;
+  const rand=`<div class="form"><p class="pgs">Questions</p><div class="fr">${cats.map(c=>`<button class="fchip ${k===c?"on":""}" data-a="xlk:${c}">${c==="mix"?"Mix of everything":c}</button>`).join("")}</div>
+     <p class="pgs">How many</p><div class="fr">${[5,10,15].map(x=>`<button class="fchip ${n===x?"on":""}" data-a="xln:${x}">${x}</button>`).join("")}</div>${secs}<button class="cta" data-a="xlhost">Create game</button></div>`;
+  const pick=`<div class="form"><div class="lqh"><b>Your game</b><span>${sel.length} question${sel.length===1?"":"s"}${sel.length>30?" · max 30":""}</span>${sel.length?`<button class="lnk" data-a="xlqclr">Clear</button>`:""}</div>
+     ${sel.length?`<ol class="lqsel">${sel.map((x,i)=>`<li><span>${i+1}.</span><b>${esc(x.q)}</b><button aria-label="Move up" data-a="xlqup:${x.id}" ${i?"":"disabled"}>▲</button><button aria-label="Remove" data-a="xlqt:${x.id}">✕</button></li>`).join("")}</ol>`:`<p class="pgs">Tap questions below to add them. Pick 10 for a normal game.</p>`}
+     ${secs}<button class="cta" data-a="xlhostp" ${sel.length&&sel.length<=30?"":"disabled"}>Create game with ${sel.length||"these"} question${sel.length===1?"":"s"}</button></div>
+     <div class="form"><div class="lqh"><b>Question bank</b><span>${B.length}</span><button class="lnk" data-a="xlqadd">${LQ.add?"Close":"✏️ Write your own"}</button></div>
+     ${LQ.add?`<div class="lqw"><label>Question<input id="lqq" maxlength="160" placeholder="What base is the hot corner?"></label><label>Right answer<input id="lqa0" maxlength="60" placeholder="Third base"></label><div class="two"><label>Wrong answer<input id="lqa1" maxlength="60"></label><label>Wrong answer<input id="lqa2" maxlength="60"></label></div><label>Wrong answer (optional)<input id="lqa3" maxlength="60"></label><label>Fun fact after (optional)<input id="lqy" maxlength="140"></label><button class="cta alt" data-a="xlqsave">Save and add to my game</button></div>`:""}
+     <input id="lqs" class="lqsrch" placeholder="🔎 Search questions" value="${esc(LQ.q)}" autocomplete="off"><div class="fr lqc">${lqCats().map(c=>`<button class="fchip ${LQ.cat===c?"on":""}" data-a="xlqc:${c}">${c==="all"?"All":esc(c)}</button>`).join("")}</div><div id="lqlist" class="lql">${lqListHTML()}</div></div>`;
+  return topbar("Dugout Live","Team trivia on everyone's phone")+`<main><section class="lvhero"><b>🔴 Host a live game</b><p>Put this screen where everyone can see it. Players join on their own phones from the Play tab. Faster right answers score more. Top 3 win bonus XP.</p></section>
+   <div class="seg two lqm"><button class="${LQ.mode==="rand"?"on":""}" data-a="xlqm:rand">🎲 Random questions</button><button class="${LQ.mode==="pick"?"on":""}" data-a="xlqm:pick">✋ I'll pick them</button></div>
+   ${LQ.mode==="pick"?pick:rand}<p class="fine">Bonus XP: 1st place 150, 2nd 100, 3rd 75, everyone else who plays 25.</p></main>`+nav()}
+{const _l=liveHTML;liveHTML=function(){if(NET&&isCoach()&&!LV.pin)return lqHostHTML();return _l()}}
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="lqs"){LQ.q=e.target.value;LQ.more=0;const l=$("#lqlist");if(l)l.innerHTML=lqListHTML()}});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a.slice(1).join(":");
+  if(k==="xlqm"){LQ.mode=v;lqSave();render();return}
+  if(k==="xlqc"){LQ.cat=v;LQ.more=0;render();return}
+  if(k==="xlqmore"){LQ.more++;const l=$("#lqlist");if(l)l.innerHTML=lqListHTML();return}
+  if(k==="xlqt"){const i=LQ.sel.indexOf(v);if(i>=0)LQ.sel.splice(i,1);else{if(LQ.sel.length>=30){toast("30 questions max");return}LQ.sel.push(v)}lqSave();const y=scrollY;render();scrollTo(0,y);return}
+  if(k==="xlqup"){const i=LQ.sel.indexOf(v);if(i>0){LQ.sel.splice(i,1);LQ.sel.splice(i-1,0,v);lqSave();const y=scrollY;render();scrollTo(0,y)}return}
+  if(k==="xlqclr"){LQ.sel=[];lqSave();render();return}
+  if(k==="xlqadd"){LQ.add=!LQ.add;render();return}
+  if(k==="xlqsave"){const g=id=>(($(id)||{}).value||"").trim(),q=g("#lqq"),o=[g("#lqa0"),g("#lqa1"),g("#lqa2"),g("#lqa3")].filter(Boolean);
+    if(!q||o.length<2||!g("#lqa0")){toast("Add a question, the right answer, and at least one wrong answer");return}
+    const id="m"+Date.now().toString(36);LQ.mine.push({id,q,o,a:0,why:g("#lqy")});if(LQ.sel.length<30)LQ.sel.push(id);LQ.add=false;lqSave();toast("Saved");render();return}
+  if(k==="xlhostp"){const B=lqBank(),qs=LQ.sel.map(id=>B.find(x=>x.id===id)).filter(Boolean).slice(0,30).map(lqShuf);if(!qs.length)return;
+    (async()=>{try{const r=await rpc("dz_live_host",{p_tok:TOK,p_qs:qs,p_secs:window._ls||20});lvGo(r.pin);render()}catch(err){toast(nmsg(err))}})();return}});
+{const st=document.createElement("style");st.textContent=`.lqm{width:100%}.lqm button.on{background:var(--amber);color:#1B1B1B}.lqh{display:flex;align-items:center;gap:8px}.lqh b{font-size:16px}.lqh span{color:var(--mute);font-weight:800;font-size:13px;flex:1}
+.lqsel{list-style:none;display:grid;gap:6px;max-height:300px;overflow:auto}.lqsel li{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.25);border-radius:10px;padding:7px 8px}.lqsel li span{color:var(--amber);font-weight:900;width:22px}.lqsel li b{flex:1;font-size:13.5px;font-weight:700;line-height:1.3}.lqsel li button{width:30px;height:30px;border-radius:8px;background:var(--card2,#3a1680);font-size:13px}.lqsel li button:disabled{opacity:.3}
+.lqsrch{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink);font-size:15px}.lqc{flex-wrap:nowrap;overflow-x:auto}.lqc .fchip{flex:none}
+.lql{display:grid;gap:6px;max-height:460px;overflow:auto;padding-right:2px}.lqr{display:flex;align-items:flex-start;gap:10px;text-align:left;background:rgba(0,0,0,.2);border:1.5px solid var(--line);border-radius:12px;padding:9px 10px}.lqr i{font-style:normal;width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--card2,#3a1680);font-weight:900}.lqr.on{border-color:var(--amber)}.lqr.on i{background:var(--amber);color:#1B1B1B}.lqr b{display:block;font-size:14px;line-height:1.3}.lqr small{display:block;color:var(--mute);font-size:12px;font-weight:700;margin-top:2px}
+.lqw{display:grid;gap:8px;background:rgba(0,0,0,.2);border-radius:12px;padding:10px}`;document.head.appendChild(st)}
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
