@@ -3985,4 +3985,125 @@ document.addEventListener("click",e=>{const t=e.target.closest(".prow2[data-a^='
       try{sessionStorage.setItem("dz-upd",String(now))}catch(e){}
       location.replace(location.pathname+"?u="+now+location.hash)}catch(e){}}
   setTimeout(chk,1500);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")chk()});addEventListener("focus",chk)})();
+
+/* ===== EXTRA PRACTICE, PARENT VIEW (tabs) AND SCREEN TIME — Nov 2026 ===== */
+const XT=[["hit","🏏","Hitting / cage"],["pitch","⚾","Pitching / bullpen"],["field","🧤","Fielding"],["throw","🎯","Throwing / catch"],["run","💨","Running / speed"],["str","🏋️","Strength"],["team","👥","Team or group practice"],["lesson","🎓","Private lesson"],["other","✏️","Something else"]],XTM=[15,30,45,60,90];
+const xtOf=k=>XT.find(x=>x[0]===k)||XT[XT.length-1];
+var XTS={k:"",min:30,open:false};
+function xtApply(p,it){p.xtra=p.xtra||[];const id=it.xid||it.aid;if(it.del){p.xtra=p.xtra.filter(x=>x.id!==it.del);return}if(p.xtra.some(x=>x.id===id))return;
+  p.xtra.push({id,d:it.d||today(),k:it.k||"other",min:Math.max(5,Math.min(240,+it.min||30)),note:String(it.note||"").slice(0,80),from:it.from||""});p.xtra=p.xtra.slice(-60);p.act=p.act||{};p.act[it.d||today()]=(p.act[it.d||today()]||0)+1}
+function xtDay(p,d){return (p.xtra||[]).filter(x=>x.d===d)}
+function xtList(L,canDel){return L.map(x=>{const o=xtOf(x.k);return `<div class="xtr"><span>${o[1]}</span><span class="dtx"><b>${esc(o[2])} · ${x.min} min</b>${x.note||x.from?`<small>${x.note?esc(x.note):""}${x.note&&x.from?" · ":""}${x.from?"logged by "+esc(x.from):""}</small>`:""}</span>${canDel?`<button class="lnk" data-a="xtdel:${x.id}">Undo</button>`:""}</div>`}).join("")}
+function xtCard(p,par){const t=today(),L=xtDay(p,t),who=par?esc(p.n):"you";
+  const form=XTS.open?`<p class="lfl">What kind?</p><div class="fr">${XT.map(o=>`<button class="fchip ${XTS.k===o[0]?"on":""}" data-a="xtk:${o[0]}">${o[1]} ${o[2]}</button>`).join("")}</div>
+    <p class="lfl">How long?</p><div class="fr">${XTM.map(m=>`<button class="fchip ${XTS.min===m?"on":""}" data-a="xtm:${m}">${m} min</button>`).join("")}</div>
+    <label class="xtn">Note (optional)<input id="xtnote" maxlength="80" placeholder="${par?"Hit lesson with Coach Mike":"Took 50 swings in the cage"}"></label>
+    ${XTS.k==="pitch"?`<p class="pgs">⚾ ${par?"Log the pitch count in Arm care too, so Coach sees the whole week.":"Tell a parent how many pitches you threw so they can log it."}</p>`:""}
+    <div class="xtb"><button class="cta" data-a="xtsave" ${XTS.k?"":"disabled"}>${XTS.k?"Log it"+(par?"":" · +20 XP"):"Pick what kind first"}</button><button class="ghost sm" data-a="xtopen">Cancel</button></div>`:
+    `<button class="cta xtgo" data-a="xtopen">➕ ${L.length?"Log another one":par?"Log extra practice for "+who:"I did extra practice"}</button>`;
+  return `<section class="xtc"><div class="xth"><span>💪</span><div><b>Extra practice today?</b><small>${par?"Lessons, cage time, another team's practice: log it so Coach sees the work.":"Lessons, cage time, catch with a parent, extra reps. It all counts."}</small></div></div>${xtList(L,true)}${form}</section>`}
+async function xtSave(){const par=isParent(),p=par?(kidsOf().find(x=>x.id===window._kid)||kidsOf()[0]):me();if(!p||!XTS.k)return;const note=(($("#xtnote")||{}).value||"").trim(),it={kind:"xtra",d:today(),k:XTS.k,min:XTS.min,note};
+  if(par){it.xid=nid();if(await parentPush(p.id,it)){if(NET)xtApply(p,Object.assign({from:"Parent"},it));XTS={k:"",min:30,open:false};toast("Logged for "+p.n+". Coach can see it.");render()}return}
+  it.xid=nid();xtApply(p,it);p.xtxp=p.xtxp||{};const t=today();XTS={k:"",min:30,open:false};if((p.xtxp[t]||0)<2){p.xtxp[t]=(p.xtxp[t]||0)+1;award(p,20,"Extra practice!")}else{save();toast("Logged. Nice work!")}render()}
+async function xtDel(id){const par=isParent(),p=par?(kidsOf().find(x=>x.id===window._kid)||kidsOf()[0]):me();if(!p)return;
+  if(par){if(await parentPush(p.id,{kind:"xtra",del:id})){if(NET)xtApply(p,{del:id});render()}return}xtApply(p,{del:id});save();render()}
+
+/* --- screen time: counted on the player's device while the app is open; limits set by a parent --- */
+const FUNV=["play","game","club","trade","chal","cards","cguide","locker","boards","hsp","hstab","live","duel"],SCR_LIM=[0,30,45,60,90,120],SCR_BED=[["","Off"],["20:00","8 PM"],["20:30","8:30 PM"],["21:00","9 PM"],["22:00","10 PM"]];
+function scrMe(){const p=!isCoach()&&!isParent()&&S&&S.who&&!S.peek?me():null;return p&&!p.tmp?p:null}
+function scrSet(p){return Object.assign({lim:0,mode:"fun",bed:""},p.scrl||{})}
+function scrApply(p,it){if(it.kind==="scr")p.scrl=Object.assign(scrSet(p),it.set||{});else if(it.kind==="scrb"){const t=it.d||today();p.scrb=p.scrb&&p.scrb.d===t?{d:t,min:p.scrb.min+(+it.min||0)}:{d:t,min:+it.min||0}}}
+function scrUsed(p,d,fun){return Math.round(((fun?p.scrf:p.scr)||{})[d||today()]||0)}
+function scrLeft(p){const s=scrSet(p);if(!s.lim)return Infinity;const b=p.scrb&&p.scrb.d===today()?p.scrb.min:0;return (s.lim+b)*60-scrUsed(p,today(),s.mode==="fun")}
+function scrBedNow(p){const s=scrSet(p);if(!s.bed)return false;const n=new Date(),m=n.getHours()*60+n.getMinutes(),[h,mm]=s.bed.split(":").map(Number);return m>=h*60+mm||m<300}
+function scrBlocked(p,v){const s=scrSet(p);if(!(scrLeft(p)<=0||scrBedNow(p)))return false;return s.mode==="all"?v!=="acct":FUNV.includes(v)}
+function scrLockHTML(p){const s=scrSet(p),bed=scrBedNow(p),all=s.mode==="all";
+  return topbar(bed?"Lights out":"Time's up for today")+`<main><section class="scrlock"><span>${bed?"🌙":"⏰"}</span><h2>${bed?"It's past bedtime.":all?"That's your app time for today.":"Game time is done for today."}</h2>
+   <p>${all?"See you tomorrow, Dawg. Rest up.":"Drills, homework and the Library are still open. Go get better!"}</p><small>${bed?"Your parent set app bedtime.":"Your parent set a daily limit. Ask them if you need more time."}</small></section>
+   ${all?"":`<button class="cta" data-a="go:home">🏠 Home</button><button class="ghost" data-a="go:lib">📚 Library</button>`}</main>`+(all?"":nav())}
+setInterval(()=>{let p;try{p=scrMe()}catch(e){return}if(!p||document.hidden)return;const t=today(),fun=FUNV.includes(view);p.scr=p.scr||{};p.scr[t]=(p.scr[t]||0)+15;if(fun){p.scrf=p.scrf||{};p.scrf[t]=(p.scrf[t]||0)+15}
+  const old=addDays(t,-14);[p.scr,p.scrf||{}].forEach(o=>Object.keys(o).forEach(k=>{if(k<old)delete o[k]}));
+  window._scrN=(window._scrN||0)+1;if(window._scrN%4===0)save();
+  const s=scrSet(p),left=scrLeft(p);if(s.lim&&left>0&&left<=300&&(s.mode==="all"||fun)&&window._scrW!==t){window._scrW=t;toast("⏰ 5 minutes of "+(s.mode==="all"?"app":"game")+" time left today")}
+  if(scrBlocked(p,view)&&!G&&!sheet)render()},15000);
+{const _r=render;render=function(){let p=null;try{p=S&&S.who&&!(NET&&!ME)?scrMe():null}catch(e){}if(p&&scrBlocked(p,view)){$("#app").innerHTML=scrLockHTML(p);$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.remove("lock");return}_r();
+  const pm=S&&S.who&&!isCoach()&&!isParent()?me():null;if(view==="home"&&pm){const td=document.querySelector("#app main .todo-box");if(td&&!document.querySelector("#app .xtc"))td.insertAdjacentHTML("afterend",xtCard(pm,false))}}}
+{const _mi=mergeInbox;mergeInbox=function(p,items){let ch=false;(items||[]).forEach(it=>{if(!it||!it.aid||(p.got&&p.got[it.aid]))return;if(it.kind==="scr"||it.kind==="scrb"){scrApply(p,it);ch=true}else if(it.kind==="xtra"){xtApply(p,Object.assign({},it,{xid:it.xid||it.aid}));ch=true}});return _mi(p,items)||ch}}
+{const _ps=playerSheet;playerSheet=function(id){const h=_ps(id),p=P(id);if(!p)return h;const L=(p.xtra||[]).filter(x=>x.d>=addDays(today(),-13)).slice().reverse(),st=scrUsed(p,today());
+  return h.replace("<h4>Arm</h4>",`<h4>Extra practice · last 2 weeks</h4>${L.length?xtList(L.slice(0,8),false)+`<p class="fine">${L.length} session${L.length===1?"":"s"} · ${L.reduce((a,x)=>a+x.min,0)} min total</p>`:`<p class="fine">None logged.</p>`}${st?`<p class="fine">📱 In the app today: ${Math.round(st/60)} min</p>`:""}<h4>Arm</h4>`)}}
+
+/* --- parent: My Player, in four tabs --- */
+const PTABS=[["today","☀️","Today"],["week","📅","Week"],["arm","💪","Arm care"],["screen","📱","Screen time"]];
+function scrTabHTML(p){const s=window._scrEd&&window._scrEd.id===p.id?window._scrEd:Object.assign({id:p.id},scrSet(p)),t=today(),days=Array.from({length:7},(_,i)=>addDays(t,i-6)),mx=Math.max(1800,...days.map(d=>scrUsed(p,d))),left=scrLeft(p),cur=scrSet(p);
+  const m=x=>Math.round(x/60),avg=Math.round(days.reduce((a,d)=>a+scrUsed(p,d),0)/7/60),changed=JSON.stringify([s.lim,s.mode,s.bed])!==JSON.stringify([cur.lim,cur.mode,cur.bed]);
+  return `<div class="tiles four scrt"><div><b>${m(scrUsed(p,t))}<i>m</i></b><small>In the app today</small></div><div><b>${m(scrUsed(p,t,true))}<i>m</i></b><small>Games &amp; Clubhouse today</small></div><div><b>${avg}<i>m</i></b><small>Daily average</small></div><div><b>${cur.lim?(left===Infinity?"–":Math.max(0,m(left))+"<i>m</i>"):"∞"}</b><small>Left today</small></div></div>
+   <div class="scrch">${days.map(d=>{const a=scrUsed(p,d),f=scrUsed(p,d,true);return `<div class="${d===t?"td":""}"><span class="scrb" style="height:${Math.round(a/mx*100)}%"><i style="height:${a?Math.round(f/a*100):0}%"></i></span><b>${m(a)}</b><small>${new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short"}).slice(0,2)}</small></div>`}).join("")}</div>
+   <p class="pgs scrk"><i class="k1"></i> Drills, homework, videos <i class="k2"></i> Games, cards, Clubhouse · minutes per day</p>
+   <h3 class="sec">Daily limit</h3><div class="fr">${SCR_LIM.map(v=>`<button class="fchip ${s.lim===v?"on":""}" data-a="scrl:${v}">${v?v+" min":"No limit"}</button>`).join("")}</div>
+   <h3 class="sec">The limit covers</h3><div class="scrmode">${[["fun","🎮","Games, cards and Clubhouse","Drills, homework and videos always stay open. Recommended."],["all","📱","The whole app","Everything locks when time is up."]].map(o=>`<button class="${s.mode===o[0]?"on":""}" data-a="scrm:${o[0]}"><span>${o[1]}</span><span class="dtx"><b>${o[2]}</b><small>${o[3]}</small></span></button>`).join("")}</div>
+   <h3 class="sec">App bedtime</h3><div class="fr">${SCR_BED.map(o=>`<button class="fchip ${s.bed===o[0]?"on":""}" data-a="scrd:${o[0].replace(":","")}">${o[1]}</button>`).join("")}</div><p class="fine">After bedtime the same parts lock until 5 AM.</p>
+   <button class="cta" data-a="scrsave" ${changed?"":"disabled"}>${changed?"Save for "+esc(p.n):"Saved"}</button>
+   ${cur.lim?`<button class="ghost" data-a="scrbonus">⏱️ Give 15 more minutes today${p.scrb&&p.scrb.d===t?" (+"+p.scrb.min+" so far)":""}</button>`:""}
+   <p class="fine">Time counts only while the Dugout is open on ${esc(p.n)}'s screen. Changes take effect next time their app syncs, usually within a minute.</p>`}
+famHTML=function(){const K=kidsOf(),cur=K.find(p=>p.id===window._kid)||K[0];
+  if(!K.length)return topbar("My Player")+`<main>${WAIT.length?`<div class="empty">⏳ Waiting for Coach to confirm you're ${esc(WAIT.join(" and "))}'s parent. Check back soon.</div>`:`<div class="empty">No player linked yet.</div><button class="cta" data-a="go:pkids">Pick your player</button>`}${newsHTML()}</main>`+nav();
+  const p=cur,t=today(),wk=weekDays(),inWk=d=>d>=wk[0]&&d<=wk[6],L=level(p.xp),a=p.act||{},r=restInfo(p),tab=PTABS.some(x=>x[0]===window._ptab)?window._ptab:"today";
+  const todays=p.hw.filter(h=>DR[h.id]&&(h.done===t||(!h.done&&(!h.on||h.on<=t)))),G_=h=>DR[h.id].c==="game",tw=todays.filter(h=>!G_(h)),tg=todays.filter(G_),tDone=todays.filter(h=>h.done).length;
+  const wkItems=p.hw.filter(h=>DR[h.id]&&(inWk(dayOf(h))||(h.done&&inWk(h.done)))),ww=wkItems.filter(h=>!G_(h)),xw=(p.xtra||[]).filter(x=>inWk(x.d)),solo=Math.max(0,(p.log||[]).filter(l=>inWk(l.d)).length-wkItems.filter(h=>h.done&&!G_(h)&&inWk(h.done)).length);
+  const grp=(title,list,empty)=>`<div class="tgrp"><h4>${title} <span>${list.filter(h=>h.done).length} of ${list.length} done</span></h4>${list.length?list.map(h=>hwRow(h,t)).join(""):`<p class="pgs">${empty}</p>`}</div>`;
+  const s=scrSet(p),stoday=Math.round(scrUsed(p,t)/60);
+  let body="";
+  if(tab==="today")body=`${tutCard()}${qsHTML(p).replace("Had another sport's practice today?",esc(p.n)+" had another sport's practice today?")}${newsHTML()}
+   ${p.pain?`<button class="hurt" data-a="ptab:arm"><span class="dtx"><b>🚩 Arm pain reported ${nice(p.pain.at)}</b><small>No throwing until a coach or doctor checks it. Tap for Arm care.</small></span></button>`:""}
+   <div class="todo-box"><h3 class="sec todo">${esc(p.n)}'s day <span>${tDone} of ${todays.length} done</span></h3>
+    ${todays.length?grp("💪 Workouts",tw,"No workouts assigned for today.")+(tg.length?grp("🎮 Arcade games",tg,""):""):`<div class="empty">Nothing assigned today. A good day for a drill from the Drills tab or extra practice.</div>`}
+    <p class="pgs">Tap a drill to see why it matters, what you need and a how-to video. Let ${esc(p.n)} check it off themselves.</p></div>
+   ${xtCard(p,true)}
+   <h3 class="sec">🎉 Cheer them on</h3><div class="shq">${CHEERS.map((c,i)=>`<button data-a="cheer:${p.id}:${i}">${esc(c)}</button>`).join("")}</div>
+   <button class="rowb osbtn" data-a="zopar:${p.id}"><span>🏅</span><span class="dtx"><b>${esc(p.n)}'s other sports${(p.sports||[]).length?" · "+p.sports.length:""}</b><small>${(p.sports||[]).length?esc(p.sports.map(x=>x.e+" "+x.n).join(" · ")):"Add soccer, hoops, anything. Baseball workouts come off those days."}</small></span><span class="arr">›</span></button>`;
+  else if(tab==="week")body=`<div class="wsum"><div><b>${ww.filter(h=>h.done).length}/${ww.length}</b><small>Coach's workouts</small></div><div><b>${xw.length}</b><small>Extra practices · ${xw.reduce((a,x)=>a+x.min,0)} min</small></div><div><b>${solo}</b><small>Drills on their own</small></div></div>
+   <div class="wkl">${wk.map((d,i)=>{const its=p.hw.filter(h=>DR[h.id]&&dayOf(h)===d),xs=xtDay(p,d);return `<div class="wkr ${d===t?"td":""} ${d<t?"past":""}"><div class="wkdn"><b>${"Mon Tue Wed Thu Fri Sat Sun".split(" ")[i]}</b><small>${+d.slice(8)}</small>${a[d]?`<i title="Active">✓</i>`:""}</div><div class="wki">${its.map(h=>{const x=DR[h.id],st=hwStat(h,t);return `<button class="wkit ${st[0]}" data-a="drill:${x.id}"><span>${CAT[x.c].e}</span>${esc(x.n)}<em>${st[0]==="ok"?"✓":st[0]==="late"?"✗":"○"}</em></button>`}).join("")}${xs.map(x=>`<span class="wkit ok xtw"><span>${xtOf(x.k)[1]}</span>${esc(xtOf(x.k)[2])} · ${x.min}m<em>💪</em></span>`).join("")}${!its.length&&!xs.length?`<span class="wkn">${a[d]&&d<=t?"Did drills on their own 💪":d<t?"Nothing logged":"Nothing assigned yet"}</span>`:""}</div></div>`}).join("")}</div>
+   <p class="pgs wkkey">✓ done · ○ to do · ✗ missed · 💪 extra practice</p>`;
+  else if(tab==="arm")body=`<div class="form">${p.pain?`<div class="hurt"><span class="dtx"><b>🚩 Arm pain reported ${nice(p.pain.at)}</b><small>No throwing until a coach or doctor checks it.</small></span></div>`:""}
+    <div class="armst ${r.ok?"ok":""}"><b>${r.ok?"✅ Ready to throw":"⏸️ Resting from pitching"}</b><small>${r.ok?"Pitching rest is done.":"Until "+nice(r.until)+" (Pitch Smart rest days)."}</small></div>
+    <p class="pgs">Log any pitching outside BigDawgz (lessons, other teams, the backyard) so Coach sees the whole week.</p>
+    <div class="two"><label>Pitches thrown<input id="pln" inputmode="numeric" maxlength="3" placeholder="0"></label><label>Date<input id="pld" type="date" value="${t}"></label></div>
+    <label>Where<select id="plw">${["Lesson","Another team's game","Bullpen at home","Other"].map(w=>`<option>${w}</option>`).join("")}</select></label>
+    <button class="cta" data-a="plog:${p.id}">Log pitches</button>
+    ${(p.pitch||[]).filter(o=>o.d>=addDays(t,-7)).slice(-4).reverse().map(o=>`<div class="annrow"><span class="dtx"><b>${o.n} pitches · ${nice(o.d)}</b><small>${esc(o.what||"BigDawgz")}${o.from?" · logged by "+esc(o.from):""}</small></span></div>`).join("")}
+    <label>Something hurt? (optional note)<input id="pnote" maxlength="120" placeholder="Inside of elbow after Tuesday"></label><button class="ghost warn" data-a="pain:${p.id}">🚩 My player's arm hurts</button></div>
+   <div class="ptab2"><b>Pitch Smart rest days · ages 11–12</b><small>1–20 pitches: 0 · 21–35: 1 · 36–50: 2 · 51–65: 3 · 66–85: 4. Max 85 a day.</small></div>
+   <p class="safe">Sore is okay. Pain is not. If ${esc(p.n)}'s arm hurts, no throwing until it's checked.</p>`;
+  else body=scrTabHTML(p);
+  return topbar("My Player",K.length>1?"":"What "+p.n+" is working on")+`<main>
+   ${K.length>1?`<div class="seg kids">${K.map(k=>`<button class="${k.id===p.id?"on":""}" data-a="kid:${k.id}">${esc(k.n)}</button>`).join("")}</div>`:""}
+   ${WAIT.length?`<div class="ann"><small>⏳ Waiting on Coach</small><b>${esc(WAIT.join(", "))}</b></div>`:""}
+   ${busyBanner(p,t).replace("Baseball workouts are off today.",esc(p.n)+"'s baseball workouts are off today.")}
+   <section class="phero" style="--c:${p.col}">${avatar(p,1)}<div><small>${p.num?"#"+p.num+" · ":""}${esc(p.pos||"BigDawgz")}</small><h1>${esc(p.n)}</h1><span class="lvl">${L.n} · ${p.xp} XP</span></div><div class="streak ${p.streak?"":"cold"}"><i>🔥</i><b>${p.streak}</b><small>day streak</small></div></section>
+   <div class="tiles four"><button data-a="ptab:today"><b>${tDone}/${todays.length}</b><small>Done today</small></button><button data-a="ptab:week"><b>${wk.filter(d=>a[d]).length}/7</b><small>Active days</small></button><button data-a="ptab:arm"><b>${r.ok?"✅":"⏸️"}</b><small>${r.ok?"Arm ready":"Arm resting"}</small></button><button data-a="ptab:screen"><b>${stoday}<i>m</i></b><small>${s.lim?"of "+s.lim+"m app time":"App time today"}</small></button></div>
+   <div class="ptabs">${PTABS.map(x=>`<button class="${tab===x[0]?"on":""}" data-a="ptab:${x[0]}"><span>${x[1]}</span>${x[2]}</button>`).join("")}</div>
+   ${body}</main>`+nav()}
+document.addEventListener("click",e=>{const el=e.target.closest("[data-a]");if(!el||e.target.closest("a"))return;const a=el.dataset.a.split(":"),k=a[0],v=a.slice(1).join(":");
+  if(!/^(ptab|xtopen|xtk|xtm|xtsave|xtdel|scrl|scrm|scrd|scrsave|scrbonus)$/.test(k))return;e.stopPropagation();
+  const p=isParent()?(kidsOf().find(x=>x.id===window._kid)||kidsOf()[0]):me();
+  if(k==="ptab"){window._ptab=v;render();const tb=document.querySelector(".ptabs");if(tb&&tb.getBoundingClientRect().top<0)tb.scrollIntoView({block:"start"});return}
+  if(k==="xtopen"){XTS.open=!XTS.open;if(!XTS.open)XTS.k="";render();return}if(k==="xtk"){XTS.k=v;keepXt();render();return}if(k==="xtm"){XTS.min=+v;keepXt();render();return}if(k==="xtsave"){xtSave();return}if(k==="xtdel"){xtDel(v);return}
+  if(!p)return;const ed=window._scrEd&&window._scrEd.id===p.id?window._scrEd:(window._scrEd=Object.assign({id:p.id},scrSet(p)));
+  if(k==="scrl"){ed.lim=+v;render();return}if(k==="scrm"){ed.mode=v;render();return}if(k==="scrd"){ed.bed=v?v.slice(0,2)+":"+v.slice(2):"";render();return}
+  if(k==="scrsave"){const set={lim:ed.lim,mode:ed.mode,bed:ed.bed};parentPush(p.id,{kind:"scr",set}).then(ok=>{if(ok){if(NET)scrApply(p,{kind:"scr",set});window._scrEd=null;toast("Saved. "+p.n+"'s app picks it up on the next sync.");render()}});return}
+  if(k==="scrbonus"){const it={kind:"scrb",d:today(),min:15};parentPush(p.id,it).then(ok=>{if(ok){if(NET)scrApply(p,it);toast("+15 minutes for today");render()}});return}},true);
+function keepXt(){const n=$("#xtnote");if(n)window._xtn=n.value}
+{const _r=render;render=function(){_r();const n=$("#xtnote");if(n&&window._xtn){n.value=window._xtn}if(!XTS.open)window._xtn=""}}
+(()=>{const st=document.createElement("style");st.textContent=`.xtc{display:grid;gap:8px;background:linear-gradient(135deg,rgba(255,201,61,.14),var(--card));border:1.5px solid var(--amber);border-radius:18px;padding:12px}.xth{display:flex;gap:10px;align-items:center}.xth>span{font-size:28px}.xth b{display:block;font-size:16px}.xth small{color:var(--mute);font-weight:700;font-size:12.5px}
+.xtr{display:flex;gap:10px;align-items:center;background:rgba(11,11,13,.35);border-radius:12px;padding:8px 10px}.xtr>span:first-child{font-size:22px}.xtr .dtx b{font-size:14px}.xtr .dtx small{color:var(--mute);font-size:12px;font-weight:700}.xtb{display:flex;gap:8px;align-items:center}.xtb .cta{flex:1}.xtb .ghost{width:auto}.xtn{display:grid;gap:4px;font-size:13px;font-weight:800}.xtn input{background:rgba(11,11,13,.4);border:1.5px solid var(--line);border-radius:12px;padding:10px;color:var(--ink);font:inherit}.xtgo{font-size:15px;padding:12px}
+.ptabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:rgba(11,11,13,.45);border-radius:16px;padding:4px;position:sticky;top:64px;z-index:5}.ptabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;font-size:12px;font-weight:900;color:var(--mute)}.ptabs button span{font-size:18px}.ptabs button.on{background:var(--amber);color:#2A1400}
+.tiles.four button{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 4px;color:var(--ink)}.tiles b i,.scrt b i{font-style:normal;font-size:.6em;opacity:.8;margin-left:1px}
+.wsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wsum div{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px;text-align:center}.wsum b{display:block;font-size:22px}.wsum small{color:var(--mute);font-weight:700;font-size:11.5px;line-height:1.2}.xtw{border-style:dashed!important}
+.armst{display:grid;gap:2px;background:rgba(240,72,75,.15);border:1.5px solid var(--red);border-radius:14px;padding:10px 12px}.armst.ok{background:rgba(61,220,132,.15);border-color:var(--grass)}.armst small{color:var(--mute);font-weight:700}.ptab2{display:grid;gap:2px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px}.ptab2 small{color:var(--mute);font-weight:700}
+button.hurt{width:100%;text-align:left}
+.scrch{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:150px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 10px 8px}.scrch>div{display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}.scrb{width:70%;min-height:3px;background:var(--sky);border-radius:6px 6px 2px 2px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}.scrb i{background:var(--amber);width:100%}.scrch b{font-size:11px}.scrch small{font-size:11px;color:var(--mute);font-weight:800}.scrch .td small{color:var(--amber)}
+.scrk{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.scrk i{display:inline-block;width:10px;height:10px;border-radius:3px}.scrk .k1{background:var(--sky)}.scrk .k2{background:var(--amber);margin-left:6px}
+.scrmode{display:grid;gap:8px}.scrmode button{display:flex;gap:10px;align-items:center;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;color:var(--ink)}.scrmode button>span:first-child{font-size:24px}.scrmode small{color:var(--mute);font-weight:700;font-size:12.5px}.scrmode button.on{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber) inset}
+.scrlock{display:grid;justify-items:center;text-align:center;gap:8px;background:var(--card);border:2px solid var(--amber);border-radius:22px;padding:28px 16px}.scrlock>span{font-size:56px}.scrlock p{font-weight:800}.scrlock small{color:var(--mute);font-weight:700}`;document.head.appendChild(st)})();
+
 </script></body></html>
