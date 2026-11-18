@@ -3870,6 +3870,9 @@ document.addEventListener("click",e=>{const t=e.target.closest(".prow2[data-a^='
 .ppeq{display:grid;grid-template-columns:1fr 1fr;gap:6px}.ppeq div{background:var(--card);border-radius:10px;padding:7px 9px}.ppeq small{display:block;font-size:11px;font-weight:800;color:var(--mute)}.ppeq b{font-size:13px}
 .ppbad{display:flex;flex-wrap:wrap;gap:6px}.ppbad span{background:var(--card);border:1.5px solid var(--line);border-radius:99px;padding:5px 10px;font-size:13px;font-weight:700}.ppfull{margin:0 0 8px}`;document.head.appendChild(st)}
 
+/* ===== room at the bottom so nothing hides behind the tab bar ===== */
+{const st=document.createElement("style");st.textContent=`#app{padding-bottom:calc(140px + env(safe-area-inset-bottom))!important}#app main{scroll-margin-bottom:140px}.sheet{padding-bottom:calc(40px + env(safe-area-inset-bottom))!important}`;document.head.appendChild(st)}
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
