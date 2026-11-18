@@ -3609,6 +3609,78 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
 
 CLUBV.push("locker","cguide");
 
+/* ===== JERSEYS v2: every concept jersey gets its own name, cut, lettering and emblem ===== */
+// cut: button | pullover | vest | raglan | twotone ; font: script | block | arch | stencil | retro ; num: chest | center | sleeve ; emb: icon on the chest
+const JSTY={
+ bdc:{cut:"button",font:"script",num:"chest"},gold:{cut:"button",font:"script",num:"chest"},mid:{cut:"pullover",font:"script",num:"chest"},pink:{cut:"button",font:"script",num:"chest"},bone:{cut:"button",font:"script",num:"chest",emb:"bone"},
+ nh:{name:"New Hudson Nighthawks",word:"Nighthawks",away:"New Hudson",cut:"vest",font:"retro",num:"center",emb:"moon"},
+ wave:{name:"Walled Lake Waves",word:"Waves",away:"Walled Lake",cut:"raglan",font:"arch",num:"center",emb:"wave"},
+ coop:{name:"Cooperstown Classic",word:"Cooperstown",away:"Visitors",cut:"button",font:"script",num:"sleeve",emb:"patch"},
+ tiger:{name:"Stripes",word:"STRIPES",away:"STRIPES",cut:"pullover",font:"arch",num:"center",emb:"claw"},
+ bolt:{name:"Storm",word:"STORM",away:"STORM",cut:"twotone",font:"stencil",num:"center",emb:"bolt"},
+ lava:{name:"Inferno",word:"Inferno",away:"Inferno",cut:"raglan",font:"retro",num:"center",emb:"flame"},
+ ice:{name:"Glaciers",word:"GLACIERS",away:"GLACIERS",cut:"pullover",font:"block",num:"chest",emb:"flake"},
+ gal:{name:"Comets",word:"Comets",away:"Comets",cut:"twotone",font:"script",num:"center",emb:"planet"},
+ camo:{name:"Brigade",word:"BRIGADE",away:"BRIGADE",cut:"button",font:"stencil",num:"chest",emb:"star"},
+ neon:{name:"Neon Rays",word:"RAYS",away:"RAYS",cut:"vest",font:"retro",num:"center",emb:"zap"},
+ sun:{name:"Sundogs",word:"Sundogs",away:"Sundogs",cut:"pullover",font:"retro",num:"center",emb:"sun"},
+ chrome:{name:"Gold Rush",word:"GOLD RUSH",away:"GOLD RUSH",cut:"button",font:"block",num:"chest",emb:"nugget"},
+ dia:{name:"Diamonds",word:"Diamonds",away:"Diamonds",cut:"raglan",font:"script",num:"chest",emb:"gem"},
+ sand:{name:"Sandlotters",word:"Sandlotters",away:"Road",cut:"button",font:"arch",num:"sleeve",emb:"ball"},
+ dye:{name:"Good Vibes",word:"Vibes",away:"Vibes",cut:"pullover",font:"retro",num:"center",emb:"peace"},
+ usa:{name:"Stars and Stripes",word:"USA",away:"USA",cut:"button",font:"arch",num:"center",emb:"star"},
+ haze:{name:"Twilight",word:"Twilight",away:"Twilight",cut:"vest",font:"script",num:"center",emb:"moon"}};
+JDES.forEach(d=>{const s=JSTY[d[0]];if(s&&s.name){d[1]=s.name;JV.forEach(v=>{const g=GEAR["j_"+d[0]+"_"+v[0]];if(g)g.n=s.name+" "+v[1]})}});
+function jEmb(k,x,y,s,c,c2){const t=`translate(${x} ${y}) scale(${s})`;switch(k){
+ case"bolt":return `<path transform="${t}" d="M-3 -10 h7 l-4 7 h5 l-10 13 3 -9 h-5z" fill="${c}" stroke="${c2}" stroke-width=".8"/>`;
+ case"flame":return `<path transform="${t}" d="M0 -11 c3 5 8 7 7 13 c-1 5 -4 8 -7 8 c-4 0 -7 -3 -7 -8 c0 -3 2 -5 3 -7 c0 3 1 4 3 5 c-1 -4 0 -8 1 -11z" fill="${c}" stroke="${c2}" stroke-width=".8"/>`;
+ case"flake":return `<g transform="${t}" stroke="${c}" stroke-width="1.8" stroke-linecap="round"><path d="M0 -9V9M-8 -4.5L8 4.5M-8 4.5L8 -4.5"/><path d="M-2 -7l2 2 2 -2M-2 7l2 -2 2 2" fill="none"/></g>`;
+ case"planet":return `<g transform="${t}"><circle r="6" fill="${c}"/><ellipse rx="11" ry="3.5" fill="none" stroke="${c2}" stroke-width="1.6" transform="rotate(-20)"/></g>`;
+ case"star":return `<path transform="${t}" d="M0 -9 2.6 -2.8 9 -2.8 3.8 1.2 5.6 8 0 4 -5.6 8 -3.8 1.2 -9 -2.8 -2.6 -2.8z" fill="${c}" stroke="${c2}" stroke-width=".8"/>`;
+ case"moon":return `<path transform="${t}" d="M3 -9 a9 9 0 1 0 6 15 a7 7 0 1 1 -6 -15z" fill="${c}" stroke="${c2}" stroke-width=".8"/>`;
+ case"wave":return `<path transform="${t}" d="M-10 4 q4 -12 12 -8 q-6 0 -4 6 q3 4 10 -2 q-2 10 -12 10 q-6 0 -6 -6z" fill="${c}" stroke="${c2}" stroke-width=".8"/>`;
+ case"claw":return `<g transform="${t}" stroke="${c}" stroke-width="2.4" stroke-linecap="round"><path d="M-6 -9 L-9 9M0 -10 L-2 10M6 -9 L5 9"/></g>`;
+ case"zap":return `<g transform="${t}" fill="none" stroke="${c}" stroke-width="2"><circle r="8"/><path d="M-3 -5 h4 l-2 4 h3 l-5 6 1 -4 h-3z" fill="${c}" stroke="none"/></g>`;
+ case"sun":return `<g transform="${t}"><circle r="5" fill="${c}"/><g stroke="${c}" stroke-width="1.6">${[0,45,90,135,180,225,270,315].map(a=>`<path d="M0 -7.5V-10.5" transform="rotate(${a})"/>`).join("")}</g></g>`;
+ case"nugget":return `<path transform="${t}" d="M-8 2 l3 -7 7 -2 6 4 1 6 -6 5 -8 0z" fill="${c}" stroke="${c2}" stroke-width=".8"/>`;
+ case"gem":return `<g transform="${t}"><path d="M-8 -3 l4 -5 h8 l4 5 -8 10z" fill="${c}" stroke="${c2}" stroke-width=".8"/><path d="M-8 -3h16M-4 -8l4 15 4 -15" stroke="${c2}" stroke-width=".6" fill="none"/></g>`;
+ case"ball":return `<g transform="${t}"><circle r="7" fill="#fff" stroke="${c2}" stroke-width=".8"/><path d="M-4 -5 q3 5 0 10M4 -5 q-3 5 0 10" stroke="#C81E1E" stroke-width="1" fill="none"/></g>`;
+ case"peace":return `<g transform="${t}" stroke="${c}" stroke-width="1.8" fill="none"><circle r="8"/><path d="M0 -8V8M0 1 L-5.6 5.6M0 1 L5.6 5.6"/></g>`;
+ case"patch":return `<g transform="${t}"><circle r="8.5" fill="${c2}" stroke="${c}" stroke-width="1.4"/><circle r="5.5" fill="none" stroke="${c}" stroke-width=".6" stroke-dasharray="1 1"/><text y="2.6" text-anchor="middle" font-size="7" font-weight="900" fill="${c}" font-family="Georgia,serif">'26</text></g>`;
+ case"bone":return `<g transform="${t}" fill="${c}"><rect x="-7" y="-1.6" width="14" height="3.2" rx="1.6"/><circle cx="-7" cy="-2.2" r="2.4"/><circle cx="-7" cy="2.2" r="2.4"/><circle cx="7" cy="-2.2" r="2.4"/><circle cx="7" cy="2.2" r="2.4"/></g>`;
+ default:return""}}
+jerseySVG=function(g,num){const d=g.d,v=g.v,st=JSTY[d[0]]||{cut:"button",font:"script",num:"chest"},uid=hsh(g.id+(num||""))%1e6,P=d[2],S=d[3],T=d[4],n=esc(String(num||12));
+  const base=v==="home"?(["sand","coop"].includes(d[0])?"#F3E7C9":"#F7F7F4"):v==="away"?(["mid","neon","bone","haze"].includes(d[0])?"#26262A":["gal","ice"].includes(d[0])?S:"#9DA3AD"):P;
+  const dark=v==="alt"||["mid","neon","bone","haze"].includes(d[0])&&v==="away"||(v==="away"&&d[0]==="gal");
+  const pat=v==="alt"?d[8]:d[5];let word=v==="away"?(st.away||(["Lakers","Sandlot","USA"].includes(d[6])?d[6]:"Dawgs")):(st.word||d[6]);
+  let wc=v==="alt"?(["chrome","gold"].includes(d[0])?"#111":T):(v==="away"&&dark?T:P);const wo=v==="alt"?(["chrome","gold"].includes(d[0])?T:P):S;let nc=v==="alt"?T:(dark?T:S);const slv=st.cut==="vest"?S:(v==="home"?P:S);
+  const body=st.cut==="vest"?"M36 7 L48 3 Q60 13 72 3 L84 7 Q88 26 96 34 L96 125 L24 125 L24 34 Q32 26 36 7 Z":"M30 9 L48 3 Q60 13 72 3 L90 9 L115 33 L101 49 L92 41 L92 125 L28 125 L28 41 L19 49 L5 33 Z";
+  const under=st.cut==="vest"?`<path d="M36 7 L22 12 L5 33 L19 49 L28 41 L28 60 L92 60 L92 41 L101 49 L115 33 L98 12 L84 7 Z" fill="${S}"/><path d="M7 36 L19 48 M113 36 L101 48" stroke="${T}" stroke-width="3"/>`:"";
+  let cutFx="";
+  if(st.cut==="button")cutFx=`<path d="M60 14 V125" stroke="${S}" stroke-width="2.4"/>${[34,52,70,88,106].map(y=>`<circle cx="60" cy="${y}" r="1.6" fill="${T}"/>`).join("")}`;
+  else if(st.cut==="pullover")cutFx=`<path d="M60 12 V28" stroke="${S}" stroke-width="2"/><circle cx="60" cy="20" r="1.4" fill="${T}"/><circle cx="60" cy="26" r="1.4" fill="${T}"/><path d="M28 112 H92" stroke="${S}" stroke-width="3" opacity=".8"/>`;
+  else if(st.cut==="raglan")cutFx=`<path d="M48 3 L28 41 L5 33 L30 9 Z M72 3 L92 41 L115 33 L90 9 Z" fill="${slv}"/><path d="M48 3 L28 41 M72 3 L92 41" stroke="${T}" stroke-width="2"/>`;
+  else if(st.cut==="twotone")cutFx=`<path d="M28 125 L28 70 L92 30 L92 125Z" fill="${v==="alt"?S:P}" opacity="${v==="alt"?.55:.9}"/><path d="M28 70 L92 30" stroke="${T}" stroke-width="2.5"/>`;
+  const sleeves=st.cut==="vest"?"":st.cut==="raglan"?"":`<path d="M5 33 L19 49 L28 41 L30 9 Z M115 33 L101 49 L92 41 L90 9 Z" fill="${slv}" opacity="${v==="alt"?.85:1}"/>`;
+  const sstripe=st.cut==="vest"?"":`<path d="M8 37 L19 47 M112 37 L101 47" stroke="${T}" stroke-width="2.6"/>${st.font==="block"||st.font==="arch"?`<path d="M11 40 L20 44 M109 40 L100 44" stroke="${P===slv?S:P}" stroke-width="1.6"/>`:""}`;
+  const lum=c=>{const h=c.replace("#","");if(h.length<6)return .1;const r=parseInt(h.slice(0,2),16),gg=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return (.299*r+.587*gg+.114*b)/255},bl=lum(base),fix=c=>Math.abs(lum(c)-bl)>=.35?c:[P,S,T,"#111111","#FFFFFF"].sort((a,b)=>Math.abs(lum(b)-bl)-Math.abs(lum(a)-bl))[0];wc=fix(wc);nc=fix(nc);
+  const wl=word.length,fs=st.font==="script"?(wl>9?12:wl>7?15:18):(wl>9?9:wl>6?11.5:14);
+  let lettering="";
+  if(st.font==="script")lettering=`<g transform="rotate(-8 60 50)"><text x="60" y="55" text-anchor="middle" font-family="var(--fd),Georgia,serif" font-style="italic" font-size="${fs}" fill="${wc}" stroke="${wo}" stroke-width="1.2" paint-order="stroke">${esc(word)}</text><path d="M${60-fs*wl*.26} 60 q${fs*wl*.26} 6 ${fs*wl*.55} -3" fill="none" stroke="${wc}" stroke-width="2"/></g>`;
+  else if(st.font==="arch")lettering=`<defs><path id="ja${uid}" d="M24 60 Q60 36 96 60"/></defs><text font-family="Impact,'Arial Black',var(--fb),sans-serif" font-weight="900" font-size="${fs}" letter-spacing="${wl>8?0:1}" fill="${wc}" stroke="${wo}" stroke-width="1.4" paint-order="stroke"><textPath href="#ja${uid}" startOffset="50%" text-anchor="middle">${esc(word.toUpperCase())}</textPath></text>`;
+  else if(st.font==="block")lettering=`<text x="60" y="52" text-anchor="middle" font-family="Impact,'Arial Black',var(--fb),sans-serif" font-weight="900" font-size="${fs}" letter-spacing="1.5" fill="${wc}" stroke="${wo}" stroke-width="1.4" paint-order="stroke">${esc(word.toUpperCase())}</text>`;
+  else if(st.font==="stencil")lettering=`<text x="60" y="52" text-anchor="middle" font-family="'Courier New',monospace" font-weight="900" font-size="${fs+1}" letter-spacing="1" fill="${wc}" stroke="${wo}" stroke-width="1" paint-order="stroke">${esc(word.toUpperCase())}</text><path d="M30 46 H90" stroke="${base===P?S:base}" stroke-width="1" opacity=".9"/>`;
+  else lettering=`<g transform="rotate(-5 60 50)"><text x="61.5" y="55.5" text-anchor="middle" font-family="var(--fd),'Arial Rounded MT Bold',sans-serif" font-weight="900" font-size="${fs+3}" fill="${wo}">${esc(word)}</text><text x="60" y="54" text-anchor="middle" font-family="var(--fd),'Arial Rounded MT Bold',sans-serif" font-weight="900" font-size="${fs+3}" fill="${wc}">${esc(word)}</text></g>`;
+  const emb=st.emb?jEmb(st.emb,st.num==="chest"?84:38,st.num==="chest"?30:30,st.emb==="patch"?1:0.95,wc,wo):"";
+  const number=st.num==="center"?`<text x="60" y="${st.cut==="twotone"?100:98}" text-anchor="middle" font-family="Impact,'Arial Black',var(--fb),sans-serif" font-size="30" fill="${nc}" stroke="${v==="alt"?S:P}" stroke-width="1.2" paint-order="stroke">${n}</text>`
+    :st.num==="sleeve"?`<text x="14" y="30" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="9" fill="${nc}" transform="rotate(-38 14 30)">${n}</text><text x="40" y="92" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="13" fill="${nc}">${n}</text>`
+    :`<text x="40" y="92" text-anchor="middle" font-family="var(--fd),Georgia,serif" font-size="16" fill="${nc}" stroke="${v==="alt"?S:P}" stroke-width=".8" paint-order="stroke">${n}</text>`;
+  const collar=st.cut==="pullover"||st.cut==="twotone"?`<path d="M48 3 Q60 17 72 3" fill="none" stroke="${S}" stroke-width="4"/>`:`<path d="M48 3 Q60 13 72 3" fill="none" stroke="${S}" stroke-width="3.5"/>`;
+  const trimB=st.cut==="vest"?`<path d="M36 7 Q32 26 24 34 M84 7 Q88 26 96 34" stroke="${T}" stroke-width="3" fill="none"/>`:"";
+  return `<svg class="jsvg" viewBox="0 0 120 130" aria-hidden="true"><defs><clipPath id="jc${uid}"><path d="${body}"/></clipPath><linearGradient id="js${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".25" stop-color="#000" stop-opacity="0"/><stop offset=".75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>
+   ${under}<path d="${body}" fill="${base}"/><g clip-path="url(#jc${uid})">${pat&&pat!=="solid"?jPattern(pat,v==="alt"?[d[0],d[1],P,base===P?S:P,T]:d,uid):""}${cutFx}${sleeves}${sstripe}<rect width="120" height="130" fill="url(#js${uid})"/></g>
+   ${collar}${trimB}<path d="${body}" fill="none" stroke="${S}" stroke-width="2"/>${lettering}${emb}${number}</svg>`};
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
