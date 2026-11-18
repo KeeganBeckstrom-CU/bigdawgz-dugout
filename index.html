@@ -3249,6 +3249,136 @@ function cguideHTML(){const S0=CARDS.find(c=>c.r==="S"&&c.pos!=="SP")||CARDS[0],
 LEVELS.push([4200,"Legend"],[5700,"Icon"],[7500,"Immortal"]);
 {const _lv=level;level=function(xp){const L=LEVELS,last=L[L.length-1];if(xp<last[0])return _lv(xp);const step=2500,n=Math.floor((xp-last[0])/step),lo=last[0]+n*step;return {i:L.length-1+n,n:n?"Immortal ★"+(n+1):last[1],lo,hi:lo+step,pct:Math.min(100,(xp-lo)/step*100),next:"Immortal ★"+(n+2)}}}
 
+/* ===== NO DAILY LIMIT: every XP earned is also XP to spend ===== */
+ECON.freeDrills=Infinity;ECON.freeGames=Infinity;
+{const _c=cardsHTML;cardsHTML=function(){return _c().replace(/Free drills earn XP [^<]*homework always/,"Every XP you earn is XP to spend. No daily limit.")}}
+{const _o=oddsSheet;oddsSheet=function(){return _o().replace(/<li>Free drills: your first[^<]*<\/li><li>Arcade games: your first[^<]*<\/li>/,"<li>Every drill and arcade game, no daily limit</li>")}}
+
+/* ===== TEAM CLUBHOUSE: arcade, cards, trades, send-a-score challenges, leaderboards (backend: supabase/dugout-clubhouse.sql) ===== */
+var CL={d:null,t:0,busy:false,err:"",tc:{},tr:null,ch:{g:"trivia",lv:0,to:[]},pick:null};
+const CLUBV=["club","play","cards","trade","chal","boards","hsp","live","duel","film"];
+const clMe=()=>CL.d&&CL.d.me;
+async function clLoad(force){if(!NET||!TOK||CL.busy)return;if(!force&&CL.d&&Date.now()-CL.t<15000)return;CL.busy=true;
+  try{CL.d=await rpc("dz_club",{p_tok:TOK});CL.err=""}catch(e){CL.err=nmsg(e)}CL.t=Date.now();CL.busy=false;if(["club","trade","chal"].includes(view)||(G&&G.done))render()}
+function clErr(e){return ({not_yours:"One of your cards isn't saved yet. Wait a few seconds and try again.",not_theirs:"They don't have that card anymore.",too_many_trades:"You have 5 offers waiting. Cancel one first.",bad_trade:"Pick 1 to 3 of your cards.",cards_moved:"One of those cards already went somewhere else. The offer was cancelled.",gone:"That's not there anymore.",slow_down:"That's a lot of challenges today. Try again tomorrow.",not_claimed:"Pick your name on the roster first.",players_only:"Only players can do that."})[e.message]||nmsg(e)}
+const clOpen=()=>{const d=CL.d,m=clMe();if(!d)return{ti:[],to:[],ci:[]};return{ti:d.trades.filter(t=>t.status==="open"&&t.to===m),to:d.trades.filter(t=>t.status==="open"&&t.from===m),ci:d.chals.filter(c=>c.status==="open"&&c.to===m)}};
+function clubNav(){const o=clOpen(),items=[["club","🏟️","Clubhouse"],["play","🎮","Arcade"],["cards","🃏","Cards"],["trade","🔁","Trades",o.ti.length],["chal","⚔️","Challenges",o.ci.length],["boards","🏆","Leaders"]];
+  return `<div class="clnav">${items.map(i=>`<button class="${view===i[0]||(i[0]==="boards"&&view==="hsp")?"on":""}" data-a="go:${i[0]}"><span>${i[1]}</span>${i[2]}${i[3]?`<i>${i[3]}</i>`:""}</button>`).join("")}</div>`}
+function clNeed(){return !NET?`<div class="empty">Trades and challenges need team accounts. They work on the live app when everyone is signed in.</div>`:!CL.d?`<div class="empty">${CL.err?esc(CL.err):"Loading the clubhouse…"}</div>`:""}
+/* --- hub --- */
+function clubHTML(){clLoad(false);const p=isCoach()?coachP():econ(me()),o=clOpen(),L=p?level(p.xp||0):null;
+  const tile=(a,e,t,s,b)=>`<button class="cltile" data-a="${a}"><span class="cle">${e}</span><b>${t}</b><small>${s}</small>${b?`<i>${b}</i>`:""}</button>`;
+  return topbar("Team Clubhouse","Games, cards, trades and challenges")+`<main>${clubNav()}
+   ${!isCoach()&&p?`<section class="clxp"><div><small>XP to spend</small><b>⚡ ${(p.bank||0).toLocaleString("en-US")}</b></div><div><small>${esc(L.n)}</small><b>${(p.xp||0).toLocaleString("en-US")} XP</b></div></section>`:""}
+   <div class="cltiles">${tile("go:play","🎮","Arcade","18 baseball games")}${tile("go:cards","🃏","Cards","Packs, binder, squad")}${tile("go:trade","🔁","Trades","Swap cards with teammates",o.ti.length)}${tile("go:chal","⚔️","Challenges","Beat a teammate's score",o.ci.length)}${tile("go:boards","🏆","Leaderboards","Top scores")}${tile("go:duel","🥊","Head-to-Head","Play live, same time")}</div>
+   ${NET&&CL.d&&!isCoach()?(o.ci.length?`<h3 class="sec">⚔️ Challenges for you</h3>${o.ci.slice(0,3).map(chRow).join("")}`:"")+(o.ti.length?`<h3 class="sec">🔁 Trade offers for you</h3>${o.ti.slice(0,2).map(trRow).join("")}`:""):""}
+   ${liveCard()}</main>`+nav()}
+/* --- trades --- */
+function cardsMini(L){return L.length?`<div class="trc">${L.map(c=>CARD[c.id]?`<div>${tcard(c)}</div>`:"").join("")}</div>`:`<div class="trnone">Nothing. It's a gift!</div>`}
+function trRow(t){const m=clMe(),mine=t.from===m,inc=t.to===m,st=t.status;
+  return `<div class="trr ${st}"><div class="trh"><b>${mine?"You → "+esc(t.tn):inc?esc(t.fn)+" → You":esc(t.fn)+" → "+esc(t.tn)}</b><span>${st==="open"?(inc?"wants to trade":"waiting"):st==="done"?"✅ Traded":st==="declined"?"Said no":"Cancelled"}</span></div>${t.note?`<p class="trn">“${esc(t.note)}”</p>`:""}
+   <div class="trs"><div><small>${mine?"You give":inc?"You get":esc(t.fn)+" gives"}</small>${cardsMini(t.give)}</div><span class="trx">⇄</span><div><small>${mine?"You get":inc?"You give":esc(t.tn)+" gives"}</small>${cardsMini(t.want)}</div></div>
+   ${st==="open"&&inc&&!isCoach()?`<div class="two"><button class="cta" data-a="xtra:accept:${t.id}">Accept trade</button><button class="ghost" data-a="xtra:decline:${t.id}">No thanks</button></div>`:st==="open"&&mine?`<button class="ghost" data-a="xtra:cancel:${t.id}">Cancel offer</button>`:""}</div>`}
+function trBuilder(){const T=CL.tr,d=CL.d,m=clMe(),p=econ(me());
+  if(!T.to){return `<div class="form"><b class="pgn">Who do you want to trade with?</b><div class="trp">${d.team.filter(x=>x.id!==m).map(x=>`<button data-a="xtrto:${x.id}"><b>${esc(x.name)}${x.num?" · #"+x.num:""}</b><small>${x.n} card${x.n===1?"":"s"}</small></button>`).join("")||`<p class="pgs">No teammates yet.</p>`}</div><button class="ghost" data-a="xtrx">Cancel</button></div>`}
+  const who=d.team.find(x=>x.id===T.to)||{name:"Teammate"},theirs=CL.tc[T.to],mineL=(p.cards||[]).filter(c=>CARD[c.id]).sort((a,b)=>covr(b)-covr(a)),theirsL=(theirs||[]).filter(c=>CARD[c.id]).sort((a,b)=>covr(b)-covr(a)),busy=new Set(clOpen().to.flatMap(t=>t.give.map(c=>c.u)));
+  const grid=(L,sel,act,dis)=>`<div class="tgrid trg">${L.map(c=>{const on=sel.includes(c.u),off=dis&&dis.has(c.u);return `<button class="tcb trpick ${on?"on":""} ${off?"off":""}" data-a="${off?"":act+":"+c.u}">${tcard(c)}${on?`<i class="trck">✓</i>`:""}${off?`<i class="trbz">In an offer</i>`:""}</button>`}).join("")}</div>`;
+  return `<div class="form trb"><div class="lqh"><b>Trade with ${esc(who.name)}</b><button class="lnk" data-a="xtrx">Cancel</button></div>
+   <div class="trsum"><div><small>You give (${T.give.length}/3)</small>${cardsMini(T.give.map(u=>mineL.find(c=>c.u===u)).filter(Boolean))}</div><span class="trx">⇄</span><div><small>You get (${T.want.length}/3)</small>${cardsMini(T.want.map(u=>theirsL.find(c=>c.u===u)).filter(Boolean))}</div></div>
+   <input id="trnote" maxlength="80" placeholder="Add a note (optional)" value="${esc(T.note||"")}"><button class="cta" data-a="xtrsend" ${T.give.length?"":"disabled"}>Send trade offer</button>
+   <div class="seg two"><button class="${T.tab!=="mine"?"on":""}" data-a="xtrtab:theirs">${esc(who.name)}'s cards</button><button class="${T.tab==="mine"?"on":""}" data-a="xtrtab:mine">Your cards</button></div>
+   ${T.tab==="mine"?(mineL.length?grid(mineL,T.give,"xtrg",busy):`<div class="empty">You don't have any cards yet.</div>`):theirs?(theirsL.length?grid(theirsL,T.want,"xtrw"):`<div class="empty">They don't have any cards yet.</div>`):`<div class="empty">Loading their cards…</div>`}
+   <p class="fine">Pick up to 3 of yours and up to 3 of theirs. You can ask for nothing to give a gift. Cards move the next time each of you opens the app. If a card was in your squad, it comes out of the squad.</p></div>`}
+function tradeHTML(){clLoad(false);const need=clNeed();let b=need;
+  if(!b){const o=clOpen(),m=clMe(),hist=CL.d.trades.filter(t=>t.status!=="open");
+    if(isCoach())b=`<p class="pgs">Every trade on the team from the last two weeks.</p>${CL.d.trades.map(trRow).join("")||`<div class="empty">No trades yet.</div>`}`;
+    else b=(CL.tr?trBuilder():`<button class="cta" data-a="xtrnew">🔁 Start a trade</button>`)+
+      `<h3 class="sec">For you <span>${o.ti.length}</span></h3>${o.ti.map(trRow).join("")||`<div class="empty">No offers right now.</div>`}
+       <h3 class="sec">Your offers <span>${o.to.length}/5</span></h3>${o.to.map(trRow).join("")||`<div class="empty">You haven't sent any.</div>`}
+       ${hist.length?`<h3 class="sec">Recent</h3>${hist.slice(0,8).map(trRow).join("")}`:""}`}
+  return topbar("Trades","Swap cards with teammates")+`<main>${clubNav()}${b}</main>`+nav()}
+/* --- challenges --- */
+function chRow(c){const m=clMe(),g=GAMES.find(x=>x[0]===c.game)||["","🎮",c.game],mine=c.from===m,inc=c.to===m,done=c.status==="done",my=mine?c.fs:c.ts,th=mine?c.ts:c.fs,res=done?(my>th?"W":my<th?"L":"T"):"";
+  return `<div class="chr ${res}"><span class="che">${g[1]}</span><span class="dtx"><b>${isCoach()?esc(c.fn)+" vs "+esc(c.tn):mine?"You vs "+esc(c.tn):esc(c.fn)+" vs You"}</b><small>${esc(g[2])} · ${LVN[c.lv]} · ${done?(isCoach()?c.fs+" – "+c.ts:"You "+my+" · "+(mine?esc(c.tn):esc(c.fn))+" "+th):c.status==="declined"?"Said not now":inc?"Beat "+c.fs+" to win":"Waiting for "+esc(c.tn)}</small></span>
+   ${c.status==="open"&&inc&&!isCoach()?`<span class="chb"><button class="cta sm" data-a="xchp:${c.id}">Play</button><button class="lnk" data-a="xchno:${c.id}">No</button></span>`:done&&!isCoach()?`<em class="chres">${res==="W"?"🏆 Won":res==="L"?"Lost":"Tie"}</em>`:""}</div>`}
+function chalHTML(){clLoad(false);const need=clNeed();let b=need;
+  if(!b){const m=clMe(),o=clOpen(),sent=CL.d.chals.filter(c=>c.status==="open"&&c.from===m),done=CL.d.chals.filter(c=>c.status!=="open");
+    if(isCoach())b=`<p class="pgs">Every challenge on the team from the last two weeks.</p>${CL.d.chals.map(chRow).join("")||`<div class="empty">No challenges yet.</div>`}`;
+    else{const C=CL.ch,mates=CL.d.team.filter(x=>x.id!==m);
+      b=`<h3 class="sec">For you <span>${o.ci.length}</span></h3>${o.ci.map(chRow).join("")||`<div class="empty">No one has challenged you. Go challenge them!</div>`}
+       <h3 class="sec">⚔️ Send a challenge <span>you play first</span></h3><div class="form"><p class="pgs">1. Pick a game</p><div class="chg">${GAMES.map(g=>`<button class="fchip ${C.g===g[0]?"on":""}" data-a="xchg:${g[0]}">${g[1]} ${esc(g[2])}</button>`).join("")}</div>
+       <p class="pgs">2. Pick a level</p><div class="fr">${LVN.map((n,i)=>`<button class="fchip ${C.lv===i?"on":""}" data-a="xchl:${i}">${n}</button>`).join("")}</div>
+       <p class="pgs">3. Who do you want to challenge?</p><div class="fr">${mates.length?`<button class="fchip ${C.to.length===mates.length?"on":""}" data-a="xchall">Whole team</button>`:""}${mates.map(x=>`<button class="fchip ${C.to.includes(x.id)?"on":""}" data-a="xcht:${x.id}">${esc(x.name)}</button>`).join("")||`<span class="pgs">No teammates yet.</span>`}</div>
+       <button class="cta" data-a="xchgo" ${C.to.length?"":"disabled"}>Play ${esc((GAMES.find(g=>g[0]===C.g)||["","",""])[2])} and send my score</button><p class="fine">They'll get the exact same questions. Winner +30 XP, tie +20, and +10 just for playing.</p></div>
+       ${sent.length?`<h3 class="sec">Waiting on them <span>${sent.length}</span></h3>${sent.map(chRow).join("")}`:""}
+       ${done.length?`<h3 class="sec">Results</h3>${done.slice(0,12).map(chRow).join("")}`:""}`}}
+  return topbar("Challenges","Send your score. Beat theirs.")+`<main>${clubNav()}${b}</main>`+nav()}
+/* --- games: same questions for both players. Every game gets a seed so any run can become a challenge --- */
+function startSeeded(k,lv,seed){window._noDaily=1;try{withSeed(seed,()=>_sgRaw(k,null,lv))}finally{window._noDaily=0}if(G&&G.k===k)G.seed=seed}
+var _sgRaw=startGame;startGame=function(k,arg,lv){if(lv==null||arg!=null)return _sgRaw(k,arg,lv);const seed=Math.floor(Math.random()*2147483647);withSeed(seed,()=>_sgRaw(k,arg,lv));if(G&&G.k===k&&G.seed==null)G.seed=seed};
+{const _ws=wordStart,_fs=fourStart,keep=(prev,f)=>{const sd=prev&&prev.seed!=null&&prev.lv===3&&prev.over&&prev.won?prev.seed+((prev.cn||0)+1)*7919+5:null;withSeed(sd,f);if(sd!=null&&G){G.seed=prev.seed;G.chal=prev.chal}};
+  wordStart=function(sp,daily){const prev=G;keep(prev,()=>_ws(sp,daily&&!window._noDaily))};fourStart=function(sp,i){const prev=G;keep(prev,()=>_fs(sp,i))}}
+{const _rg=recordGame;recordGame=function(p,k,lv,raw){_rg(p,k,lv,raw);if(!G)return;G.raw=raw;if(G.chal&&!G.chal.sent){G.chal.sent=1;chalSubmit(G.chal,k,lv,raw)}}}
+async function chalSubmit(c,k,lv,raw){try{if(c.id){const r=await rpc("dz_chal_play",{p_tok:TOK,p_id:c.id,p_score:raw});c.res=r.res;c.theirs=r.theirs;toast(r.res==="win"?"🏆 You beat "+c.them+"!":r.res==="tie"?"🤝 Tie with "+c.them:c.them+" wins this one")}
+  else{const r=await rpc("dz_chal_send",{p_tok:TOK,p_to:c.to,p_game:k,p_lv:lv,p_seed:G.seed,p_score:raw});c.res="sent";c.n=r.sent;toast("⚔️ Challenge sent!")}}catch(e){c.res="err";c.err=clErr(e);toast(c.err)}CL.t=0;clLoad(true);if(G&&G.chal===c)render()}
+const chalOK=()=>NET&&ME&&!isCoach()&&!S.peek&&G&&G.seed!=null&&!G.duel&&!(G.k==="word"&&G.daily)&&G.raw!=null;
+function chEndHTML(){const c=G.chal;if(c){if(c.id)return `<div class="chend ${c.res||""}"><b>${!c.res?"Sending your score…":c.res==="err"?esc(c.err):c.res==="win"?"🏆 You beat "+esc(c.them)+"!":c.res==="tie"?"🤝 Tie with "+esc(c.them):"💪 "+esc(c.them)+" wins this time"}</b>${c.res&&c.res!=="err"?`<div class="duvs"><div><small>You</small><b>${G.raw}</b></div><i>VS</i><div><small>${esc(c.them)}</small><b>${c.theirs}</b></div></div><small>${c.res==="win"?"+30 XP":c.res==="tie"?"+20 XP":"+10 XP for playing"}. It lands in a few seconds.</small>`:""}<button class="ghost" data-a="go:chal">⚔️ Challenges</button></div>`;
+    return `<div class="chend"><b>${c.res==="sent"?"⚔️ Challenge sent to "+c.n+" teammate"+(c.n===1?"":"s")+"!":c.res==="err"?esc(c.err):"Sending your challenge…"}</b><small>Your score: ${G.raw}. Now they have to beat it.</small><button class="ghost" data-a="go:chal">⚔️ Challenges</button></div>`}
+  if(!chalOK())return "";if(CL.pick)return `<div class="chend"><b>⚔️ Who should try to beat ${G.raw}?</b>${CL.d?`<div class="fr">${CL.d.team.filter(x=>x.id!==clMe()).map(x=>`<button class="fchip ${CL.pick.includes(x.id)?"on":""}" data-a="xchpk:${x.id}">${esc(x.name)}</button>`).join("")}</div><button class="cta" data-a="xchsend" ${CL.pick.length?"":"disabled"}>Send challenge</button>`:`<p class="pgs">Loading teammates…</p>`}<button class="lnk" data-a="xchpkx">Cancel</button></div>`;
+  return `<button class="chbtn" data-a="xchpick">⚔️ Challenge a teammate to beat ${G.raw}</button>`}
+{const _gi=gameInner;gameInner=function(){let h=_gi();if(!G||G.pickLv)return h;
+  if(G.chal&&G.chal.id&&!G.done&&!G.over)h=h.replace(/(<main class="gm">)/,`$1<div class="chbar">⚔️ Beat <b>${esc(G.chal.them)}</b>: <b>${G.chal.ts}</b></div>`);
+  if((G.done||G.over)&&!G.duel){const x=chEndHTML();if(x){let i=h.indexOf('<button class="cta" data-a="lv:');if(i<0)i=h.lastIndexOf("</main>");if(i>0)h=h.slice(0,i)+x+h.slice(i)}}return h}}
+/* --- trades reach the player through the inbox, like homework --- */
+{const _mi=mergeInbox;mergeInbox=function(p,items){let ch=false;p.got=p.got||{};(items||[]).forEach(it=>{if(it.kind!=="trade"||p.got[it.aid])return;ch=true;const out=new Set((it.out||[]).map(c=>c.u));
+    p.cards=(p.cards||[]).filter(c=>!out.has(c.u));Object.keys(p.squad||{}).forEach(s=>{if(out.has(p.squad[s]))delete p.squad[s]});const have=new Set(p.cards.map(c=>c.u));
+    (it.in||[]).forEach(c=>{if(c&&c.id&&!have.has(c.u))p.cards.push({u:c.u,id:c.id,par:c.par||"base",auto:!!c.auto,sn:c.sn||"",at:it.at||today()})});
+    const got=(it.in||[]).map(c=>CARD[c.id]?CARD[c.id].n:"").filter(Boolean);p.shouts.push({t:"🔁 Trade with "+(it.with||"a teammate")+(got.length?": you got "+got.join(", "):""),at:it.at||today(),aid:it.aid})});
+  return _mi(p,items)||ch}}
+/* --- views, nav, clicks --- */
+{const _r=render;render=function(){if(["club","trade","chal"].includes(view)&&S.who&&!(NET&&!ME)&&!(NET&&S.who==="claim")&&!isParent()){const m=$("#app");m.innerHTML=view==="club"?clubHTML():view==="trade"?tradeHTML():chalHTML();$("#sheet").innerHTML="";$("#sheet").className="";document.body.classList.remove("lock");return}return _r()}}
+{const _n=nav;nav=function(){let h=_n();if(isParent())return h;const on=CLUBV.includes(view)||view==="game"?"on":"",o=clOpen(),badge=o.ti.length+o.ci.length;
+  h=h.replace(/<button class="[^"]*" data-a="go:cards">[\s\S]*?<\/button>/,"");return h.replace(/<button class="[^"]*" data-a="go:play">[\s\S]*?<\/button>/,`<button class="${on}" data-a="go:club"><span>🏟️</span><small>Clubhouse</small>${badge?`<i class="nbdg">${badge}</i>`:""}</button>`)}}
+for(const f of ["playHTML","cardsHTML","boardsHTML","hspHTML"]){const o=window[f];window[f]=function(){const h=o.apply(this,arguments);return isParent()?h:h.replace("<main>","<main>"+clubNav())}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1];
+  if(k==="xsell"){const busy=new Set(clOpen().to.flatMap(x=>x.give.map(c=>c.u)));if(busy.has(v)){e.stopImmediatePropagation();toast("That card is in a trade offer. Cancel the offer first.")}}},true);
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1],y=()=>{const s=scrollY;render();scrollTo(0,s)};
+  if(k==="go"&&["club","trade","chal"].includes(v))clLoad(true);
+  if(k==="xtrnew"){CL.tr={to:null,give:[],want:[],tab:"theirs"};render();return}
+  if(k==="xtrx"){CL.tr=null;render();return}
+  if(k==="xtrto"){CL.tr.to=v;CL.tr.want=[];CL.tr.tab="theirs";render();if(!CL.tc[v])rpc("dz_club_cards",{p_tok:TOK,p_player:v}).then(r=>{CL.tc[v]=r.cards||[];if(view==="trade")y()}).catch(err=>toast(clErr(err)));return}
+  if(k==="xtrtab"){CL.tr.tab=v;y();return}
+  if(k==="xtrg"||k==="xtrw"){const L=k==="xtrg"?CL.tr.give:CL.tr.want,i=L.indexOf(v);if(i>=0)L.splice(i,1);else if(L.length<3)L.push(v);else toast("3 cards max");y();return}
+  if(k==="xtrsend"){const T=CL.tr,p=econ(me()),give=T.give.map(u=>(p.cards||[]).find(c=>c.u===u)).filter(Boolean),want=T.want.map(u=>(CL.tc[T.to]||[]).find(c=>c.u===u)).filter(Boolean),note=(($("#trnote")||{}).value||"").trim();
+    if(!give.length)return;(async()=>{try{if(typeof netFlush==="function")await netFlush();await rpc("dz_trade_offer",{p_tok:TOK,p_to:T.to,p_give:give,p_want:want,p_note:note});CL.tr=null;toast("🔁 Offer sent!");await clLoad(true);render()}catch(err){toast(clErr(err))}})();return}
+  if(k==="xtra"){const id=a[2];(async()=>{try{if(v==="accept"&&typeof netFlush==="function")await netFlush();await rpc("dz_trade_act",{p_tok:TOK,p_id:id,p_act:v});toast(v==="accept"?"🔁 Trade done! Your cards are on the way.":v==="decline"?"Said no thanks":"Offer cancelled");await clLoad(true);if(v==="accept"&&typeof netPull==="function")setTimeout(()=>netPull(false),800);render()}catch(err){toast(clErr(err));clLoad(true)}})();return}
+  if(k==="xchg"){CL.ch.g=v;y();return}if(k==="xchl"){CL.ch.lv=+v;y();return}
+  if(k==="xcht"){const L=CL.ch.to,i=L.indexOf(v);i>=0?L.splice(i,1):L.push(v);y();return}
+  if(k==="xchall"){const mates=CL.d.team.filter(x=>x.id!==clMe()).map(x=>x.id);CL.ch.to=CL.ch.to.length===mates.length?[]:mates;y();return}
+  if(k==="xchgo"){const C=CL.ch;if(!C.to.length)return;const seed=Math.floor(Math.random()*2147483647);startSeeded(C.g,C.lv,seed);if(G){G.chal={to:C.to.slice()};G.from="chal"}view="game";render();scrollTo(0,0);return}
+  if(k==="xchp"){const c=CL.d&&CL.d.chals.find(x=>x.id===v);if(!c)return;startSeeded(c.game,c.lv,+c.seed);if(G){G.chal={id:c.id,them:c.fn,ts:c.fs};G.from="chal"}view="game";render();scrollTo(0,0);if(c.game==="signs"&&typeof signsNext==="function"&&G&&!G.round)signsNext();return}
+  if(k==="xchno"){rpc("dz_chal_decline",{p_tok:TOK,p_id:v}).then(()=>clLoad(true)).catch(err=>toast(clErr(err)));return}
+  if(k==="xchpick"){CL.pick=[];clLoad(false);render();return}if(k==="xchpkx"){CL.pick=null;render();return}
+  if(k==="xchpk"){const i=CL.pick.indexOf(v);i>=0?CL.pick.splice(i,1):CL.pick.push(v);render();return}
+  if(k==="xchsend"){const to=CL.pick.slice();CL.pick=null;(async()=>{try{const r=await rpc("dz_chal_send",{p_tok:TOK,p_to:to,p_game:G.k,p_lv:G.lv||0,p_seed:G.seed,p_score:G.raw});G.chal={to,res:"sent",n:r.sent,sent:1};toast("⚔️ Challenge sent!");clLoad(true)}catch(err){toast(clErr(err))}render()})();return}
+  if(k==="lv"||k==="game")CL.pick=null});
+setInterval(()=>{if(NET&&TOK&&ME&&!document.hidden&&!G&&!isParent())clLoad(false)},30000);
+{const st=document.createElement("style");st.textContent=`.clnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-2px -16px 2px;padding:0 16px 4px}.clnav::-webkit-scrollbar{display:none}.clnav button{flex:none;display:flex;align-items:center;gap:5px;background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:800;font-size:13.5px;position:relative}.clnav button.on{background:var(--amber);color:#1B1B1B;border-color:var(--amber)}.clnav i,.nbdg{font-style:normal;background:#F0484B;color:#fff;border-radius:99px;font-size:11px;font-weight:900;padding:1px 6px;margin-left:2px}
+.nav button{position:relative}.nbdg{position:absolute;top:2px;right:18%}
+.clxp{display:grid;grid-template-columns:1fr 1fr;gap:10px}.clxp div{background:linear-gradient(135deg,rgba(255,201,61,.2),var(--card));border:1.5px solid var(--amber);border-radius:16px;padding:10px 12px}.clxp small{display:block;font-size:12px;font-weight:800;color:var(--mute)}.clxp b{font:400 24px var(--fd);color:var(--amber)}
+.cltiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cltile{position:relative;display:grid;justify-items:start;gap:2px;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:14px 12px}.cltile .cle{font-size:30px}.cltile b{font:400 19px var(--fd)}.cltile small{color:var(--mute);font-size:12.5px;font-weight:700}.cltile i{position:absolute;top:10px;right:10px;font-style:normal;background:#F0484B;color:#fff;border-radius:99px;font-size:12px;font-weight:900;padding:2px 8px}
+.trr{display:grid;gap:8px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px}.trr.done{border-color:#3DDC84}.trr.declined,.trr.cancelled{opacity:.6}.trh{display:flex;justify-content:space-between;gap:8px}.trh span{color:var(--mute);font-size:12.5px;font-weight:800}.trn{font-size:13px;color:var(--mute);font-style:italic}
+.trs,.trsum{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start}.trs small,.trsum small{display:block;font-size:11.5px;font-weight:900;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}.trx{font-size:22px;align-self:center;color:var(--amber)}
+.trc{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:5px}.trnone{font-size:12.5px;color:var(--mute);font-weight:700;padding:10px 0}
+.trp{display:grid;gap:6px}.trp button{display:flex;justify-content:space-between;align-items:center;text-align:left;background:rgba(0,0,0,.25);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}.trp small{color:var(--mute);font-weight:800}
+.trb input{width:100%;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink);font-size:15px}
+.trg{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.trpick{position:relative}.trpick.on{outline:3px solid var(--amber);outline-offset:2px;border-radius:12px}.trpick.off{opacity:.45}.trck{position:absolute;top:-6px;right:-6px;z-index:9;width:24px;height:24px;border-radius:50%;background:var(--amber);color:#1B1B1B;font:900 14px/24px var(--fb);font-style:normal}.trbz{position:absolute;left:4px;right:4px;bottom:4px;z-index:9;font-style:normal;background:#000;color:#fff;font-size:10px;font-weight:900;border-radius:6px;padding:2px}
+.chr{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:6px}.chr.W{border-color:#3DDC84}.chr.L{opacity:.8}.che{font-size:26px}.chr .dtx{flex:1;min-width:0}.chr .dtx b{display:block;font-size:14.5px}.chr .dtx small{display:block;color:var(--mute);font-size:12.5px;font-weight:700}.chb{display:flex;align-items:center;gap:8px}.chres{font-style:normal;font-weight:900;font-size:13px}
+.chg{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}.chg .fchip{flex:none}
+.chbar{text-align:center;background:linear-gradient(90deg,#F0484B,#b91c1c);border-radius:12px;padding:7px 10px;font-weight:800;font-size:14px;color:#fff}
+.chend{display:grid;gap:8px;justify-items:center;text-align:center;background:rgba(0,0,0,.35);border:2px solid #F0484B;border-radius:16px;padding:12px;margin-top:10px}.chend.win{border-color:#3DDC84}.chend small{color:var(--mute);font-weight:700;font-size:13px}.chend .fr{justify-content:center}
+.chbtn{width:100%;margin-top:10px;background:linear-gradient(90deg,#F0484B,#b91c1c);color:#fff;border:0;border-radius:14px;padding:13px;font-weight:900;font-size:15px;box-shadow:0 4px 0 #6E1014}`;document.head.appendChild(st)}
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}

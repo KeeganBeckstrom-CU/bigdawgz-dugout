@@ -20,3 +20,10 @@ Dugout Live: the coach can pick the questions (or write their own) instead of us
 New card design (rarity frame, parallel ribbon and serial stamp, on-card autographs, all six stats, explained back). Card guide in the Cards tab.
 Seven packs, each with its own opening: Rookie Rush, All-Star Surge, Bullpen Heat, Grand Slam, World Series Vault, Hall of Fame Vault (tiger), Cosmic Moonshot. The top three give 3 cards.
 Levels no longer stop at Hall of Famer: Legend, Icon, Immortal, then Immortal ★2, ★3... every 2,500 XP.
+
+## Team Clubhouse
+Run `supabase/dugout-clubhouse.sql` once in the Supabase SQL Editor (after `dugout-backend.sql` and `dugout-duel.sql`).
+New Clubhouse tab holds the Arcade, Cards, Trades, Challenges and Leaderboards.
+Trades: offer 1-3 of your cards for 0-3 of a teammate's. Cards move through the inbox when each player next syncs.
+Challenges: play any game and send your score. Teammates get the same questions (shared seed). Winner +30 XP, tie +20, +10 for playing.
+No daily limit on XP to spend.
