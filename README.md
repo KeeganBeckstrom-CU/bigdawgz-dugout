@@ -27,3 +27,7 @@ New Clubhouse tab holds the Arcade, Cards, Trades, Challenges and Leaderboards.
 Trades: offer 1-3 of your cards for 0-3 of a teammate's. Cards move through the inbox when each player next syncs.
 Challenges: play any game and send your score. Teammates get the same questions (shared seed). Winner +30 XP, tie +20, +10 for playing.
 No daily limit on XP to spend.
+
+## Search, XP and Home
+🔎 in the top bar searches every page, game, drill, video, trivia/rule question, card and player.
+Players see their XP in the top bar (tap for the XP page: level, how to earn, recent XP, all levels). Home starts with the XP card, then today's work.
