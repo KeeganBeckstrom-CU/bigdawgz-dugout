@@ -3681,6 +3681,92 @@ jerseySVG=function(g,num){const d=g.d,v=g.v,st=JSTY[d[0]]||{cut:"button",font:"s
    ${under}<path d="${body}" fill="${base}"/><g clip-path="url(#jc${uid})">${pat&&pat!=="solid"?jPattern(pat,v==="alt"?[d[0],d[1],P,base===P?S:P,T]:d,uid):""}${cutFx}${sleeves}${sstripe}<rect width="120" height="130" fill="url(#js${uid})"/></g>
    ${collar}${trimB}<path d="${body}" fill="none" stroke="${S}" stroke-width="2"/>${lettering}${emb}${number}</svg>`};
 
+/* ===== HALL OF FAME TIGER v2: a huge, shredded tiger slugger ===== */
+function tigerSVG(){const O="#F28C28",K="#141414",W="#FFF4E0",st=`stroke="${K}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`;
+ return `<svg class="tgsvg" viewBox="0 0 260 300" aria-hidden="true">
+  <g class="tglegs"><path d="M98 196 L86 268 L70 286 L108 288 L112 268 L122 206Z" fill="${O}" ${st}/><path d="M150 206 L160 268 L156 288 L194 286 L176 266 L170 196Z" fill="${O}" ${st}/>
+   <path d="M90 236 l14 4 M162 236 l-14 4 M88 252 l14 2 M166 252 l-14 2" ${st} stroke-width="5"/>
+   <path d="M88 182 Q132 176 178 182 L182 222 Q160 230 134 214 Q108 230 84 222Z" fill="#5C2B89" ${st}/><path d="M92 188 H176" stroke="#E0BE58" stroke-width="5"/></g>
+  <g class="tgbody"><path d="M70 92 Q132 62 196 92 Q214 118 190 150 Q178 172 176 186 L90 186 Q88 172 76 150 Q52 118 70 92Z" fill="${O}" ${st}/>
+   <path d="M104 98 Q132 88 160 98 Q170 130 160 182 L106 182 Q96 130 104 98Z" fill="${W}" ${st} stroke-width="3"/>
+   <path d="M106 112 Q120 124 132 112 Q144 124 158 112" fill="none" ${st} stroke-width="3"/><path d="M132 118 V180 M112 136 H152 M114 154 H150 M116 170 H148" ${st} stroke-width="3" fill="none"/>
+   <path d="M74 112 l20 6 -18 6 M72 134 l22 4 -20 8 M196 112 l-20 6 18 6 M198 134 l-22 4 20 8 M86 160 l16 2 -12 8 M182 160 l-16 2 12 8" fill="${K}"/></g>
+  <g class="tghead"><path d="M96 46 L88 14 L114 30Z M168 46 L176 14 L150 30Z" fill="${O}" ${st}/><path d="M94 22 l10 12 M170 22 l-10 12" stroke="#FFB0B0" stroke-width="5"/>
+   <path d="M90 56 Q90 22 132 20 Q174 22 174 56 Q178 84 158 96 Q132 108 106 96 Q86 84 90 56Z" fill="${O}" ${st}/>
+   <path d="M108 74 Q132 66 156 74 Q160 96 132 100 Q104 96 108 74Z" fill="${W}"/>
+   <path d="M120 30 l4 12 4 -12 M132 26 v14 M140 30 l-4 12 -4 -12 M92 54 l12 4 -12 4 M172 54 l-12 4 12 4" fill="${K}" ${st} stroke-width="2"/>
+   <path d="M104 52 L124 58 M160 52 L140 58" ${st} stroke-width="5"/><ellipse cx="116" cy="64" rx="7" ry="5" fill="#FDE047" ${st} stroke-width="2"/><ellipse cx="148" cy="64" rx="7" ry="5" fill="#FDE047" ${st} stroke-width="2"/><circle cx="117" cy="64" r="2.4" fill="${K}"/><circle cx="147" cy="64" r="2.4" fill="${K}"/>
+   <path d="M126 76 h12 l-6 7z" fill="${K}"/><path d="M114 86 Q132 98 150 86" fill="#7A1C1C" ${st} stroke-width="3"/><path d="M120 87 l3 6 3 -5 M144 87 l-3 6 -3 -5" fill="#fff" stroke="${K}" stroke-width="1.5"/></g>
+  <g class="tgarms"><path d="M76 100 Q40 104 40 140 Q44 160 74 156 L118 132" fill="none" stroke="${K}" stroke-width="34" stroke-linecap="round"/><path d="M76 100 Q40 104 40 140 Q44 160 74 156 L118 132" fill="none" stroke="${O}" stroke-width="26" stroke-linecap="round"/>
+   <path d="M190 100 Q226 104 224 140 Q220 160 190 156 L146 132" fill="none" stroke="${K}" stroke-width="34" stroke-linecap="round"/><path d="M190 100 Q226 104 224 140 Q220 160 190 156 L146 132" fill="none" stroke="${O}" stroke-width="26" stroke-linecap="round"/>
+   <path d="M44 120 q10 -14 24 -6 M220 120 q-10 -14 -24 -6" ${st} fill="none" stroke-width="3"/><path d="M48 134 l14 2 M216 134 l-14 2 M56 150 l10 -6 M208 150 l-10 -6" ${st}/>
+   <g class="tgbat"><path d="M120 132 L136 128 L238 -40 Q246 -56 232 -60 Q220 -62 214 -46 Z" fill="#E7C08A" ${st}/><path d="M118 134 L138 128" stroke="${K}" stroke-width="9" stroke-linecap="round"/><path d="M226 -36 L210 -42" stroke="#7A4B1E" stroke-width="3"/></g>
+   <circle cx="132" cy="132" r="15" fill="${O}" ${st}/><path d="M122 126 h20 M122 134 h20" ${st} stroke-width="2.5"/></g></svg>`}
+{const _s=sceneHTML;sceneHTML=function(pk,go){let h=_s(pk,go);if(pk.k==="hof")h=h.replace(/<div class="tiger">[\s\S]*?<\/div><div class="whoosh">/,`<div class="tiger">${tigerSVG()}</div><div class="impact"></div><div class="whoosh">`);return h}}
+{const st=document.createElement("style");st.textContent=`
+.sc-hof .tiger{width:min(74vw,400px);height:auto;aspect-ratio:260/300;bottom:-2%;left:-110vw}.tiger .tgsvg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+.sc-hof.go .tiger{animation:tgrun2 .85s cubic-bezier(.3,.8,.4,1) forwards}@keyframes tgrun2{to{left:calc(32% - min(74vw,400px)*.51)}}
+.sc-hof .tgbat{transform-origin:132px 132px;transform:rotate(-80deg)}.sc-hof.go .tgbat{animation:tgswing2 .28s .95s cubic-bezier(.7,0,.9,1) forwards}@keyframes tgswing2{to{transform:rotate(58deg)}}
+.sc-hof.go .tgbody,.sc-hof.go .tghead{animation:tgtwist .3s .95s ease-out forwards}@keyframes tgtwist{to{transform:translateX(10px) rotate(4deg)}}
+.sc-hof.go .tiger .tgsvg{animation:tgbob2 .17s 5 alternate}@keyframes tgbob2{to{transform:translateY(-12px)}}
+.sc-hof .scpk{bottom:22%!important}
+.impact{position:absolute;left:50%;bottom:30%;width:30px;height:30px;margin-left:-15px;border-radius:50%;background:radial-gradient(circle,#fff,#FDE047 40%,rgba(253,224,71,0) 70%);z-index:6;opacity:0;pointer-events:none}.sc-hof.go .impact{animation:impact .5s 1.2s ease-out forwards}@keyframes impact{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(14)}}
+.fball{font-size:min(28vw,120px)!important;top:36%!important}.fball span{display:inline-block;filter:drop-shadow(0 0 18px #f97316) drop-shadow(0 0 40px #ef4444);animation:fbspin .25s linear infinite}@keyframes fbspin{to{transform:rotate(360deg)}}
+.fball b{height:min(18vw,80px)!important;top:calc(50% - min(9vw,40px))!important;right:45%!important;width:70vw!important;background:linear-gradient(90deg,transparent,#ef4444 30%,#f97316 60%,#fde047)!important;filter:blur(6px)!important;border-radius:60px!important}
+.sc-heat.go .fball{animation:fball2 .75s ease-in forwards!important}@keyframes fball2{0%{opacity:1;transform:translateX(0) scale(.6)}85%{opacity:1;transform:translateX(62vw) scale(1)}100%{opacity:0;transform:translateX(75vw) scale(1.4)}}`;document.head.appendChild(st)}
+
+/* ===== JERSEY TIERS: seven tiers. The cooler the jersey, the rarer it is ===== */
+const JT=[null,["Common","#AEB6C4"],["Uncommon","#3DDC84"],["Rare","#4DB8FF"],["Epic","#B57BFF"],["Legendary","#FFD25A"],["Mythic","#FF5FA2"],["Grail","#FFFFFF"]];
+const JCOOL={bdc:1,gold:1,mid:2,nh:3,wave:1,coop:2,tiger:4,bolt:2,lava:4,ice:2,gal:5,camo:1,pink:0,neon:3,sun:2,chrome:5,dia:3,sand:0,dye:2,usa:1,bone:0,haze:3};
+const JTB=[0,1,1,2,2,3,3,4],JTS=[0,15,25,50,100,250,600,1500],JTW=[0,1,.7,1,.8,1,.6,.25],JTR=["","C","C","R","A","S","L","L"];
+GLIST.forEach(g=>{if(g.slot!=="jersey")return;const c=JCOOL[g.d[0]]||0,b=g.v==="alt"?(c>=5?2:1):0;g.jt=Math.max(1,Math.min(7,1+c+b));g.r=JTR[g.jt];g.w=JTW[g.jt]});
+GLIST.forEach(g=>{if(g.w==null)g.w=1});
+const gBoost=g=>g.jt?JTB[g.jt]:GBOOST[g.r],gSell=g=>g.jt?JTS[g.jt]:GSELL[g.r],gTier=g=>g.jt?JT[g.jt]:[RAR[g.r][0],RAR[g.r][1]];
+rollGear=function(w,jersey){const r=wpick(w);let pool=gPool(r).filter(g=>!jersey||g.slot==="jersey");if(!pool.length)pool=gPool(r);if(!pool.length)pool=GLIST.filter(g=>!jersey||g.slot==="jersey");
+  const tot=pool.reduce((a,g)=>a+g.w,0);let x=Math.random()*tot,pick=pool[0];for(const g of pool){if((x-=g.w)<0){pick=g;break}}return {u:"g"+nid().slice(0,10),gid:pick.id,at:today()}};
+gearBonus=function(p){const L=p&&p.locker||{},G_=p&&p.gear||[];let b=0;GSLOTS.forEach(s=>{const it=G_.find(x=>x.u===L[s[0]]);if(it&&GEAR[it.gid])b+=gBoost(GEAR[it.gid])});return Math.min(12,b)};
+{const _gc=gcard;gcard=function(it,big){const g=GEAR[it&&it.gid];let h=_gc(it,big);if(!g)return h;const t=gTier(g);
+  h=h.replace(/<span class="gcr">[^<]*<\/span>/,`<span class="gcr">${t[0]}</span>`).replace(/<span class="gcb">[^<]*<\/span>/,`<span class="gcb">+${gBoost(g)}</span>`);
+  if(g.jt)h=h.replace('<div class="gc ',`<div class="gc jt${g.jt} `).replace(/--rc:[^;"]*/,"--rc:"+t[1]);return h}}
+{const _gs=gearSheetHTML;gearSheetHTML=function(u){const p=cardOwner(),it=(p.gear||[]).find(x=>x.u===u);let h=_gs(u);if(!it)return h;const g=GEAR[it.gid],t=gTier(g);
+  return h.replace(/<p class="pgs ctr">[^<]*<\/p>/,`<p class="pgs ctr">${t[0]} ${(GSLOTS.find(s=>s[0]===g.slot)||[])[2]} · +${gBoost(g)} squad rating · pulled ${esc(nice(it.at))}</p>`).replace(/⚡\d+/g,"⚡"+gSell(g))}}
+document.addEventListener("click",e=>{const t=e.target.closest('[data-a^="xgsell:"]');if(!t)return;const v=t.dataset.a.split(":")[1];if(LK.sell!==v)return;const p=cardOwner(),it=(p.gear||[]).find(x=>x.u===v);if(!it)return;const g=GEAR[it.gid];
+  if(g.jt&&!unl()){e.stopImmediatePropagation();p.bank=(p.bank||0)+gSell(g);p.gear=p.gear.filter(x=>x.u!==v);Object.keys(p.locker||{}).forEach(s=>{if(p.locker[s]===v)delete p.locker[s]});save();LK.sell=null;gearSheet(null);render();toast("Sold for ⚡ "+gSell(g)+" XP")}},true);
+{const st=document.createElement("style");st.textContent=`.gc.jt2{background:linear-gradient(135deg,#0d5c33,#3DDC84 28%,#127a45 48%,#b9ffd6 62%,#0e5f35)}
+.gc.jt6{background:conic-gradient(from var(--ang,0deg),#FF5FA2,#7c3aed,#FF5FA2,#f9a8d4,#FF5FA2);animation:spinb 4s linear infinite;box-shadow:0 0 18px rgba(255,95,162,.6)}
+.gc.jt7{background:conic-gradient(from var(--ang,0deg),#fff,#FF5FA2,#a78bfa,#38bdf8,#34d399,#fde047,#fb923c,#fff);animation:spinb 3s linear infinite;box-shadow:0 0 24px rgba(255,255,255,.7),0 0 50px rgba(167,139,250,.6)}
+.gc.jt7 .gcbg{background:radial-gradient(60% 45% at 50% 40%,rgba(255,255,255,.45),transparent 70%),repeating-conic-gradient(from 0deg at 50% 42%,#1b1035 0 10deg,#2a1755 10deg 20deg)}.gc.jt7 .gcr{background:linear-gradient(90deg,#FF5FA2,#a78bfa,#38bdf8);border-color:#fff}
+.gc.jt6 .tcfoil,.gc.jt7 .tcfoil,.gc.jt5 .tcfoil{opacity:.55;animation:foil2 3.5s ease-in-out infinite alternate}`;document.head.appendChild(st)}
+/* jersey closet: show each tier */
+{const _l=lockerHTML;lockerHTML=function(){let h=_l();return h.replace('<h3 class="sec">🎽 Jersey closet','<div class="jtl">'+JT.slice(1).map((t,i)=>`<span style="--c:${t[1]}">${t[0]}<small>+${JTB[i+1]}</small></span>`).join("")+'</div><h3 class="sec">🎽 Jersey closet')}}
+{const st=document.createElement("style");st.textContent=`.jtl{display:flex;flex-wrap:wrap;gap:5px}.jtl span{font-size:11.5px;font-weight:900;border:1.5px solid var(--c);color:var(--c);border-radius:99px;padding:3px 8px}.jtl small{color:var(--mute);margin-left:3px}`;document.head.appendChild(st)}
+
+/* ===== NAVIGATION: a back-to-Clubhouse button instead of the bubble row; dropdowns instead of long bubble rows ===== */
+const CLUBSUB=["play","cards","trade","chal","boards","hsp","locker","cguide","duel","live"];
+clubNav=function(){return ""};
+{const _t=topbar;topbar=function(title,sub){let h=_t(title,sub);if(!isParent()&&CLUBSUB.includes(view))h=h.replace('<header class="top"><div class="tl">','<header class="top"><div class="tl"><button class="backclub" data-a="go:club">‹ Clubhouse</button>');return h}}
+function selHTML(id,cur,opts,label){return `<label class="selw"><span>${label}</span><select data-sel="${id}">${opts.map(o=>`<option value="${esc(o[0])}" ${String(cur)===String(o[0])?"selected":""}>${esc(o[1])}</option>`).join("")}</select></label>`}
+bdChips=function(){return selHTML("bdg",BD.g,[["all","🏆 All games"]].concat(GAMES.map(g=>[g[0],g[1]+" "+g[2]])),"Game")};
+{const _c=chalHTML;chalHTML=function(){return _c().replace(/<div class="chg">[\s\S]*?<\/div>/,selHTML("chg",CL.ch.g,GAMES.map(g=>[g[0],g[1]+" "+g[2]]),"Game")).replace(/<div class="fr">(<button class="fchip[^"]*" data-a="xchl:[\s\S]*?)<\/div>/,(m)=>selHTML("chl",CL.ch.lv,LVN.map((n,i)=>[i,n]),"Level"))}}
+LK.sort=LK.sort||"tier";
+{const _l=lockerHTML;lockerHTML=function(){let h=_l();const sel=`<div class="selrow">${selHTML("lkf",LK.f,[["all","All gear"]].concat(GSLOTS.map(s=>[s[0],s[1]+" "+s[2]])),"Show")}${selHTML("lks2",LK.sort,[["tier","Rarest first"],["new","Newest first"],["boost","Biggest boost"],["name","Name A–Z"]],"Sort")}</div>`;
+  h=h.replace(/<div class="fr lkf">[\s\S]*?<\/div>/,sel);return h}}
+{const _gl=lockerHTML;lockerHTML=function(){const p=cardOwner();if(p&&p.gear){const key={tier:x=>-(GEAR[x.gid].jt?GEAR[x.gid].jt+0.5:"CRASL".indexOf(GEAR[x.gid].r)*1.4+1),new:x=>x.at<"9"?-Number(String(x.at).replace(/-/g,"")):0,boost:x=>-gBoost(GEAR[x.gid]),name:x=>GEAR[x.gid].n}[LK.sort];
+  const orig=p.gear.slice();p.gear.sort((a,b)=>{const A=key(a),B=key(b);return typeof A==="string"?A.localeCompare(B):A-B});const h=_gl();p.gear=orig;return h}return _gl()}}
+window._bs=window._bs||"ovr";
+{const _ch=cardsHTML;cardsHTML=function(){const tab=window._ct2||"shop";if(tab!=="binder")return _ch();const p=cardOwner();if(!p)return _ch();
+  const orig=p.cards,key={ovr:c=>-covr(c),new:c=>-Number(String(c.at||"0").replace(/-/g,"")),rar:c=>-("CRASL".indexOf(CARD[c.id].r)*10+Object.keys(PAR).indexOf(c.par)),name:c=>CARD[c.id].n.split(" ").slice(-1)[0],team:c=>CARD[c.id].tm,pos:c=>CARD[c.id].pos}[window._bs];
+  let h=_ch();if(!orig)return h;const cs=orig.filter(c=>CARD[c.id]).slice().sort((a,b)=>{const A=key(a),B=key(b);return (typeof A==="string"?A.localeCompare(B):A-B)||covr(b)-covr(a)});
+  const f=window._bf||"all",L=cs.filter(c=>f==="all"||(f==="par"?c.par!=="base"||c.auto:CARD[c.id].r===f));
+  h=h.replace(/<div class="tgrid">[\s\S]*?<\/div>(?=<\/main>)/,`<div class="tgrid">${L.map(c=>`<button class="tcb" data-a="xcard:${c.u}">${tcard(c)}</button>`).join("")}</div>`);
+  return h.replace(/(<div class="bstat">[\s\S]*?<\/div>)/,`$1<div class="selrow">${selHTML("bf",f,[["all","All cards"],["L","Legends"],["S","Superstars"],["A","All-Stars"],["R","Rares"],["C","Commons"],["par","Parallels & autos"]],"Show")}${selHTML("bs",window._bs,[["ovr","Best OVR"],["new","Newest"],["rar","Rarest"],["name","Last name"],["team","Team"],["pos","Position"]],"Sort")}</div>`).replace(/<div class="fr">(<button class="fchip[^"]*" data-a="xbf:[\s\S]*?)<\/div>/,"")}}
+document.addEventListener("change",e=>{const s=e.target.closest&&e.target.closest("select[data-sel]");if(!s)return;const v=s.value,k=s.dataset.sel;
+  if(k==="bdg"){BD.g=v;render()}else if(k==="chg"){CL.ch.g=v;render()}else if(k==="chl"){CL.ch.lv=+v;render()}else if(k==="lkf"){LK.f=v;render()}else if(k==="lks2"){LK.sort=v;render()}else if(k==="bf"){window._bf=v;render()}else if(k==="bs"){window._bs=v;render()}});
+{const st=document.createElement("style");st.textContent=`.backclub{display:inline-flex;align-items:center;background:var(--amber);color:#1B1B1B;border-radius:999px;padding:7px 12px;font-weight:900;font-size:13.5px;margin-right:6px;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.top .tl:has(.backclub) .lg,.top .tl:has(.backclub) .brand,.top .tl:has(.backclub) .team{display:none}
+.selrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.selw{display:grid;gap:3px}.selw span{font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.selw select{width:100%;appearance:none;-webkit-appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23E0BE58' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;border:1.5px solid var(--line);border-radius:12px;padding:11px 32px 11px 12px;color:var(--ink);font-size:15px;font-weight:800}`;document.head.appendChild(st)}
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
