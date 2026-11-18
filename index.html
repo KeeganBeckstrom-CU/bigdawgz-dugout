@@ -3466,6 +3466,149 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a],a.srr")
 #srres{flex:1;overflow:auto;padding:10px 0 40px}.srh{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin:14px 0 6px;display:flex;justify-content:space-between}.srh span{color:var(--mute)}
 .srr{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 11px;margin-bottom:5px;color:var(--ink);text-decoration:none}.sri{font-size:20px;flex:none;width:26px;text-align:center}.srr .dtx{min-width:0}.srr b{display:block;font-size:14.5px;line-height:1.3}.srr small{display:block;color:var(--mute);font-size:12.5px;font-weight:700;margin-top:2px}.srr .srw{color:#B9FFCF}.srr mark{background:rgba(255,201,61,.35);color:#fff;border-radius:3px;padding:0 1px}.srhint{text-align:center;margin-top:20px}`;document.head.appendChild(st)}
 
+/* ===== GEAR + JERSEYS: collect equipment and jerseys from packs, equip them in your Locker, boost your squad ===== */
+// Jersey designs: [id, name, primary, secondary, trim, pattern, wordmark, tier 0-4, alt pattern]
+const JDES=[
+ ["bdc","BigDawgz Classic","#5C2B89","#E0BE58","#FFFFFF","pin","BigDawgz",1,"solid"],
+ ["gold","Old Gold Dawg Pound","#C9A440","#111111","#5C2B89","solid","Dawgs",1,"chrome"],
+ ["mid","Midnight Dawgz","#111111","#8E5BD6","#E0BE58","solid","BigDawgz",2,"bolt"],
+ ["nh","New Hudson Nights","#0B1F4B","#FF4FA3","#5CE1E6","pin","New Hudson",2,"sunset"],
+ ["wave","Walled Lake Waves","#0E6E7A","#0B2545","#E8F7F9","waves","Lakers",1,"waves"],
+ ["coop","Cooperstown Classic","#7A1C1C","#1E2A5A","#F3E7C9","pin","Dawgs",3,"pin"],
+ ["tiger","Tigerstripe","#F28C28","#111111","#FFFFFF","solid","BigDawgz",3,"tiger"],
+ ["bolt","Lightning","#1E5BFF","#FFE14D","#FFFFFF","solid","Bolts",2,"bolt"],
+ ["lava","Lava Flow","#C81E1E","#FF9A1F","#1A0A05","solid","Dawgs",3,"flame"],
+ ["ice","Ice Cold","#8FD3FF","#E9F7FF","#123A6B","solid","BigDawgz",2,"frost"],
+ ["gal","Galaxy","#3B1C7A","#38BDF8","#FDE68A","solid","BigDawgz",4,"galaxy"],
+ ["camo","Field Camo","#4B5A2A","#2E3A1A","#E0BE58","solid","Dawgs",2,"camo"],
+ ["pink","Pink Out","#FF5FA2","#FFFFFF","#5C2B89","pin","BigDawgz",1,"solid"],
+ ["neon","Neon Nights","#0A0A0A","#39FF14","#FF2BD6","solid","Dawgs",3,"neon"],
+ ["sun","Retro Sunset","#F59E0B","#B91C1C","#3B1C0A","solid","Dawgs",2,"sunset"],
+ ["chrome","Gold Chrome","#D4AF37","#FFF3B0","#111111","solid","BigDawgz",4,"chrome"],
+ ["dia","Diamond Dust","#C0C7D1","#FFFFFF","#5C2B89","solid","BigDawgz",3,"sparkle"],
+ ["sand","Sandlot","#8B5E34","#F3E3C3","#3A2414","solid","Sandlot",1,"pin"],
+ ["dye","Tie-Dye Summer","#22D3EE","#F472B6","#111111","solid","Dawgs",2,"tiedye"],
+ ["usa","Stars and Stripes","#1E3A8A","#B91C1C","#FFFFFF","pin","USA",2,"stars"],
+ ["bone","Dawg Bone","#1A1A1A","#F5F5F5","#E0BE58","solid","Dawgs",1,"bones"],
+ ["haze","Purple Haze","#7C3AED","#EC4899","#FFFFFF","solid","BigDawgz",3,"gradient"]];
+const JV=[["home","Home"],["away","Away"],["alt","Alternate"]],TIERR="CRASL",GBOOST={C:1,R:1,A:2,S:2,L:3},GSELL={C:15,R:40,A:100,S:250,L:600};
+const GSLOTS=[["jersey","🎽","Jersey"],["bat","🏏","Bat"],["glove","🧤","Glove"],["cleats","👟","Cleats"],["helmet","⛑️","Helmet"],["bgl","🧤","Batting gloves"]];
+// other gear: [id, slot, name, rarity, color1, color2]
+const GITEMS=[
+ ["b1","bat","Maple Classic","C","#C89B5C","#3A2414"],["b2","bat","Midnight Ash","R","#222222","#E0BE58"],["b3","bat","Thunder Birch","R","#F1DDB1","#1E5BFF"],["b4","bat","Gold Rush Alloy","A","#E0BE58","#111111"],["b5","bat","Dawg Bone Wood","A","#F5F5F5","#5C2B89"],["b6","bat","Lava Lumber","S","#C81E1E","#FF9A1F"],["b7","bat","Cosmic Crusher","L","#3B1C7A","#38BDF8"],["b8","bat","Hall of Fame Hickory","L","#7A4B1E","#FDE68A"],
+ ["g1","glove","Pocket Pro","C","#9A5B2A","#3A2414"],["g2","glove","Black Diamond","R","#1A1A1A","#C0C7D1"],["g3","glove","Purple Web","R","#5C2B89","#E0BE58"],["g4","glove","Vacuum Cleaner","A","#C2410C","#111111"],["g5","glove","Golden Web","S","#D4AF37","#5C2B89"],["g6","glove","Galaxy Mitt","L","#3B1C7A","#F472B6"],
+ ["c1","cleats","Turf Trainers","C","#F5F5F5","#5C2B89"],["c2","cleats","Speed Spikes","R","#1E5BFF","#FFFFFF"],["c3","cleats","Purple Rush","R","#5C2B89","#E0BE58"],["c4","cleats","Lava Kicks","A","#C81E1E","#FF9A1F"],["c5","cleats","Gold Rush","S","#D4AF37","#111111"],["c6","cleats","Moon Walkers","L","#C0C7D1","#8E5BD6"],
+ ["h1","helmet","Matte Purple","C","#5C2B89","#E0BE58"],["h2","helmet","Chrome Dome","R","#C0C7D1","#111111"],["h3","helmet","Midnight Matte","A","#111111","#8E5BD6"],["h4","helmet","Gold Flake","S","#D4AF37","#5C2B89"],["h5","helmet","Galaxy Lid","L","#3B1C7A","#38BDF8"],
+ ["n1","bgl","Grip Kings","C","#F5F5F5","#5C2B89"],["n2","bgl","Black Ops","R","#111111","#E0BE58"],["n3","bgl","Neon Grip","A","#39FF14","#111111"],["n4","bgl","Gold Touch","S","#D4AF37","#111111"],["n5","bgl","Cosmic Grip","L","#7C3AED","#38BDF8"]];
+const GEAR={};
+JDES.forEach(d=>JV.forEach((v,vi)=>{const t=Math.min(4,d[7]+(vi===2?1:0));GEAR["j_"+d[0]+"_"+v[0]]={id:"j_"+d[0]+"_"+v[0],slot:"jersey",n:d[1]+" "+v[1],r:TIERR[t],d,v:v[0]}}));
+GITEMS.forEach(x=>{GEAR[x[0]]={id:x[0],slot:x[1],n:x[2],r:x[3],c1:x[4],c2:x[5]}});
+const GLIST=Object.values(GEAR),gPool=r=>GLIST.filter(g=>g.r===r);
+/* --- art --- */
+function jPattern(p,d,uid){const P=d[2],S=d[3],T=d[4];
+  switch(p){case"pin":return `<g opacity=".55" stroke="${S}" stroke-width="1">${Array.from({length:18},(_,i)=>`<line x1="${8+i*6}" y1="0" x2="${8+i*6}" y2="130"/>`).join("")}</g>`;
+  case"waves":return `<g fill="none" stroke="${S}" stroke-width="3" opacity=".7">${[70,84,98,112].map(y=>`<path d="M0 ${y} q10 -7 20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>`).join("")}</g>`;
+  case"tiger":return `<g fill="${S}">${[16,36,56,76,96,116].map((y,i)=>`<path d="M0 ${y} q22 ${i%2?10:-8} 48 3 q-20 2 -48 9z M120 ${y+8} q-22 ${i%2?-8:10} -46 -1 q20 -3 46 -10z"/>`).join("")}</g>`;
+  case"bolt":return `<g fill="${S}" stroke="${T}" stroke-width="1"><path d="M22 30 l14 0 -8 22 12 0 -22 34 6 -26 -10 0z"/><path d="M92 60 l12 0 -6 16 9 0 -17 26 4 -19 -8 0z"/></g>`;
+  case"flame":return `<g><path d="M0 130 V96 q10 -20 16 -6 q4 -24 16 -10 q6 -26 18 -6 q8 -22 18 -2 q8 -26 18 -4 q8 -18 16 0 q10 -16 18 4 V130z" fill="${S}"/><path d="M0 130 V110 q12 -14 20 -2 q8 -16 18 0 q10 -14 20 0 q10 -16 20 0 q10 -14 20 0 q8 -10 22 2 V130z" fill="#FDE047" opacity=".85"/></g>`;
+  case"frost":return `<g stroke="${S}" stroke-width="1.6" opacity=".8" fill="none">${[[30,40],[86,30],[60,96],[24,104],[96,92]].map(c=>`<path d="M${c[0]-8} ${c[1]}h16M${c[0]} ${c[1]-8}v16M${c[0]-6} ${c[1]-6}l12 12M${c[0]+6} ${c[1]-6}l-12 12"/>`).join("")}</g>`;
+  case"galaxy":return `<defs><radialGradient id="gx${uid}" cx="70%" cy="30%"><stop offset="0" stop-color="${S}" stop-opacity=".8"/><stop offset="1" stop-color="${S}" stop-opacity="0"/></radialGradient></defs><rect width="120" height="130" fill="url(#gx${uid})"/><g fill="#fff">${Array.from({length:26},(_,i)=>`<circle cx="${(i*37)%118}" cy="${(i*53)%128}" r="${i%5?0.7:1.4}"/>`).join("")}</g>`;
+  case"camo":return `<g opacity=".9">${[[20,30,"#2E3A1A"],[70,20,"#6B7A3A"],[95,60,"#2E3A1A"],[40,70,"#3E2E1A"],[80,105,"#6B7A3A"],[20,110,"#2E3A1A"],[60,48,"#3E2E1A"]].map(b=>`<ellipse cx="${b[0]}" cy="${b[1]}" rx="18" ry="10" transform="rotate(${b[0]%60} ${b[0]} ${b[1]})" fill="${b[2]}"/>`).join("")}</g>`;
+  case"neon":return `<g fill="none" stroke-width="2.4"><path d="M0 40 L120 70" stroke="${S}"/><path d="M0 52 L120 82" stroke="${T}"/></g>`;
+  case"sunset":return `<g>${["#FDE047","#F59E0B","#EA580C","#B91C1C"].map((c,i)=>`<rect y="${78+i*9}" width="120" height="7" fill="${p==="sunset"&&d[0]==="nh"?["#FF4FA3","#C084FC","#5CE1E6","#FF4FA3"][i]:c}"/>`).join("")}</g>`;
+  case"chrome":return `<defs><linearGradient id="ch${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${P}"/><stop offset=".35" stop-color="${S}"/><stop offset=".55" stop-color="${P}"/><stop offset=".8" stop-color="${S}"/><stop offset="1" stop-color="${P}"/></linearGradient></defs><rect width="120" height="130" fill="url(#ch${uid})"/>`;
+  case"sparkle":return `<g fill="#fff">${Array.from({length:14},(_,i)=>{const x=(i*29)%112+4,y=(i*41)%120+6;return `<path d="M${x} ${y-4}l1.2 2.8 2.8 1.2-2.8 1.2-1.2 2.8-1.2-2.8-2.8-1.2 2.8-1.2z"/>`}).join("")}</g>`;
+  case"tiedye":return `<g opacity=".85">${[["#22D3EE",20,30],["#F472B6",90,40],["#FDE047",50,80],["#A78BFA",100,110],["#34D399",15,110]].map(c=>`<circle cx="${c[1]}" cy="${c[2]}" r="34" fill="${c[0]}" opacity=".7"/>`).join("")}</g>`;
+  case"stars":return `<g><rect width="120" height="56" fill="${P}"/><g fill="#fff">${Array.from({length:15},(_,i)=>`<circle cx="${12+(i%5)*24}" cy="${10+Math.floor(i/5)*16}" r="2.2"/>`).join("")}</g>${[64,82,100,118].map(y=>`<rect y="${y}" width="120" height="8" fill="${S}"/>`).join("")}</g>`;
+  case"bones":return `<g fill="${S}" opacity=".35">${Array.from({length:10},(_,i)=>{const x=(i*31)%100+10,y=(i*47)%110+10;return `<g transform="rotate(${i*36} ${x} ${y})"><rect x="${x-7}" y="${y-1.5}" width="14" height="3" rx="1.5"/><circle cx="${x-7}" cy="${y-2}" r="2.2"/><circle cx="${x-7}" cy="${y+2}" r="2.2"/><circle cx="${x+7}" cy="${y-2}" r="2.2"/><circle cx="${x+7}" cy="${y+2}" r="2.2"/></g>`}).join("")}</g>`;
+  case"gradient":return `<defs><linearGradient id="gr${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P}"/><stop offset="1" stop-color="${S}"/></linearGradient></defs><rect width="120" height="130" fill="url(#gr${uid})"/>`;
+  default:return""}}
+function jerseySVG(g,num){const d=g.d,v=g.v,uid=hsh(g.id+(num||""))%1e6,P=d[2],S=d[3],T=d[4];
+  const base=v==="home"?(["sand","coop"].includes(d[0])?"#F3E7C9":"#F7F7F4"):v==="away"?(["mid","neon","bone"].includes(d[0])?"#2B2B2E":"#9DA3AD"):P;
+  const pat=v==="alt"?d[8]:d[5],word=v==="away"&&!["Lakers","Sandlot","USA"].includes(d[6])?"Dawgs":d[6],wc=v==="alt"?(["chrome","gold"].includes(d[0])?"#111":T):P,wo=v==="alt"?P:S,nc=v==="alt"?T:S;
+  const body="M30 9 L48 3 Q60 13 72 3 L90 9 L115 33 L101 49 L92 41 L92 125 L28 125 L28 41 L19 49 L5 33 Z",fs=word.length>8?13:word.length>6?16:19;
+  return `<svg class="jsvg" viewBox="0 0 120 130" aria-hidden="true"><defs><clipPath id="jc${uid}"><path d="${body}"/></clipPath><linearGradient id="js${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".25" stop-color="#000" stop-opacity="0"/><stop offset=".75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>
+   <path d="${body}" fill="${base}"/><g clip-path="url(#jc${uid})">${pat&&pat!=="solid"?jPattern(pat==="pin"&&v==="alt"?"pin":pat,v==="alt"?[d[0],d[1],P,base===P?S:P,T]:d,uid):""}
+   <path d="M5 33 L19 49 L28 41 L30 9 Z M115 33 L101 49 L92 41 L90 9 Z" fill="${v==="home"?P:S}" opacity="${v==="alt"?.85:1}"/><path d="M7 36 L19 48 M113 36 L101 48" stroke="${T}" stroke-width="3"/>
+   <path d="M60 14 V125" stroke="${S}" stroke-width="2.4"/>${[34,52,70,88,106].map(y=>`<circle cx="60" cy="${y}" r="1.6" fill="${T}"/>`).join("")}
+   <rect width="120" height="130" fill="url(#js${uid})"/></g>
+   <path d="M48 3 Q60 13 72 3" fill="none" stroke="${S}" stroke-width="3.5"/><path d="${body}" fill="none" stroke="${S}" stroke-width="2"/>
+   <g transform="rotate(-8 60 52)"><text x="60" y="57" text-anchor="middle" font-family="var(--fd),Georgia,serif" font-style="italic" font-size="${fs}" fill="${wc}" stroke="${wo}" stroke-width="1.2" paint-order="stroke">${esc(word)}</text><path d="M${60-fs*word.length*.26} 62 q${fs*word.length*.26} 6 ${fs*word.length*.55} -3" fill="none" stroke="${wc}" stroke-width="2"/></g>
+   <text x="40" y="92" text-anchor="middle" font-family="var(--fd),Georgia,serif" font-size="16" fill="${nc}" stroke="${v==="alt"?S:P}" stroke-width=".8" paint-order="stroke">${esc(String(num||12))}</text></svg>`}
+function gearSVG(g){const a=g.c1,b=g.c2;
+  if(g.slot==="bat")return `<svg viewBox="0 0 120 120"><g transform="rotate(-38 60 60)"><path d="M54 112 h12 l2 -50 c4 -12 6 -34 6 -52 0 -8 -6 -12 -14 -12 s-14 4 -14 12 c0 18 2 40 6 52 z" fill="${a}" stroke="${b}" stroke-width="3"/><rect x="52" y="100" width="16" height="8" rx="2" fill="${b}"/><path d="M54 30 h12" stroke="${b}" stroke-width="2" opacity=".6"/></g></svg>`;
+  if(g.slot==="glove")return `<svg viewBox="0 0 120 120"><path d="M30 96 C14 80 14 50 22 34 c4 -8 12 -6 13 2 l2 18 2 -30 c1 -9 12 -9 13 0 l2 28 3 -32 c1 -9 12 -9 13 0 l1 32 4 -26 c2 -8 12 -7 12 2 l-2 36 c10 -10 22 -8 22 2 c-6 14 -18 26 -22 40 c-6 18 -36 22 -52 -2z" fill="${a}" stroke="${b}" stroke-width="3"/><path d="M84 66 c8 -6 18 -6 20 0" stroke="${b}" stroke-width="3" fill="none"/><path d="M40 92 q20 10 40 0" stroke="${b}" stroke-width="3" fill="none"/></svg>`;
+  if(g.slot==="cleats")return `<svg viewBox="0 0 120 120"><path d="M14 76 c0 -16 6 -30 18 -36 l14 -6 c10 10 30 18 54 18 c8 0 12 10 8 18 l-4 8 h-88z" fill="${a}" stroke="${b}" stroke-width="3"/><path d="M14 80 h96 v8 h-96z" fill="${b}"/>${[22,40,58,76,94].map(x=>`<path d="M${x} 88 l3 8 3 -8z" fill="${b}"/>`).join("")}<path d="M46 40 l10 12 M56 36 l10 12 M66 34 l8 10" stroke="${b}" stroke-width="2.5"/><path d="M60 58 q16 -2 28 10" stroke="${b}" stroke-width="3" fill="none"/></svg>`;
+  if(g.slot==="helmet")return `<svg viewBox="0 0 120 120"><path d="M20 74 c0 -32 20 -52 46 -52 c26 0 40 20 40 44 v12 h-30 c-4 12 -14 20 -26 20 c-18 0 -30 -10 -30 -24z" fill="${a}" stroke="${b}" stroke-width="3"/><path d="M76 78 h38 v8 h-38z" fill="${b}"/><ellipse cx="50" cy="70" rx="10" ry="12" fill="${b}" opacity=".85"/><path d="M40 34 q20 -10 40 2" stroke="#fff" stroke-width="4" fill="none" opacity=".5"/></svg>`;
+  return `<svg viewBox="0 0 120 120"><g transform="rotate(-12 60 60)"><path d="M36 104 v-30 c-8 -8 -10 -20 -4 -24 l6 6 v-34 c0 -7 10 -7 10 0 v24 v-30 c0 -7 10 -7 10 0 v30 v-26 c0 -7 10 -7 10 0 v28 v-20 c0 -7 10 -7 10 0 v36 c0 14 -6 24 -14 30 v10z" fill="${a}" stroke="${b}" stroke-width="3"/><path d="M36 98 h40 v8 h-40z" fill="${b}"/></g></svg>`}
+function gcard(it,big){const g=GEAR[it.gid];if(!g)return"";const R=RAR[g.r],me_=me()||{};
+  return `<div class="gc r${g.r} ${big?"big":""}" style="--rc:${R[1]}"><div class="gcin"><div class="gcbg"></div><span class="gcr">${R[0]}</span><span class="gcb">+${GBOOST[g.r]}</span><div class="gcart">${g.slot==="jersey"?jerseySVG(g,me_.num):gearSVG(g)}</div><div class="gcn"><small>${(GSLOTS.find(s=>s[0]===g.slot)||[])[2]||""}</small><b>${esc(g.n)}</b></div></div><div class="tcfoil"></div></div>`}
+/* --- squad bonus --- */
+function gearBonus(p){const L=p&&p.locker||{},G_=p&&p.gear||[];let b=0;GSLOTS.forEach(s=>{const it=G_.find(x=>x.u===L[s[0]]);if(it&&GEAR[it.gid])b+=GBOOST[GEAR[it.gid].r]});return Math.min(12,b)}
+{const _s=squadOVR;squadOVR=function(p){return Math.min(99,_s(p)+gearBonus(p))}}
+/* --- drops: every pack can have gear; better packs always do --- */
+const GDROP={rookie:[.3,{C:70,R:25,A:5}],allstar:[.45,{C:50,R:35,A:12,S:3}],heat:[.6,{C:35,R:40,A:20,S:5}],slam:[.75,{R:50,A:35,S:12,L:3}],series:[1,{R:30,A:45,S:20,L:5}],hof:[1,{A:45,S:42,L:13}],galaxy:[1,{S:65,L:35}],locker:[1,{C:45,R:33,A:16,S:5,L:1}]};
+function rollGear(w,jersey){const r=wpick(w);let pool=gPool(r).filter(g=>!jersey||g.slot==="jersey");if(!pool.length)pool=gPool(r);return {u:"g"+nid().slice(0,10),gid:pool[Math.floor(Math.random()*pool.length)].id,at:today()}}
+PACKS.push({k:"locker",n:"Locker Room Crate",cost:900,cards:0,sub:"3 pieces of gear · 1 jersey for sure · no cards",c:"#A3A3A3",c2:"#3F3F46",slots:[],auto:0,pm:1});
+{const _op=openPack;openPack=function(p,pk){const out=pk.slots&&pk.slots.length?_op(p,pk):[];const d=GDROP[pk.k];let gear=[];
+  if(pk.k==="locker")gear=[rollGear(d[1],true),rollGear(d[1]),rollGear(d[1])];else if(d&&Math.random()<d[0])gear=[rollGear(d[1])];
+  if(gear.length&&p){(p.gear=p.gear||[]).push(...gear)}window._pkGear=gear;return out}}
+{const _ps=pkStart;pkStart=function(name,pk,cards){_ps(name,pk,cards);if(PK){PK.gear=window._pkGear||[];window._pkGear=[];if(!cards.length){PK.phase="deal"}if(!(pk&&SC_T[pk.k]))pkRender()}}}
+{const _pr=pkRender;pkRender=function(){_pr();if(!PK||PK.phase!=="deal"||!(PK.gear||[]).length)return;const o=$("#pko"),d=o&&o.querySelector(".pkdeal");if(!d)return;const all=PK.open.every(Boolean);
+  const g=document.createElement("div");g.className="pkgear";g.innerHTML=`<h3>🎽 ${PK.cards.length?"Bonus gear":"Your gear"}</h3><div class="pkgrow">${PK.gear.map(gcard).join("")}</div>`;const btns=d.querySelector(".pkbtns");if(btns)btns.before(g);
+  if(!PK.cards.length&&btns)btns.innerHTML=`<button class="cta" data-a="xgdone">Put it in my locker</button>`}}
+/* --- the Locker --- */
+var LK={f:"all",sel:null,slot:null};
+function lockerHTML(){const p=cardOwner();if(!p)return homeHTML();const G_=p.gear||[],L=p.locker||{},own=new Set(G_.map(x=>x.gid)),jOwn=GLIST.filter(g=>g.slot==="jersey"&&own.has(g.id)).length,jAll=GLIST.filter(g=>g.slot==="jersey").length;
+  const slot=s=>{const it=G_.find(x=>x.u===L[s[0]]);return `<button class="lks" data-a="xlks:${s[0]}">${it?gcard(it):`<span class="lke"><b>${s[1]}</b><small>${s[2]}</small><i>＋</i></span>`}</button>`};
+  const list=(LK.f==="all"?G_:G_.filter(x=>GEAR[x.gid]&&GEAR[x.gid].slot===LK.f)).slice().sort((a,b)=>"LSARC".indexOf(GEAR[a.gid].r)-"LSARC".indexOf(GEAR[b.gid].r));
+  return topbar("Locker","Gear and jerseys boost your squad")+`<main>${clubNav()}
+   <section class="lkh"><div><small>Squad rating</small><b>${squadOVR(p)}</b></div><div><small>Gear boost</small><b>+${gearBonus(p)}</b></div><div><small>Jerseys</small><b>${jOwn}/${jAll}</b></div></section>
+   <h4 class="sqt">Equipped <span>tap a slot to change it</span></h4><div class="lkg">${GSLOTS.map(slot).join("")}</div>
+   <div class="fr lkf">${[["all","All"]].concat(GSLOTS.map(s=>[s[0],s[1]+" "+s[2]])).map(x=>`<button class="fchip ${LK.f===x[0]?"on":""}" data-a="xlkf:${x[0]}">${x[1]}</button>`).join("")}</div>
+   ${list.length?`<div class="tgrid gk">${list.map(it=>`<button class="tcb" data-a="xgi:${it.u}">${gcard(it)}${Object.values(L).includes(it.u)?`<i class="lkon">✓ On</i>`:""}</button>`).join("")}</div>`:`<div class="empty">No gear here yet. Every pack can drop gear, and the Locker Room Crate is all gear.</div>`}
+   <h3 class="sec">🎽 Jersey closet <span>${jOwn} of ${jAll}</span></h3><div class="jcl">${JDES.map(d=>`<div class="jrow"><b>${esc(d[1])}</b><div>${JV.map(v=>{const g=GEAR["j_"+d[0]+"_"+v[0]],has=own.has(g.id);return `<span class="jcs ${has?"has":""}" style="--rc:${RAR[g.r][1]}">${has?jerseySVG(g,p.num):`<i>?</i>`}<small>${v[1]}</small></span>`}).join("")}</div></div>`).join("")}</div>
+   <p class="fine">Each piece of gear adds to your squad rating: Common and Rare +1, All-Star and Superstar +2, Legend +3. Max +12 from gear.</p></main>`+nav()}
+function gearSheetHTML(u){const p=cardOwner(),it=(p.gear||[]).find(x=>x.u===u);if(!it)return"";const g=GEAR[it.gid],on=Object.values(p.locker||{}).includes(u);
+  return `<div class="gsheet"><div class="gsbox"><button class="x" data-a="xgx" aria-label="Close">✕</button>${gcard(it,1)}<p class="pgs ctr">${RAR[g.r][0]} ${(GSLOTS.find(s=>s[0]===g.slot)||[])[2]} · +${GBOOST[g.r]} squad rating · pulled ${esc(nice(it.at))}</p>
+   <div class="two">${on?`<button class="ghost" data-a="xgoff:${u}">Take it off</button>`:`<button class="cta sm" data-a="xgon:${u}">Equip</button>`}<button class="ghost ${LK.sell===u?"warn":""}" data-a="xgsell:${u}">${LK.sell===u?"Tap again: sell ⚡"+GSELL[g.r]:"Quick sell ⚡"+GSELL[g.r]}</button></div></div></div>`}
+function gearSheet(u){let o=$("#gsh");if(!u){if(o)o.remove();return}if(!o){o=document.createElement("div");o.id="gsh";document.body.appendChild(o)}o.innerHTML=gearSheetHTML(u)}
+{const _r=render;render=function(){if(view==="locker"&&S.who&&!(NET&&!ME)&&!isParent()){$("#app").innerHTML=lockerHTML();$("#sheet").innerHTML="";$("#sheet").className="";return}if($("#gsh")&&view!=="locker")gearSheet(null);return _r()}}
+{const _c=cardsHTML;cardsHTML=function(){return _c().replace('<div class="seg three">','<div class="seg four">').replace(/(data-a="xct2:squad">[\s\S]*?<\/button>)/,'$1<button data-a="go:locker"><span>🎽</span>Locker</button>')}}
+{const _cn=clubNav;clubNav=function(){return _cn().replace('<button class="'+(view==="boards"||view==="hsp"?"on":"")+'" data-a="go:boards">',`<button class="${view==="locker"?"on":""}" data-a="go:locker"><span>🎽</span>Locker</button>$&`)}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0],v=a[1],p=cardOwner(),sv=()=>{if(isCoach())saveCoachCards&&saveCoachCards();save()};
+  if(k==="xlkf"){LK.f=v;render();return}
+  if(k==="xlks"){LK.f=v;render();toast("Tap gear below to equip it");return}
+  if(k==="xgi"){LK.sell=null;gearSheet(v);return}if(k==="xgx"){gearSheet(null);return}
+  if(k==="xgon"){const it=(p.gear||[]).find(x=>x.u===v);if(!it)return;p.locker=p.locker||{};p.locker[GEAR[it.gid].slot]=v;sv();gearSheet(null);render();toast("Equipped! Squad rating "+squadOVR(p));return}
+  if(k==="xgoff"){Object.keys(p.locker||{}).forEach(s=>{if(p.locker[s]===v)delete p.locker[s]});sv();gearSheet(null);render();return}
+  if(k==="xgsell"){if(LK.sell!==v){LK.sell=v;gearSheet(v);return}const it=(p.gear||[]).find(x=>x.u===v);if(!it)return;if(!unl())p.bank=(p.bank||0)+GSELL[GEAR[it.gid].r];p.gear=p.gear.filter(x=>x.u!==v);Object.keys(p.locker||{}).forEach(s=>{if(p.locker[s]===v)delete p.locker[s]});sv();LK.sell=null;gearSheet(null);render();toast("Sold for ⚡ "+GSELL[GEAR[it.gid].r]+" XP");return}
+  if(k==="xgdone"){PK=null;pkRender();go("locker");return}});
+/* coaches keep their gear on this device too */
+{const _sc=saveCoachCards;saveCoachCards=function(){_sc();try{if(CP)localStorage.setItem("dz-coach-gear",JSON.stringify({gear:CP.gear||[],locker:CP.locker||{}}))}catch(e){}}
+ const _cp=coachP;coachP=function(){const fresh=!CP,c=_cp();if(fresh){try{const d=JSON.parse(localStorage.getItem("dz-coach-gear")||"null");if(d){c.gear=d.gear||[];c.locker=d.locker||{}}}catch(e){}}return c}}
+/* show the equipped jersey on My Card */
+{const _ch=cardHTML;cardHTML=function(p){let h=_ch(p);const it=(p.gear||[]).find(x=>x.u===(p.locker||{}).jersey);if(it&&GEAR[it.gid])h=h.replace('<div class="bmid">',`<div class="bmid"><div class="bjer">${jerseySVG(GEAR[it.gid],p.num)}</div>`);return h}}
+{const st=document.createElement("style");st.textContent=`.seg.four{grid-template-columns:repeat(4,1fr)}
+.gc{--rc:#AEB6C4;container-type:inline-size;position:relative;aspect-ratio:5/7;border-radius:5.5cqw;padding:2.4cqw;background:linear-gradient(135deg,#5b636d,#e9edf2 25%,#8b939e 45%,#fafcff 60%,#646c76);overflow:hidden;box-shadow:0 2cqw 5cqw rgba(0,0,0,.5)}
+.gc.rR{background:linear-gradient(135deg,#0a2f73,#4DB8FF 30%,#0c3d8f 50%,#9fdcff 65%,#123e8c)}.gc.rA{background:linear-gradient(135deg,#3b1275,#B57BFF 30%,#5b21b6 50%,#f0d2ff 65%,#4c1d95)}.gc.rS{background:linear-gradient(135deg,#8a4b06,#FFD25A 28%,#b06a0b 48%,#fff6c9 62%,#9a5a07)}.gc.rL{background:conic-gradient(from var(--ang,0deg),#FF5FA2,#a78bfa,#38bdf8,#34d399,#fde047,#fb923c,#FF5FA2);animation:spinb 6s linear infinite}
+.gcin{position:relative;height:100%;border-radius:3.4cqw;overflow:hidden;background:#0d0a18}.gcbg{position:absolute;inset:0;background:radial-gradient(70% 50% at 50% 42%,color-mix(in srgb,var(--rc) 45%,transparent),transparent 75%),repeating-linear-gradient(90deg,#141024 0 6cqw,#181230 6cqw 12cqw)}
+.gcr{position:absolute;left:3cqw;top:3cqw;z-index:2;font:900 4cqw/1 var(--fb);letter-spacing:.08em;text-transform:uppercase;background:rgba(0,0,0,.7);border:.4cqw solid var(--rc);color:#fff;border-radius:99px;padding:1.2cqw 2.4cqw}
+.gcb{position:absolute;right:3cqw;top:3cqw;z-index:2;font:400 7cqw/1 var(--fd);color:#fff;background:var(--rc);color:#111;border-radius:2cqw;padding:1cqw 2.2cqw}
+.gcart{position:absolute;left:8%;right:8%;top:15%;height:58%;display:grid;place-items:center;filter:drop-shadow(0 2cqw 2cqw rgba(0,0,0,.6))}.gcart svg{width:100%;height:100%}
+.gcn{position:absolute;left:0;right:0;bottom:0;padding:3cqw 4cqw 4cqw;background:linear-gradient(0deg,rgba(0,0,0,.9),rgba(0,0,0,.6));border-top:.6cqw solid var(--rc);text-align:center}.gcn small{display:block;font:900 3.6cqw/1 var(--fb);letter-spacing:.12em;color:var(--rc);text-transform:uppercase}.gcn b{display:block;font:400 7.4cqw/1.05 var(--fd);color:#fff;margin-top:1cqw}
+.gc.rS .tcfoil,.gc.rL .tcfoil,.gc.rA .tcfoil{opacity:.45;animation:foil2 4.5s ease-in-out infinite alternate}
+.gc.big{width:min(70vw,260px);margin:0 auto}
+.pkgear{width:100%;display:grid;gap:8px;justify-items:center}.pkgear h3{font:400 20px var(--fd);color:var(--amber)}.pkgrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:100%}.pkgrow .gc{width:calc(33% - 8px);max-width:160px;animation:dealin .45s .3s both}
+.lkh{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.lkh div{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px;text-align:center}.lkh small{display:block;font-size:11.5px;font-weight:800;color:var(--mute)}.lkh b{font:400 26px var(--fd);color:var(--amber)}
+.lkg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.lks{padding:0;border-radius:12px;background:none}.lke{display:grid;place-items:center;aspect-ratio:5/7;border:2px dashed var(--line);border-radius:12px;background:rgba(0,0,0,.2);gap:2px}.lke b{font-size:26px}.lke small{font-size:12px;font-weight:800;color:var(--mute)}.lke i{font-style:normal;color:var(--amber);font-size:20px}
+.lkf{flex-wrap:nowrap;overflow-x:auto}.lkf .fchip{flex:none}.tgrid.gk{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.tgrid.gk .tcb{position:relative}.lkon{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:5;font-style:normal;background:#3DDC84;color:#062;font-weight:900;font-size:11px;border-radius:99px;padding:2px 8px}
+.jcl{display:grid;gap:6px}.jrow{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:6px 10px}.jrow>b{flex:1;font-size:13.5px}.jrow>div{display:flex;gap:6px}.jcs{display:grid;justify-items:center;width:52px;border-radius:8px;padding:2px;background:rgba(0,0,0,.25);border:1.5px solid transparent}.jcs.has{border-color:var(--rc)}.jcs svg{width:46px;height:50px}.jcs i{width:46px;height:50px;display:grid;place-items:center;font-style:normal;color:var(--mute);font-weight:900;opacity:.6}.jcs small{font-size:9px;font-weight:800;color:var(--mute)}
+#gsh .gsheet{position:fixed;inset:0;z-index:70;background:rgba(5,2,15,.8);display:flex;align-items:flex-end;justify-content:center}.gsbox{position:relative;width:min(560px,100%);background:var(--bg2,#2a1060);border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:grid;gap:10px;max-height:92vh;overflow:auto}
+.bjer{width:76px;height:82px;margin:0 auto -8px}.bjer svg{width:100%;height:100%;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}`;document.head.appendChild(st)}
+
+CLUBV.push("locker","cguide");
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}

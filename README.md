@@ -31,3 +31,7 @@ No daily limit on XP to spend.
 ## Search, XP and Home
 🔎 in the top bar searches every page, game, drill, video, trivia/rule question, card and player.
 Players see their XP in the top bar (tap for the XP page: level, how to earn, recent XP, all levels). Home starts with the XP card, then today's work.
+
+## Gear and jerseys
+Clubhouse → 🎽 Locker. 22 jersey designs (BigDawgz Classic, Old Gold Dawg Pound, Midnight Dawgz, New Hudson Nights, Walled Lake Waves, Cooperstown Classic, Tigerstripe, Galaxy, Lava Flow and more), each in Home, Away and Alternate = 66 jerseys, plus 31 bats, gloves, cleats, helmets and batting gloves.
+Gear drops from every pack (better packs always), and the Locker Room Crate (900 XP) is 3 pieces of gear with a jersey for sure. Equipped gear adds up to +12 to the squad rating. The equipped jersey shows on My Card.
