@@ -3782,6 +3782,26 @@ document.addEventListener("click",e=>{const t=e.target.closest('[data-a="xreels"
 {const st=document.createElement("style");st.textContent=`.acrow{display:flex;align-items:center;justify-content:space-between;gap:12px}.acrow b{display:block;font-size:15px}.acrow small{display:block;color:var(--mute);font-size:12.5px;font-weight:700}
 .tgl{flex:none;width:54px;height:30px;border-radius:30px;background:#3a2a5a;border:1.5px solid var(--line);position:relative;transition:background .2s}.tgl i{position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .2s}.tgl.on{background:#3DDC84}.tgl.on i{left:27px}`;document.head.appendChild(st)}
 
+/* ===== QUICK LOG: "I had another sport's practice today" in one tap. Baseball workouts come off for the day ===== */
+function qsHTML(p){if(!p||isCoach())return"";const t=today(),on=sportsOn(p,t),mine=[],seen={};(p.sports||[]).forEach(x=>{const k=x.n.toLowerCase();if(!seen[k]){seen[k]=1;mine.push([x.n,x.e])}});
+  const quick=on.filter(x=>!x.rec&&x.date===t&&x.quick);
+  if(on.length)return `<div class="qsport done"><span class="qse">${on.map(x=>x.e).join(" ")}</span><span class="dtx"><b>${esc(on.map(x=>x.n).join(" + "))} practice today</b><small>Baseball workouts are off today. Rest up! Quizzes and games still count.</small></span>${quick.length?`<button class="lnk" data-a="xqsundo">Undo</button>`:""}</div>`;
+  const opts=mine.slice(0,4);
+  return `<div class="qsport"><b>🏅 Had another sport's practice today?</b><small>Tap it and today's baseball workouts come off. Quizzes and games still count.</small><div class="qsb">${opts.map(o=>`<button class="fchip" data-a="xqs:${esc(o[0])}">${o[1]} ${esc(o[0])}</button>`).join("")}<label class="qssel"><select data-sel="qs"><option value="">${opts.length?"Other sport…":"Pick your sport…"}</option>${OSPORTS.filter(o=>!opts.some(x=>x[0].toLowerCase()===o[0].toLowerCase())).map(o=>`<option value="${esc(o[0])}">${o[1]} ${esc(o[0])}</option>`).join("")}</select></label></div></div>`}
+function qsLog(p,name){if(!p||!name)return;const t=today(),s={id:"s"+Date.now().toString(36),n:name.slice(0,30),e:sportEmo(name),rec:false,date:t,quick:1};
+  if(isParent()){parentPush(p.id,{kind:"cheer",sp:s,at:t}).then(ok=>{if(ok){spApply(p,s);toast(s.e+" "+s.n+" logged for "+p.n);render()}});return}
+  (p.sports=p.sports||[]).push(s);save();toast(s.e+" "+s.n+" practice logged. Baseball workouts are off today.");render()}
+{const _h=homeHTML;homeHTML=function(){const h=_h(),p=me();if(!p||isParent())return h;return h.replace("<main>","<main>"+qsHTML(p))}}
+{const _r=render;render=function(){_r();if(view!=="home"||isCoach()||isParent())return;const m=document.querySelector("#app main");if(!m)return;const q=m.querySelector(":scope > .qsport"),td=m.querySelector(":scope > .todo-box"),bz=m.querySelector(":scope > .busy");if(q&&bz)bz.remove();if(q&&td)td.before(q)}}
+{const _f=famHTML;famHTML=function(){const h=_f(),K=kidsOf();if(!K.length)return h;const p=K.find(x=>x.id===window._kid)||K[0];return h.replace("<main>","<main>"+qsHTML(p).replace("Had another sport's practice today?",esc(p.n)+" had another sport's practice today?"))}}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t)return;const a=t.dataset.a.split(":"),k=a[0],v=a.slice(1).join(":"),p=isParent()?(kidsOf().find(x=>x.id===window._kid)||kidsOf()[0]):me();
+  if(k==="xqs"){qsLog(p,v);return}
+  if(k==="xqsundo"){const t0=today(),q=(p.sports||[]).filter(x=>x.quick&&x.date===t0);if(isParent()){q.forEach(x=>parentPush(p.id,{kind:"cheer",sp:{id:x.id,del:1},at:t0}).then(ok=>{if(ok){spApply(p,{id:x.id,del:1});render()}}));return}p.sports=(p.sports||[]).filter(x=>!(x.quick&&x.date===t0));save();toast("Undone. Baseball workouts are back on.");render()}});
+document.addEventListener("change",e=>{const s=e.target.closest&&e.target.closest('select[data-sel="qs"]');if(!s||!s.value)return;const p=isParent()?(kidsOf().find(x=>x.id===window._kid)||kidsOf()[0]):me();qsLog(p,s.value)});
+{const st=document.createElement("style");st.textContent=`.qsport{display:grid;gap:6px;background:linear-gradient(135deg,rgba(61,220,132,.16),var(--card));border:1.5px solid #3DDC84;border-radius:16px;padding:12px}.qsport>b{font-size:15.5px}.qsport>small{color:var(--mute);font-size:12.5px;font-weight:700}
+.qsb{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.qssel select{appearance:none;-webkit-appearance:none;background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;color:var(--ink);font-weight:800;font-size:14px}
+.qsport.done{display:flex;align-items:center;gap:10px}.qse{font-size:26px}.qsport.done .dtx{flex:1}.qsport.done b{display:block;font-size:15px}.qsport.done small{display:block;color:var(--mute);font-size:12.5px;font-weight:700}`;document.head.appendChild(st)}
+
 /* ===== auto-update: reload when a newer version of the app is on the site ===== */
 (function(){const ME_SRC=(document.currentScript||{}).textContent||"";if(!ME_SRC||location.protocol==="file:")return;
   try{if(/[?&]u=\d/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
