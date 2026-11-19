@@ -1,6 +1,24 @@
-# BigDawgz 12U Dugout
+# Basepaths
 
-Team app for BigDawgz 12U: drills, games and the at-home program.
+The team app for youth baseball coaches, players and families. Run practice. Teach the game.
+(Started as the BigDawgz 12U Dugout. BigDawgz is now the first team on Basepaths.)
+
+## Many teams (run this first)
+Run `supabase/basepaths-orgs.sql` once in the Supabase SQL Editor, after all the `dugout-*.sql` files. Safe to run again.
+- Accounts work across every team. First screen: pick Coach, Parent or Player, then sign in or create an account.
+- After signing in you land on **My teams**: current teams and past seasons, each labeled name · age · season.
+- **Find your team**: search by name, age, season or town, then ask to join as a player, parent or coach. A coach on that team approves you (Coach's View shows who's waiting, and Masterfile has Approve / Deny).
+- Can't find it? Players and parents are told to ask their head coach to create the team. Only coach accounts can create one, and the creator is the head coach.
+- Inside a team everything works the way it always has. Tap the team logo in the top bar (or More → My teams) to switch teams.
+- Your BigDawgz data becomes the first team, and the first approved coach account becomes the **Basepaths admin**.
+
+## Team look (coaches)
+More → Team look and info. Upload a team logo, a big logo, a banner photo and a background photo; type hex colors or pull them from the logo; set the team's Venmo for dues. Press **Update my team's look** and the app re-themes for everyone on that team. Everything outside a team stays Basepaths-branded.
+
+## Basepaths admin (admins only)
+My teams → Basepaths admin. Overview numbers, every team (open it as a coach, members, approve, change roles, edit, pause, delete) and every account (reset password, make admin, delete).
+Make another account an admin: `update dg_users set is_admin = true where email = 'them@email.com';`
+
 
 ## Head-to-Head (live duels)
 Run `supabase/dugout-duel.sql` once in the Supabase SQL Editor (after `dugout-backend.sql` and `dugout-live.sql`).
