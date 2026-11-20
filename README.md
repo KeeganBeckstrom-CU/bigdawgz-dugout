@@ -12,6 +12,14 @@ Run `supabase/basepaths-orgs.sql` once in the Supabase SQL Editor, after all the
 - Inside a team everything works the way it always has. Tap the team logo in the top bar (or More → My teams) to switch teams.
 - Your BigDawgz data becomes the first team, and the first approved coach account becomes the **Basepaths admin**.
 
+## Kids' accounts and deleting accounts (run second)
+Run `supabase/basepaths-kids.sql` after `basepaths-orgs.sql`.
+- Player sign-up asks for a birth year. Under 13: "Ask a parent to set you up" (remembered on that device).
+- Parents: My teams → **My players** → Add my player (name, username, password). That's the parent's OK. Kids sign in with the username.
+- Parents can change a kid's password or delete the kid's account. Players who were already on a team show up for their linked parent as "Needs your OK."
+- Anyone can delete their account: My teams → Delete my account (an only coach on a team with people must add another coach first).
+- `privacy.html` and `terms.html` — fill in the support email before submitting to the App Store, and have a lawyer look them over.
+
 ## Team look (coaches)
 More → Team look and info. Upload a team logo, a big logo, a banner photo and a background photo; type hex colors or pull them from the logo; set the team's Venmo for dues. Press **Update my team's look** and the app re-themes for everyone on that team. Everything outside a team stays Basepaths-branded.
 
