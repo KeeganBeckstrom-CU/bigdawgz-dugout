@@ -18,6 +18,8 @@
 alter table dg_users add column if not exists kid boolean not null default false;
 alter table dg_users add column if not exists parent_id uuid references dg_users(id) on delete cascade;
 alter table dg_users add column if not exists consent_at timestamptz;
+-- which wording the parent checked, so there's a record of exactly what they agreed to
+alter table dg_users add column if not exists consent_ver text;
 create index if not exists dg_users_parent on dg_users(parent_id);
 
 -- kid usernames are stored as <username>@kid.basepaths so they can't clash with real emails
@@ -64,8 +66,14 @@ begin
     from dg_my_kids(u.id) k), '[]'::jsonb));
 end $$;
 
--- a parent makes a login for their player (this is the parent's OK)
-create or replace function dz_kid_add(p_tok text, p_name text, p_user text, p_pw text) returns jsonb
+-- the box parents check. Change the version if you change the wording in the app.
+create or replace function dg_consent_ver() returns text language sql immutable as $$ select 'parent-ok-v1' $$;
+
+drop function if exists dz_kid_add(text, text, text, text);
+drop function if exists dz_kid_ok(text, uuid);
+
+-- a parent makes a login for their player. They must check the permission box (p_consent).
+create or replace function dz_kid_add(p_tok text, p_name text, p_user text, p_pw text, p_consent boolean) returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare u dg_users; nm text := left(trim(coalesce(p_name, '')), 40); un text := lower(trim(coalesce(p_user, ''))); kid_id uuid;
 begin
@@ -76,20 +84,22 @@ begin
   if length(coalesce(p_pw, '')) < 6 then raise exception 'short_password'; end if;
   if exists (select 1 from dg_users where email = dg_kid_email(un)) then raise exception 'username_taken'; end if;
   if (select count(*) from dg_users where parent_id = u.id) >= 8 then raise exception 'too_many_kids'; end if;
-  insert into dg_users(email, pw, name, role, status, kid, parent_id, consent_at)
-    values (dg_kid_email(un), extensions.crypt(p_pw, extensions.gen_salt('bf')), nm, 'player', 'active', true, u.id, now())
+  if p_consent is not true then raise exception 'need_consent'; end if;
+  insert into dg_users(email, pw, name, role, status, kid, parent_id, consent_at, consent_ver)
+    values (dg_kid_email(un), extensions.crypt(p_pw, extensions.gen_salt('bf')), nm, 'player', 'active', true, u.id, now(), dg_consent_ver())
     returning dg_users.id into kid_id;
   return jsonb_build_object('ok', true, 'id', kid_id, 'user', un);
 end $$;
 
--- a parent OKs a player account that was made before parents set them up
-create or replace function dz_kid_ok(p_tok text, p_kid uuid) returns jsonb
+-- a parent OKs a player account that was made before parents set them up (must check the box too)
+create or replace function dz_kid_ok(p_tok text, p_kid uuid, p_consent boolean) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare u dg_users;
 begin
   u := dg_user(p_tok);
   if not exists (select 1 from dg_my_kids(u.id) k where k.id = p_kid) then raise exception 'not_your_player'; end if;
-  update dg_users set parent_id = u.id, consent_at = now() where id = p_kid;
+  if p_consent is not true then raise exception 'need_consent'; end if;
+  update dg_users set parent_id = u.id, consent_at = now(), consent_ver = dg_consent_ver() where id = p_kid;
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -169,7 +179,7 @@ begin
                       from dg_members m join dg_orgs o on o.id = m.org_id where m.account_id = u.id), '[]'::jsonb));
 end $$;
 
-grant execute on function dz_login(text,text), dz_kids(text), dz_kid_add(text,text,text,text), dz_kid_ok(text,uuid),
+grant execute on function dz_login(text,text), dz_kids(text), dz_kid_add(text,text,text,text,boolean), dz_kid_ok(text,uuid,boolean),
   dz_kid_pw(text,uuid,text), dz_kid_delete(text,uuid), dz_account_delete(text,text), dz_org_join(text,uuid,text), dz_home(text)
   to anon, authenticated;
 revoke execute on function dg_kid_email(text) from public, anon, authenticated;
