@@ -5161,15 +5161,21 @@ window.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("
 .bwpt.add .bwav{background:#151A24!important;border:2px dashed #3D4659;color:#9AA3B2;font-style:normal}`;document.head.appendChild(st)}
 
 /* ===== BASEPATHS 3d: BigDawgz look = deep black with the logo glowing behind everything ===== */
-function bwBlackCSS(img){return `html{background:#030304}
-body{background:radial-gradient(120% 70% at 50% 45%,#0d0a14 0%,#050507 55%,#020203 100%) fixed!important}
+const bwIsBD=(o,b)=>!!((b&&b.preset==="bigdawgz")||(o&&/^bigdawgz/.test(String(o.name||"").toLowerCase().replace(/[^a-z0-9]/g,""))));
+function bwBlackCSS(img){return `:root{--bg:#050507;--bg2:#020203;--card:#121016;--card2:#1a1622;--deep:#0a080e;--blk:#000;--line:rgba(140,92,220,.30)}
+html{background:#020203}
+body{background:radial-gradient(120% 70% at 50% 45%,#0c0a12 0%,#050507 55%,#020203 100%) fixed!important}
 body::before{content:"";position:fixed;left:50%;top:50%;width:min(96vw,560px);height:min(96vw,560px);transform:translate(-50%,-50%);border-radius:50%;z-index:0;pointer-events:none;
- background:radial-gradient(circle,rgba(124,58,237,.34) 0%,rgba(124,58,237,.16) 30%,rgba(224,190,88,.08) 48%,transparent 68%);filter:blur(14px);animation:bdglow 7s ease-in-out infinite}
-body::after{content:"";position:fixed;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;background:url("${img}") 50% 50%/min(76vw,420px) auto no-repeat;opacity:.24;mix-blend-mode:screen;filter:saturate(1.25) brightness(1.1)}
-@keyframes bdglow{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.6;transform:translate(-50%,-50%) scale(1.07)}}
+ background:radial-gradient(circle,rgba(124,58,237,.38) 0%,rgba(124,58,237,.17) 30%,rgba(224,190,88,.08) 48%,transparent 68%);filter:blur(14px);animation:bdglow 7s ease-in-out infinite;opacity:1;mix-blend-mode:normal}
+body::after{content:"";position:fixed;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;background:url("${img}") 50% 50%/min(76vw,420px) auto no-repeat;opacity:.26;mix-blend-mode:screen;filter:saturate(1.25) brightness(1.1)}
+@keyframes bdglow{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.55;transform:translate(-50%,-50%) scale(1.07)}}
 @media(prefers-reduced-motion:reduce){body::before{animation:none}}
-#app{position:relative;z-index:1}`}
-{const _a=bpApply;bpApply=function(o,b){_a(o,b);if(!(b&&b.preset==="bigdawgz"))return;const st=document.getElementById("bptheme");if(!st)return;
-  const img=b.bg&&/^data:image\//.test(b.bg)?b.bg:BD_LOGO;st.textContent=st.textContent.replace(/body::before\{[^}]*\}#app\{position:relative;z-index:1\}/,"")+"\n"+bwBlackCSS(img);
-  const m=document.querySelector('meta[name="theme-color"]');if(m)m.content="#030304"}}
+#app{position:relative;z-index:1}
+nav,.nav{background:rgba(8,6,12,.94)!important}
+.top{background:#000!important}
+.sheet{background:linear-gradient(180deg,#1a1524,#0e0c13 220px)!important}`}
+{const _a=bpApply;bpApply=function(o,b){_a(o,b);if(!bwIsBD(BP.org,b))return;const st=document.getElementById("bptheme");if(!st)return;
+  const img=b&&b.bg&&/^data:image\//.test(b.bg)?b.bg:(b&&b.logo&&/^data:image\//.test(b.logo)?b.logo:BD_LOGO);
+  st.textContent=st.textContent.replace(/body::before\{[^}]*\}#app\{position:relative;z-index:1\}/,"")+"\n"+bwBlackCSS(img);
+  const m=document.querySelector('meta[name="theme-color"]');if(m)m.content="#000000"}}
 </script></body></html>
