@@ -4772,5 +4772,284 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
 },true);
 /* the account page inside a team also gets Delete my account */
 {const _r2=render;render=function(){_r2();if(!NET||BP.legacy||!ME||view!=="acct")return;const b=document.querySelector("#app .bpin");if(b&&!b.querySelector('[data-a="bkdelgo"]'))b.insertAdjacentHTML("beforeend",`<button class="lnk" data-a="bkdelgo">Delete my account</button>`)}}
+/* ===== BASEPATHS 3: profiles on a shared phone, families + money, tappable numbers, cleaner views, test sign-up ===== */
+var BW={prof:null,pwFor:"",busy:false,un:null,unBusy:false,chTab:"open",pk:"dues",test:null};
+try{BW.test=JSON.parse(localStorage.getItem("bp-test")||"null")}catch(e){}
+const bwPT=()=>{try{return localStorage.getItem("bp-ptok")}catch(e){return null}};
+const bwSetPT=t=>{try{t?localStorage.setItem("bp-ptok",t):localStorage.removeItem("bp-ptok")}catch(e){}};
+const bwOn=()=>NET&&!BP.legacy;
+Object.assign(NERR,{bad_password:"That password isn't right.",not_your_player:"That's not one of your players.",bad_kind:"Pick dues or fundraising.",not_admin:"Only a Basepaths admin can do that."});
 
+/* --- dues and fundraising are kept apart: MONEY.pay is dues, MONEY.fund is fundraising --- */
+{const _a=applyServer;applyServer=function(r){const x=_a(r);try{const all=(MONEY&&MONEY.pay)||[];MONEY.fund=all.filter(p=>p.kind==="fund");MONEY.pay=all.filter(p=>p.kind!=="fund")}catch(e){}return x}}
+const bwFunds=pid=>((NET&&MONEY.fund)||[]).filter(x=>x.player===pid).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+const bwFundOf=pid=>Math.round(bwFunds(pid).reduce((s,x)=>s+ +x.amt,0)*100)/100;
+const bwFundSet=o=>{S.fund=Object.assign({},FUND(),S.fund||{},o)};
+
+/* --- a simple pop-up list: who is behind a number --- */
+function bwOpen(html){let o=document.getElementById("bwov");if(!o){o=document.createElement("div");o.id="bwov";document.body.appendChild(o)}
+  o.innerHTML=`<div class="sheet bwsh" role="dialog" aria-modal="true"><button class="x" data-a="bwx" aria-label="Close">✕</button>${html}</div>`;o.className="on";document.body.classList.add("lock");o.scrollTop=0}
+function bwClose(){const o=document.getElementById("bwov");if(o){o.className="";o.innerHTML=""}if(!sheet)document.body.classList.remove("lock")}
+function bwRow(r){const tag=r.a?"button":"div";return `<${tag} class="bwr${r.a?" go":""}" ${r.a?`data-a="${r.a}"`:""} ${r.c?`style="--c:${r.c}"`:""}>${r.i?`<span class="bwi">${r.i}</span>`:""}<span class="dtx"><b>${esc(r.n)}</b>${r.s?`<small>${esc(r.s)}</small>`:""}</span>${r.r!=null?`<em>${esc(r.r)}</em>`:""}${r.a?`<i class="arr">›</i>`:""}</${tag}>`}
+function bwList(title,sub,groups){bwOpen(`<h2 class="bwt">${esc(title)}</h2>${sub?`<p class="pgs">${esc(sub)}</p>`:""}${groups.map(g=>`${g.h?`<h3 class="sec">${esc(g.h)} <span>${g.rows.length}</span></h3>`:""}<div class="bwrows">${g.rows.map(bwRow).join("")||`<div class="empty">${esc(g.e||"Nobody here.")}</div>`}</div>`).join("")}`)}
+const bwPL=()=>S.players.filter(p=>!p.tmp);
+const bwPRow=(p,s,r)=>({n:p.n,s:s!=null?s:(p.num?"#"+p.num+" · ":"")+"last active "+agoTxt(p.last),a:"player:"+p.id,c:p.col,r});
+const bwWkName=d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+async function bwSaWho(what,title){bwList(title,"Loading…",[]);try{const r=await rpc("dz_sa_who",{p_tok:TOK,p_what:what});bwList(title,"",[{rows:r.rows.map(x=>({n:x.n,s:x.s}))}])}catch(e){bwClose();toast(nmsg(e))}}
+const BWK={
+  "t:players":()=>bwList("Players","Tap a player to open them.",[{rows:bwPL().map(p=>bwPRow(p))}]),
+  "t:active today":()=>{const t=today(),L=bwPL();bwList("Active today","",[{h:"Active today",rows:L.filter(p=>p.last===t).map(p=>bwPRow(p,"Did something in the app today")),e:"Nobody yet today."},{h:"Not yet today",rows:L.filter(p=>p.last!==t).map(p=>bwPRow(p))}])},
+  "t:homework done":()=>{const L=bwPL(),s=p=>hwDone(p).length+" done · "+hwOpen(p).length+" still open";bwList("Homework","Done out of everything assigned.",[{h:"Still has homework open",rows:L.filter(p=>hwOpen(p).length).sort((a,b)=>hwOpen(b).length-hwOpen(a).length).map(p=>bwPRow(p,s(p))),e:"Nobody has open homework."},{h:"All done",rows:L.filter(p=>!hwOpen(p).length&&hwDone(p).length).map(p=>bwPRow(p,s(p)))},{h:"Nothing assigned",rows:L.filter(p=>!p.hw.length).map(p=>bwPRow(p,"No homework yet"))}])},
+  "t:collected":()=>{const L=bwPL().map(p=>[p,paidOf(p.id)]).sort((a,b)=>b[1]-a[1]);bwList("Dues collected","Team dues paid by each family. Tap to record a payment.",[{rows:L.filter(x=>x[1]>0).map(([p,v])=>({n:p.n,s:esc(planName(planOf(p.id))),a:"xpopen:"+p.id,c:p.col,r:fmt(v)})),e:"No dues paid yet."}])},
+  "t:still owed":()=>{const T=DUES().total,L=bwPL().map(p=>[p,Math.max(0,T-paidOf(p.id))]).sort((a,b)=>b[1]-a[1]);bwList("Still owed","What's left on the "+fmt(T)+" season fee.",[{rows:L.filter(x=>x[1]>0.004).map(([p,v])=>({n:p.n,s:fmt(paidOf(p.id))+" paid so far",a:"xpopen:"+p.id,c:p.col,r:fmt(v)})),e:"Everyone is paid in full."}])},
+  "t:behind":()=>{const L=bwPL().map(p=>[p,nextDue(p.id)]).filter(x=>x[1]&&!x[1].full&&x[1].days<0);bwList("Behind on their plan","",[{rows:L.map(([p,n])=>({n:p.n,s:fmt(n.amt)+" late since "+nice(n.d),a:"xpopen:"+p.id,c:p.col})),e:"Nobody is behind."}])},
+  "s:active days":()=>{const p=P(sheet&&sheet[1]);if(!p)return;bwList(p.n+" this week","Days they did something in the app.",[{rows:weekDays().map(d=>({n:bwWkName(d),i:(p.act||{})[d]?"✅":"·",s:(p.act||{})[d]?"Active":d>today()?"Coming up":"Not active"}))}])},
+  "s:drills done":()=>{const p=P(sheet&&sheet[1]);if(!p)return;const W=new Set(weekDays());bwList(p.n+"'s drills","This week.",[{rows:(p.log||[]).filter(l=>W.has(l.d)).map(l=>({n:(DR[l.id]||{n:l.id}).n,s:bwWkName(l.d)})),e:"No drills logged this week."}])},
+  "s:homework done":()=>{const p=P(sheet&&sheet[1]);if(!p)return;bwList(p.n+"'s homework","Finished.",[{rows:hwDone(p).map(h=>({n:(DR[h.id]||{n:h.id}).n,i:"✅",s:"Done "+nice(h.done)})),e:"Nothing finished yet."}])},
+  "s:still open":()=>{const p=P(sheet&&sheet[1]);if(!p)return;bwList(p.n+"'s homework","Still open.",[{rows:hwOpen(p).map(h=>({n:(DR[h.id]||{n:h.id}).n,i:"⬜",s:h.due?"Due "+nice(h.due):""})),e:"Nothing open."}])},
+  "a:teams":()=>bwSaWho("orgs","Teams"),"a:active teams":()=>bwSaWho("active","Active teams"),"a:accounts":()=>bwSaWho("users","Accounts"),"a:players":()=>bwSaWho("players","Players"),
+  "a:waiting for ok":()=>bwSaWho("pending","Waiting for a coach OK"),"a:new this week":()=>bwSaWho("new7","New this week"),"a:used the app this week":()=>bwSaWho("live7","Used the app this week"),
+  "matched":()=>{const A=accts(),L=bwPL();bwList("Roster sign-ins","Players who picked their name when they signed up.",[{h:"Signed in",rows:L.filter(p=>p.claimed).map(p=>bwPRow(p,(A.find(a=>a.id===p.claimed)||{}).email||"Has a sign-in"))},{h:"No sign-in yet",rows:L.filter(p=>!p.claimed).map(p=>bwPRow(p,"Hasn't signed up yet"))}])}
+};
+function bwTag(){const tag=(el,key)=>{if(!el||el.dataset.bw)return;el.dataset.bw=key;el.classList.add("bwt");el.setAttribute("role","button");el.tabIndex=0};
+  document.querySelectorAll("#app .tiles > div, #sheet .pst > div, #app .bptiles > div").forEach(d=>{const l=((d.querySelector("small")||{}).textContent||"").trim().toLowerCase(),c=d.closest(".bptiles")?"a":d.closest("#sheet")?"s":"t",k=c+":"+l;
+    if(BWK[k]&&(c!=="t"||isCoach()))tag(d,k)});
+  if(isCoach())document.querySelectorAll("#app h3.sec span").forEach(s=>{if(/\bmatched\b/i.test(s.textContent))tag(s,"matched")});
+  document.querySelectorAll("#app .bpo .bpch.hot").forEach(c=>{const b=c.closest(".bpo").querySelector("[data-a^='bpopen:']");if(b)tag(c,"join:"+b.dataset.a.split(":")[1])})}
+function bwTapNum(el){const k=el.dataset.bw;if(k.startsWith("join:")){window._ct="master";bpEnter(k.slice(5));return}if(BWK[k])BWK[k]()}
+
+/* --- families: everyone linked to the same players is one family --- */
+function bwFams(){if(!NET)return[];const A=accts(),PL=bwPL(),L=links().filter(l=>l.status==="active"&&PL.some(p=>p.id===l.kid)),par={};
+  const add=k=>{if(!(k in par))par[k]=k},find=k=>{while(par[k]!==k){par[k]=par[par[k]];k=par[k]}return k},uni=(a,b)=>{add(a);add(b);par[find(a)]=find(b)};
+  PL.forEach(p=>add("p:"+p.id));L.forEach(l=>uni("p:"+l.kid,"a:"+l.parent));const g={};Object.keys(par).forEach(k=>{const r=find(k);(g[r]=g[r]||[]).push(k)});const T=DUES().total;
+  return Object.values(g).map(ks=>{const players=ks.filter(k=>k[0]==="p").map(k=>P(k.slice(2))).filter(Boolean).sort((a,b)=>a.n.localeCompare(b.n)),parents=ks.filter(k=>k[0]==="a").map(k=>A.find(a=>a.id===k.slice(2))).filter(Boolean);
+    return{id:players.map(p=>p.id).join("."),name:bwFamName(players,parents),players,parents,dues:players.reduce((s,p)=>s+paidOf(p.id),0),owe:T*players.length,fund:players.reduce((s,p)=>s+bwFundOf(p.id),0)}}).sort((a,b)=>a.name.localeCompare(b.name))}
+function bwFamName(pl,pa){const w=s=>(String(s||"").trim().split(/\s+/).slice(-1)[0]||"").replace(/[^A-Za-z'’-]/g,""),c=pa.map(u=>w(u.name)).concat(pl.map(p=>w(p.n))).filter(x=>x.length>=3&&/[a-z]/.test(x));
+  if(c.length){const n={};c.forEach(x=>{const k=x[0].toUpperCase()+x.slice(1);n[k]=(n[k]||0)+1});return "The "+Object.entries(n).sort((a,b)=>b[1]-a[1]||b[0].length-a[0].length)[0][0]+" family"}
+  const f=pl[0]?pl[0].n:pa[0]?pa[0].name:"";return f?f+"'s family":"Family"}
+async function bwUnLoad(){if(!NET||!isCoach()||S.peek)return;BW.unBusy=true;try{BW.un=(await rpc("dz_unmatched",{p_tok:TOK})).rows}catch(e){BW.un=[]}BW.unBusy=false;if(view==="team"&&window._ct==="families")render()}
+function bwUnGroups(){const g={};(BW.un||[]).forEach(r=>{const x=g[r.payer]=g[r.payer]||{payer:r.payer,dues:0,fund:0,rows:[]};x[r.kind]+= +r.amt;x.rows.push(r)});return Object.values(g)}
+const _bwFamOrig=familiesPanel;
+familiesPanel=function(){if(!NET)return _bwFamOrig();const F=bwFams(),T=DUES().total,PL=bwPL();if(BW.un===null&&!BW.unBusy)bwUnLoad();
+  const base=_bwFamOrig().replace(/<h3 class="sec">👪 Players and their parents[\s\S]*?(?=<h3 class="sec">🔗)/,""),cut=base.indexOf('<h3 class="sec">🔗'),ok=cut>=0?base.slice(0,cut):"",rest=cut>=0?base.slice(cut):base;
+  const pars=new Set(F.flatMap(f=>f.parents.map(u=>u.id))),UG=bwUnGroups();
+  return `${ok}<div class="tiles"><button data-a="bwfl:fams"><b>${F.length}</b><small>Families</small></button><button data-a="bwfl:players"><b>${PL.length}</b><small>Players</small></button><button data-a="bwfl:parents"><b>${pars.size}</b><small>Parents</small></button></div>
+   <h3 class="sec">👪 Families <span>tap one</span></h3>${F.map(f=>`<button class="bwfam" data-a="bwfam:${f.id}"><span class="bwfh"><b>${esc(f.name)}</b><i class="arr">›</i></span>
+     <span class="bwchips">${f.players.map(p=>`<span class="bwpc" style="--c:${p.col}">${p.num!=null&&p.num!==""?"#"+p.num+" ":""}${esc(p.n)}</span>`).join("")}${f.parents.map(u=>`<span class="bwpar">👤 ${esc(u.name)}</span>`).join("")||`<span class="bwpar none">No parent linked yet</span>`}</span>
+     <span class="bwmon"><span>Dues <b>${fmt(f.dues)}</b> of ${fmt(f.owe)}</span><span>Fundraising <b>${fmt(f.fund)}</b></span></span><span class="xp"><i style="width:${f.owe?Math.min(100,f.dues/f.owe*100):0}%"></i></span></button>`).join("")||`<div class="empty">No players yet.</div>`}
+   ${UG.length||BW.unBusy?`<h3 class="sec">💸 Paid, not matched to a player yet <span>${UG.length}</span></h3><p class="pgs">This money came in, but their player isn't in the app yet. Once the player is on your roster, match it and it moves onto that family.</p>
+     ${BW.unBusy&&!UG.length?`<div class="bpspin"></div>`:UG.map((u,i)=>`<div class="bwun"><div class="dtx"><b>${esc(u.payer)}</b><small>${u.dues?"Dues "+fmt(u.dues):""}${u.dues&&u.fund?" · ":""}${u.fund?"Fundraising "+fmt(u.fund):""} · ${u.rows.length} payment${u.rows.length===1?"":"s"}</small></div>
+       <div class="bwunf"><select id="bwum${i}" aria-label="Match ${esc(u.payer)} to a player"><option value="">Match to a player…</option>${PL.map(p=>`<option value="${p.id}">${esc(p.n)}</option>`).join("")}</select><button class="cta sm" data-a="bwum:${i}">Match</button></div></div>`).join("")}`:""}
+   ${rest}`};
+function bwFamSheet(id){const f=bwFams().find(x=>x.id===id);if(!f){bwClose();return}const T=DUES().total;
+  const pays=f.players.flatMap(p=>paysOf(p.id).map(x=>Object.assign({k:"Dues",p},x)).concat(bwFunds(p.id).map(x=>Object.assign({k:"Fundraising",p},x)))).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+  bwOpen(`<h2 class="bwt">${esc(f.name)}</h2><p class="pgs">Only coaches and this family can see their money.</p>
+   <div class="tiles"><div><b>${fmtK(f.dues)}</b><small>Dues paid</small></div><div><b>${fmtK(Math.max(0,f.owe-f.dues))}</b><small>Dues left</small></div><div><b>${fmtK(f.fund)}</b><small>Fundraising</small></div></div>
+   <h3 class="sec">Players <span>${f.players.length}</span></h3>${f.players.map(p=>{const pd=paidOf(p.id);return `<div class="bwr" style="--c:${p.col}">${avatar(p)}<span class="dtx"><b>${esc(p.n)}</b><small>Dues ${fmt(pd)} of ${fmt(T)} · fundraising ${fmt(bwFundOf(p.id))}</small></span><span class="bwbt"><button class="ghost sm" data-a="pprof:${p.id}">Profile</button><button class="cta sm" data-a="xpopen:${p.id}">＋ Pay</button></span></div>`}).join("")}
+   <h3 class="sec">Parents <span>${f.parents.length}</span></h3>${f.parents.map(u=>`<div class="bwr"><span class="bwi">👤</span><span class="dtx"><b>${esc(u.name)}</b><small>${esc(u.email||"")}</small></span></div>`).join("")||`<div class="empty">No parent linked yet. Link one under Families.</div>`}
+   <h3 class="sec">Money in <span>${pays.length}</span></h3>${pays.map(x=>`<div class="bwr"><span class="bwi">${x.k==="Dues"?"💵":"🎟️"}</span><span class="dtx"><b>${fmt(x.amt)} · ${x.k}</b><small>${esc(x.p.n)} · ${nice(x.d)} · ${esc(x.method||"")}${x.note?" · "+esc(x.note):""}</small></span></div>`).join("")||`<div class="empty">No money recorded yet.</div>`}`)}
+function bwFamTiles(k){const F=bwFams();if(k==="fams")return bwList("Families","",[{rows:F.map(f=>({n:f.name,s:f.players.map(p=>p.n).join(", "),a:"bwfam:"+f.id,r:fmt(f.dues+f.fund)}))}]);
+  if(k==="players")return bwList("Players","",[{rows:F.flatMap(f=>f.players.map(p=>bwPRow(p,f.name)))}]);
+  const A=accts(),pars=F.flatMap(f=>f.parents.map(u=>[u,f])),none=A.filter(a=>a.role==="parent"&&!pars.some(x=>x[0].id===a.id));
+  bwList("Parents","",[{h:"Linked to a player",rows:pars.map(([u,f])=>({n:u.name,s:f.name+" · "+(u.email||""),a:"bwfam:"+f.id}))},{h:"No player yet",rows:none.map(u=>({n:u.name,s:u.email||""}))}])}
+
+/* --- money on the full player profile (coach) --- */
+{const _p=pprofHTML;pprofHTML=function(){let h=_p();const p=P(PPID);if(!p||!NET||!isCoach())return h;const f=bwFams().find(x=>x.players.some(q=>q.id===p.id)),T=DUES().total,pd=paidOf(p.id),fd=bwFundOf(p.id),nd=nextDue(p.id);
+  const pays=paysOf(p.id).map(x=>Object.assign({k:"Dues"},x)).concat(bwFunds(p.id).map(x=>Object.assign({k:"Fundraising"},x))).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+  const box=`<h3 class="sec">👪 Family and money <span>only coaches and family see this</span></h3><div class="bwpm">
+   <button class="bwr go" data-a="bwfam:${f?f.id:""}"><span class="bwi">👪</span><span class="dtx"><b>${esc(f?f.name:"No family yet")}</b><small>${f&&f.parents.length?f.parents.map(u=>esc(u.name)).join(", "):"No parent linked yet"}</small></span><i class="arr">›</i></button>
+   <div class="tiles"><div><b>${fmtK(pd)}</b><small>Dues paid</small></div><div><b>${fmtK(Math.max(0,T-pd))}</b><small>Dues left</small></div><div><b>${fmtK(fd)}</b><small>Fundraising</small></div></div>
+   <p class="pgs">${esc(planName(planOf(p.id)))}${nd&&!nd.full?" · next "+fmt(nd.amt)+" "+inDays(nd.days):nd&&nd.full?" · paid in full":""}</p>
+   ${pays.slice(0,6).map(x=>`<div class="bwr"><span class="bwi">${x.k==="Dues"?"💵":"🎟️"}</span><span class="dtx"><b>${fmt(x.amt)} · ${x.k}</b><small>${nice(x.d)} · ${esc(x.method||"")}${x.note?" · "+esc(x.note):""}</small></span></div>`).join("")||`<div class="empty">No money recorded yet.</div>`}
+   <button class="cta" data-a="xpopen:${p.id}">＋ Record dues or fundraising</button></div>`;
+  const i=h.lastIndexOf("</main>");return i<0?h:h.slice(0,i)+box+h.slice(i)}}
+
+/* --- record dues OR fundraising --- */
+{const _p=paySheet;paySheet=function(pid){const p=P(pid);if(!p)return "";const k=NET?BW.pk:"dues",seg=NET?`<div class="seg two bwkind"><button class="${k==="dues"?"on":""}" data-a="bwpk:dues">💵 Team dues</button><button class="${k==="fund"?"on":""}" data-a="bwpk:fund">🎟️ Fundraising</button></div>`:"";
+  if(k!=="fund")return _p(pid).replace(/(<button class="x"[^>]*>✕<\/button>)/,"$1"+seg);const m=window._pm||"Venmo",L=bwFunds(pid);
+  return `<div class="sheet" style="--c:${p.col}"><button class="x" data-a="close" aria-label="Close">✕</button>${seg}<div class="shd">${avatar(p,1)}<div><small>Record fundraising</small><h2>${esc(p.n)}</h2></div></div>
+   <p class="pgs">This family has raised <b>${fmt(bwFundOf(pid))}</b>. It also adds to the Cooperstown total.</p>
+   <div class="form"><label>Amount<input id="pyA" inputmode="decimal" placeholder="0" class="big"></label>
+   <div class="seg four">${["Venmo","Cash","Check","Other"].map(x=>`<button class="${m===x?"on":""}" data-a="xpm:${x}">${x}</button>`).join("")}</div>
+   <div class="two"><label>Date<input id="pyD" type="date" value="${today()}"></label><label>Note (optional)<input id="pyN" maxlength="60" placeholder="Raffle tickets"></label></div>
+   <button class="cta" data-a="bwfund:${pid}">Record fundraising</button></div>
+   <h4>Fundraising history</h4>${L.map(x=>`<div class="annrow"><span class="dtx"><b>${fmt(x.amt)} · ${esc(x.method||"")}</b><small>${nice(x.d)}${x.note?" · "+esc(x.note):""}</small></span><button class="lnk" data-a="xpdel:${x.id}">${window._pd===x.id?"Tap again":"Delete"}</button></div>`).join("")||`<p class="pgs">Nothing yet.</p>`}</div>`}}
+
+/* --- Cooperstown card: raised, spent, and what's behind each --- */
+{const _f=fundCard;fundCard=function(coach){let h=_f(coach);const F=FUND(),sp=+F.spent||0,c=coach&&NET&&isCoach();
+  h=h.replace(/<p class="fundn"><b>([^<]*)<\/b> raised of ([^<]*)<\/p>/,(x,a,b)=>`<p class="fundn">${c?`<button class="bwfn" data-a="bwfr">${a}</button>`:`<b>${a}</b>`} raised of ${b}</p>${sp?`<p class="bwsp">${c?`<button class="bwfn sm" data-a="bwfs">${fmt(sp)} spent on Cooperstown</button>`:`<span>${fmt(sp)} spent on Cooperstown</span>`} · ${fmt(Math.max(0,(+F.raised||0)-sp))} left in the fund</p>`:""}`);
+  if(c)h=h.replace('<label>Goal<input id="fg"',`<label>Spent<input id="fsp" inputmode="decimal" value="${sp}"></label><label>Goal<input id="fg"`).replace('<div class="two"><label>Raised so far','<div class="two bw3"><label>Raised so far');
+  return h}}
+async function bwFundList(){if(BW.un===null&&isCoach()){bwList("Cooperstown","Loading…",[]);await bwUnLoad()}const F=FUND(),fams=bwFams().filter(f=>f.fund>0).sort((a,b)=>b.fund-a.fund),un=bwUnGroups().filter(u=>u.fund>0),team=F.team||[];
+  const known=fams.reduce((s,f)=>s+f.fund,0)+un.reduce((s,u)=>s+u.fund,0)+team.reduce((s,t)=>s+ +t.a,0),other=Math.round(((+F.raised||0)-known)*100)/100;
+  bwList("Cooperstown: "+fmt(F.raised)+" raised","Where it came from.",[{h:"From families",rows:fams.map(f=>({n:f.name,s:f.players.map(p=>p.n).join(", "),a:"bwfam:"+f.id,r:fmt(f.fund)})),e:"No family fundraising recorded yet."},
+    ...(un.length?[{h:"Not matched to a player yet",rows:un.map(u=>({n:u.payer,r:fmt(u.fund)}))}]:[]),
+    {h:"Team",rows:team.map(t=>({n:t.n,s:nice(t.d),r:fmt(+t.a)})).concat(Math.abs(other)>=0.01?[{n:other>0?"Added by hand":"Taken off by hand",s:"From Add money raised or Fix the totals",r:fmt(other)}]:[]),e:"Nothing else."}])}
+function bwSpentList(){const F=FUND(),L=F.out||[],sum=L.reduce((s,t)=>s+ +t.a,0),other=Math.round(((+F.spent||0)-sum)*100)/100;
+  bwList("Spent on Cooperstown",fmt(F.spent||0)+" so far.",[{rows:L.map(t=>({n:t.n,s:nice(t.d),r:fmt(+t.a)})).concat(Math.abs(other)>=0.01?[{n:"Other",s:"From Fix the totals",r:fmt(other)}]:[]),e:"Nothing spent yet."}])}
+
+/* --- parents: fundraising on their own Payments page --- */
+{const _m=moneyHTML;moneyHTML=function(){let h=_m();if(!NET)return h;const K=kidsOf(),p=K.find(k=>k.id===window._kid)||K[0];if(!p)return h;const L=bwFunds(p.id);
+  const box=`<h3 class="sec">🎟️ Your fundraising <span>${fmt(bwFundOf(p.id))}</span></h3>${L.length?`<div class="hist">${L.map(x=>`<div class="hi"><span class="dtx"><b>${fmt(x.amt)}</b><small>${nice(x.d)} · ${esc(x.method||"")}${x.note?" · "+esc(x.note):""}</small></span><span class="st ok">Counted</span></div>`).join("")}</div>`:`<div class="empty">No fundraising recorded for ${esc(p.n)} yet.</div>`}`;
+  const i=h.indexOf('<p class="fine">Only you and Coach');return i<0?h:h.slice(0,i)+box+h.slice(i)}}
+
+/* --- coach challenges: proposed vs finished --- */
+function bwChRow(c){const g=GAMES.find(x=>x[0]===c.game)||["","🎮",c.game],ago=agoTxt(String(c.at||"").slice(0,10)),lv=LVN[c.lv]||"";
+  if(c.status==="open")return `<div class="bwch"><span class="che">${g[1]}</span><span class="dtx"><b>${esc(c.fn)} challenged ${esc(c.tn)}</b><small>${esc(g[2])} · ${lv} · sent ${ago}</small><small>${esc(c.fn)} scored <b>${c.fs}</b>. Waiting on ${esc(c.tn)} to play.</small></span></div>`;
+  if(c.status==="declined")return `<div class="bwch dim"><span class="che">${g[1]}</span><span class="dtx"><b>${esc(c.tn)} said not now</b><small>${esc(c.fn)}'s ${esc(g[2])} challenge · ${lv} · ${ago}</small></span></div>`;
+  const tie=c.fs===c.ts,w=c.fs>c.ts?c.fn:c.tn,l=c.fs>c.ts?c.tn:c.fn,hi=Math.max(c.fs,c.ts),lo=Math.min(c.fs,c.ts);
+  return `<div class="bwch done"><span class="che">${g[1]}</span><span class="dtx"><b>${tie?"🤝 "+esc(c.fn)+" and "+esc(c.tn)+" tied":"🏆 "+esc(w)+" beat "+esc(l)}</b><small>${esc(g[2])} · ${lv} · ${ago}</small></span><em class="bwsc">${hi}–${lo}</em></div>`}
+{const _c=chalHTML;chalHTML=function(){if(!isCoach()||!NET)return _c();clLoad(false);if(clNeed())return _c();const C=CL.d.chals||[],G2={open:C.filter(c=>c.status==="open"),done:C.filter(c=>c.status==="done"),no:C.filter(c=>c.status==="declined")},t=BW.chTab,L=G2[t];
+  const wins={};G2.done.forEach(c=>{if(c.fs!==c.ts){const w=c.fs>c.ts?c.fn:c.tn;wins[w]=(wins[w]||0)+1}});const top=Object.entries(wins).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  return topbar("Challenges","Who's challenging who, and who won")+`<main>${clubNav()}<div class="tiles bwct">${[["open","Proposed"],["done","Finished"],["no","Said not now"]].map(x=>`<button class="${t===x[0]?"on":""}" data-a="bwct:${x[0]}"><b>${G2[x[0]].length}</b><small>${x[1]}</small></button>`).join("")}</div>
+   <h3 class="sec">${t==="open"?"⏳ Proposed":t==="done"?"✅ Finished":"🙅 Said not now"} <span>last 2 weeks</span></h3>${L.map(bwChRow).join("")||`<div class="empty">${t==="open"?"No open challenges right now.":t==="done"?"No finished challenges yet.":"Nobody has turned one down."}</div>`}
+   ${t==="done"&&top.length?`<h3 class="sec">🏆 Most wins <span>last 2 weeks</span></h3><div class="bwchips wide">${top.map(([n,k])=>`<span class="bwpc">${esc(n)} · ${k} win${k===1?"":"s"}</span>`).join("")}</div>`:""}
+   <p class="fine">Players send challenges from their Clubhouse. You can see every one here.</p></main>`+nav()}}
+
+/* --- a cleaner way to switch views: one View button --- */
+{const _t=topbar;topbar=function(title,sub){let h=_t(title,sub);if(!bwOn())return h;h=h.replace(/<button class="tbi" data-a="go:acct"[^>]*>⚙️<\/button>/,"");
+  const coachy=isCoach()||S.peek;if(!coachy)return h;
+  h=h.replace('<button class="cv" data-a="pvopen">👀 Player view</button>',"").replace(`<button class="cv" data-a="who:coach">‹ Coach's View</button>`,"");
+  const ic=S.peek?(isParent()?"👪":"👀"):"🧢",lb=S.peek?(isParent()?"Parent":"Player"):"Coach";
+  return h.replace('<div class="tbr">',`<div class="tbr"><button class="bwview ${S.peek?"peek":""}" data-a="pvopen" aria-label="Switch view. Now: ${lb}"><span>${ic}</span><b>${lb}</b><i>▾</i></button>`)}}
+{const _s=pvSheet;pvSheet=function(){if(!bwOn())return _s();const real=bwPL(),adm=BP.home&&BP.home.user&&BP.home.user.admin,cur=!S.peek?"coach":isParent()?"parent":"player";
+  return `<div class="sheet"><button class="x" data-a="close" aria-label="Close">✕</button><h2 class="pvh">Switch view</h2><p class="pgs">See the app the way a parent or player sees it. Nothing you tap in a preview is saved.</p>
+   <div class="bwvw">${[["coach","🧢","Coach","You",S.peek?"who:coach":"close"],["parent","👪","Parent","A family's view","pvpar"],["player","⚾","Player","A brand-new player","pv:sample"]].map(x=>`<button class="${cur===x[0]?"on":""}" data-a="${x[4]}"><span>${x[1]}</span><b>${x[2]}</b><small>${cur===x[0]?"Now":x[3]}</small></button>`).join("")}</div>
+   ${real.length?`<h3 class="sec">See what a player sees <span>${real.length}</span></h3><div class="pvl">${real.map(p=>`<button class="pvi" data-a="pv:${p.id}" style="--c:${p.col}">${avatar(p)}<span class="dtx"><b>${esc(p.n)}${p.num?" · #"+p.num:""}</b><small>${level(p.xp).n} · ${hwOpen(p).length} to do</small></span><span class="arr">›</span></button>`).join("")}</div>`:""}
+   <h3 class="sec">More</h3><div class="pvl"><button class="pvi" data-a="bpteams"><span class="av pvq"><b>⇄</b></span><span class="dtx"><b>Switch team</b><small>Back to My teams</small></span><span class="arr">›</span></button>
+   ${adm?`<button class="pvi" data-a="bwtest"><span class="av pvq"><b>🧪</b></span><span class="dtx"><b>Test sign-up</b><small>Sign up like a new person. The account is deleted when you finish.</small></span><span class="arr">›</span></button>`:""}</div></div>`}}
+
+/* --- profiles: a parent and their kids on one phone --- */
+async function bwProfLoad(){const pt=bwPT()||TOK;BW.prof=null;try{BW.prof=await rpc("dz_profiles",{p_tok:pt})}catch(e){if(e.message==="signed_out"&&bwPT()){bwSetPT(null);BW.prof=await rpc("dz_profiles",{p_tok:TOK})}else throw e}return BW.prof}
+function bwWhoHTML(){const R=BW.prof,u=BP.home&&BP.home.user;if(!R)return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><div class="bpspin"></div></div>`;
+  const inKid=!!bwPT(),cur=u&&u.id,tiles=[{id:"me",n:R.me.name,s:R.me.role==="coach"?"Coach":"Parent",lock:inKid,on:!inKid}].concat(R.kids.map(k=>({id:k.id,n:k.name,s:"Player",on:cur===k.id})));
+  return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><h2 class="bpt2">Who's using Basepaths?</h2><p class="bps" style="text-align:center">Each kid gets their own profile, so their drills, games and cards stay theirs.</p>
+   <div class="bwpf">${tiles.map(t=>`<button class="bwpt ${t.on?"on":""}" data-a="bwpick:${t.id}"><span class="bwav">${esc(bpInit(t.n))}${t.lock?`<i aria-hidden="true">🔒</i>`:""}</span><b>${esc(t.n.split(" ")[0])}</b><small>${t.on?"Using now":t.s}</small></button>`).join("")}</div>
+   ${BW.pwFor?`<div class="bpform in"><label class="bpf">${esc(R.me.name.split(" ")[0])}'s password<input id="bwpw" type="password" autocomplete="current-password"></label><button class="bpb pri" data-a="bwpwgo" ${BW.busy?"disabled":""}>Switch to ${esc(R.me.name.split(" ")[0])}</button><p class="bpfine">So kids can't get into a parent's account.</p></div>`:""}
+   ${R.kids.length?"":`<p class="bpnote">No player profiles yet. Add your kid in My players, then they show up here.</p>`}
+   <button class="bpb" data-a="bwwhox">${inKid?"Stay as "+esc((u&&u.name||"").split(" ")[0]):"Not now"}</button></div>`}
+async function bwSwitch(tok){if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);TOK=tok;try{localStorage.setItem("dz-token",tok)}catch(e){}
+  ME=null;S=emptyS();sheet=null;G=null;BP.res=null;BP.lk=null;BP.sa=null;BP.home=null;BW.prof=null;BW.pwFor="";BW.busy=false;BW.un=null;bwClose();bpClearTheme();BP.out=true;view="bphome";render();scrollTo(0,0);
+  try{const h=await bpLoadHome(),act=(h.orgs||[]).filter(o=>o.status==="active"&&o.org_status==="active"),o=act.find(x=>x.id===h.cur)||(act.length===1?act[0]:null);
+    toast("Hi "+h.user.name.split(" ")[0]+"!");if(o){await bpEnter(o.id,o.id===h.cur);return}render()}catch(e){toast(nmsg(e));render()}}
+async function bwPick(id){const R=BW.prof,u=BP.home&&BP.home.user,pt=bwPT();if(!R||BW.busy)return;
+  if(id==="me"){if(!pt){view="bphome";render();return}BW.pwFor="me";render();setTimeout(()=>{const i=$("#bwpw");if(i)i.focus()},60);return}
+  if(u&&u.id===id){view="bphome";render();return}
+  BW.busy=true;render();try{const r=await rpc("dz_profile_open",{p_tok:pt||TOK,p_kid:id});if(pt){rpc("dz_logout",{p_tok:TOK}).catch(()=>{})}else bwSetPT(TOK);await bwSwitch(r.token)}catch(e){BW.busy=false;toast(nmsg(e));render()}}
+async function bwPwGo(){const pt=bwPT(),pw=(($("#bwpw")||{}).value||"");if(!pt)return;if(!pw){toast("Type the password.");return}BW.busy=true;render();
+  try{await rpc("dz_pw_check",{p_tok:pt,p_pw:pw});const kidTok=TOK;bwSetPT(null);rpc("dz_logout",{p_tok:kidTok}).catch(()=>{});await bwSwitch(pt)}catch(e){BW.busy=false;toast(nmsg(e));render();setTimeout(()=>{const i=$("#bwpw");if(i)i.focus()},60)}}
+async function bwWhoGo(){if(ME&&!BP.out)await bpGoHome(false);view="bwwho";BW.pwFor="";render();scrollTo(0,0);try{await bwProfLoad()}catch(e){toast(nmsg(e));view="bphome"}render()}
+{const _na=netAuth;netAuth=async function(up){if(!up){bwSetPT(null)}await _na(up);if(!bwOn()||up||!TOK||!BP.out||view!=="bphome")return;const u=BP.home&&BP.home.user;if(!u||u.kid||!u.kids)return;
+  try{const R=await bwProfLoad();if(R.kids.length){view="bwwho";render();scrollTo(0,0)}}catch(e){}}}
+{const _o=netOut;netOut=async function(skip){if(BW.test&&TOK&&TOK!==BW.test.tok&&!skip){return bwTestEnd()}const pt=bwPT();bwSetPT(null);BW.prof=null;BW.un=null;bwClose();if(pt&&pt!==TOK)rpc("dz_logout",{p_tok:pt}).catch(()=>{});return _o(skip)}}
+const bwCanSwitch=u=>u&&((u.kid||u.role==="player")&&bwPT()||!u.kid&&u.kids>0);
+{const _h=bpHomeHTML;bpHomeHTML=function(){let h=_h();const u=BP.home&&BP.home.user;if(!bwCanSwitch(u))return h;
+  return h.replace('<div class="bpacts">',`<button class="bprow" data-a="bwwho"><span>👥</span><span class="bprt"><b>Switch profile</b><small>${bwPT()?"Back to a parent, or another kid on this phone":"Hand the phone to your kid. They get their own profile."}</small></span><i class="bparr">›</i></button><div class="bpacts">`)}}
+
+/* --- admin: test sign-up --- */
+{const _a=bpAdminHTML;bpAdminHTML=function(){return _a().replace('<h2 class="bpt3">Newest teams</h2>',`<button class="bprow" data-a="bwtest"><span>🧪</span><span class="bprt"><b>Test sign-up</b><small>Go through sign-up like a new coach, parent or player. The account and anything it makes are deleted when you end the test.</small></span><i class="bparr">›</i></button><h2 class="bpt3">Newest teams</h2>`)}}
+async function bwTestStart(){if(!TOK)return;let since;try{since=(await rpc("dz_test_start",{p_tok:TOK})).since}catch(e){toast(nmsg(e));return}if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);BW.test={tok:TOK,since};try{localStorage.setItem("bp-test",JSON.stringify(BW.test));localStorage.removeItem("dz-token")}catch(e){}bwSetPT(null);
+  TOK=null;ME=null;S=emptyS();sheet=null;G=null;BP.out=false;BP.home=null;BP.sa=null;BP.res=null;BP.lk=null;bwClose();bpClearTheme();auth={mode:"up",msg:"",busy:false,pw:"",role:null,keep:{}};BK.by="";try{localStorage.removeItem("bp-u13")}catch(e){}view="auth";render();scrollTo(0,0)}
+async function bwTestEnd(){const t=BW.test;if(!t||BW.busy)return;BW.busy=true;bwBar();const tt=bwPT()||TOK;let msg="Test over. Nothing to delete.";
+  if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);
+  if(tt&&tt!==t.tok){try{const r=await rpc("dz_test_end",{p_tok:t.tok,p_test:tt,p_since:t.since});msg=r.deleted?"Test account deleted"+(r.teams?", with the team it made":"")+".":"Test over. That account was made before the test, so it wasn't deleted."}catch(e){msg=nmsg(e)}
+    if(TOK&&TOK!==tt)rpc("dz_logout",{p_tok:TOK}).catch(()=>{})}
+  BW.test=null;BW.busy=false;try{localStorage.removeItem("bp-test");localStorage.removeItem("bp-u13")}catch(e){}bwSetPT(null);BK.by="";
+  TOK=t.tok;try{localStorage.setItem("dz-token",TOK)}catch(e){}ME=null;S=emptyS();sheet=null;G=null;BP.out=true;BP.home=null;bpClearTheme();auth={mode:"in",msg:"",busy:false,pw:""};view="bpadmin";render();toast(msg);
+  try{await bpLoadHome();await bpSaLoad()}catch(e){if(e.message==="signed_out")return netOut(true)}render()}
+function bwBar(){let b=document.getElementById("bwtb");if(!BW.test){if(b)b.remove();document.body.classList.remove("bwtest");return}
+  if(!b){b=document.createElement("div");b.id="bwtb";document.body.appendChild(b)}document.body.classList.add("bwtest");
+  b.innerHTML=`<span>🧪 <b>Test sign-up.</b> This account is deleted when you end the test.</span><button data-a="bwtestend" ${BW.busy?"disabled":""}>${BW.busy?"Ending…":"End test"}</button>`}
+
+/* --- render hooks --- */
+{const _r=render;render=function(){_r();if(sheet&&sheet[0]==="pv"){const sh=$("#sheet");if(sh&&!sh.innerHTML){sh.innerHTML=pvSheet();sh.className="on";document.body.classList.add("lock")}}
+  if(bwOn()&&TOK&&BP.out&&!auth.busy&&view==="bwwho"){$("#app").innerHTML=bwWhoHTML()}
+  if(bwOn()&&ME&&!BP.out&&view==="acct"&&bwCanSwitch(BP.home&&BP.home.user)){const b=document.querySelector("#app .bpin");if(b&&!b.querySelector('[data-a="bwwho"]'))b.insertAdjacentHTML("afterbegin",`<button class="ghost" data-a="bwwho">👥 Switch profile</button>`)}
+  if(bwOn()&&isCoach()&&view==="team"&&!S.peek){const sg=document.querySelector("#app .seg.six");if(sg&&!sg.querySelector('[data-a="ct:families"]')){sg.classList.add("bw7");const st=sg.querySelector('[data-a="ct:settings"]');if(st)st.insertAdjacentHTML("beforebegin",`<button class="${window._ct==="families"?"on":""}" data-a="ct:families"><span>👪</span>Families</button>`)}}
+  try{bwTag()}catch(e){}bwBar()}}
+/* boot: if the phone was left on a kid's profile, keep it that way (a parent token is still there to switch back) */
+{const _b=netBoot;netBoot=async function(){bwBar();return _b()}}
+
+/* --- taps --- */
+document.addEventListener("click",e=>{const ov=document.getElementById("bwov");if(ov&&e.target===ov){bwClose();return}
+  const n=e.target.closest("[data-bw]");if(n&&!e.target.closest("[data-a]")){e.preventDefault();e.stopImmediatePropagation();bwTapNum(n);return}
+  const t=e.target.closest("[data-a]");if(!t)return;const a=t.dataset.a.split(":"),k=a[0],v=a.slice(1).join(":");
+  if(k==="xpopen")BW.pk="dues";
+  if(ov&&ov.contains(t)&&!/^bw/.test(k)){setTimeout(bwClose,0);return}
+  if(k==="xfadd"&&NET){e.stopImmediatePropagation();const n2=num(($("#fadd")||{}).value);if(!n2){toast(NERR.bad_amount);return}const F=FUND();bwFundSet({raised:Math.round(((+F.raised||0)+n2)*100)/100});save();toast("Added "+fmt(n2)+" to Cooperstown");render();return}
+  if(k==="xfset"&&NET){e.stopImmediatePropagation();const r=num(($("#fr")||{}).value),g=num(($("#fg")||{}).value),s=num(($("#fsp")||{}).value);if(g<=0){toast("Add a goal");return}bwFundSet({raised:r,goal:g,spent:s});save();toast("Totals saved");render();return}
+  if(k==="xpdel"&&NET&&window._pd===v){const f=(MONEY.fund||[]).find(x=>x.id===v);if(f){const F=FUND();bwFundSet({raised:Math.max(0,Math.round(((+F.raised||0)-f.amt)*100)/100)});save()}return}
+  if(!/^bw/.test(k))return;e.preventDefault();e.stopImmediatePropagation();
+  if(k==="bwx"){bwClose();return}
+  if(k==="bwfam"){if(v)bwFamSheet(v);else toast("Link a parent to this player under Families.");return}
+  if(k==="bwfl"){bwFamTiles(v);return}
+  if(k==="bwfr"){bwFundList();return}if(k==="bwfs"){bwSpentList();return}
+  if(k==="bwct"){BW.chTab=v;render();return}
+  if(k==="bwpk"){const keep=[$("#pyA"),$("#pyD"),$("#pyN")].map(x=>x&&x.value);BW.pk=v;render();[$("#pyA"),$("#pyD"),$("#pyN")].forEach((x,i)=>{if(x&&keep[i])x.value=keep[i]});return}
+  if(k==="bwfund"){const amt=num(($("#pyA")||{}).value);if(amt<=0){toast(NERR.bad_amount);return}const pl=P(v);
+    (async()=>{try{await rpc("dz_money_add",{p_tok:TOK,p_player:v,p_kind:"fund",p_amt:amt,p_d:($("#pyD")||{}).value||today(),p_method:window._pm||"Venmo",p_note:(($("#pyN")||{}).value||"").trim()});
+      const F=FUND();bwFundSet({raised:Math.round(((+F.raised||0)+amt)*100)/100});await netFlush();toast("Recorded "+fmt(amt)+" of fundraising for "+(pl?pl.n:"them"));await netPull(false);render()}catch(x){toast(nmsg(x))}})();return}
+  if(k==="bwum"){const g=bwUnGroups()[+v],pid=(($("#bwum"+v)||{}).value||"");if(!g)return;if(!pid){toast("Pick their player first.");return}
+    (async()=>{try{const r=await rpc("dz_unmatched_match",{p_tok:TOK,p_payer:g.payer,p_player:pid});toast("Moved "+r.moved+" payment"+(r.moved===1?"":"s")+" onto "+P(pid).n);BW.un=null;await netPull(false);render()}catch(x){toast(nmsg(x))}})();return}
+  if(k==="bwwho"){bwWhoGo();return}
+  if(k==="bwwhox"){BW.pwFor="";view="bphome";render();return}
+  if(k==="bwpick"){bwPick(v);return}
+  if(k==="bwpwgo"){bwPwGo();return}
+  if(k==="bwtest"){sheet=null;bwTestStart();return}
+  if(k==="bwtestend"){bwTestEnd();return}
+},true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElementById("bwov")&&document.getElementById("bwov").className==="on"){bwClose();return}
+  const n=e.target.closest&&e.target.closest("[data-bw]");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();bwTapNum(n)}
+  if(e.key==="Enter"&&e.target.id==="bwpw"){e.preventDefault();bwPwGo()}});
+
+/* --- tab bar: keep it in place on iPhone. It hides while the keyboard is up, and the page snaps back when the keyboard closes. --- */
+(function(){const typing=el=>el&&el.matches&&el.matches("input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),textarea,select");
+  document.addEventListener("focusin",e=>{if(typing(e.target))document.body.classList.add("bwkb")});
+  document.addEventListener("focusout",e=>{if(!typing(e.target))return;setTimeout(()=>{if(typing(document.activeElement))return;document.body.classList.remove("bwkb");window.scrollTo(window.scrollX,window.scrollY)},90)});
+  const vv=window.visualViewport;if(vv){const chk=()=>document.body.classList.toggle("bwkbv",vv.height<window.innerHeight*0.75);vv.addEventListener("resize",chk);vv.addEventListener("scroll",()=>{if(!document.body.classList.contains("bwkbv")&&vv.offsetTop>0&&!typing(document.activeElement))window.scrollTo(window.scrollX,window.scrollY)})}})();
+
+/* --- background logo: see-through, always centered, never stretched --- */
+{const _b=bpThemeCSS;bpThemeCSS=function(b){const bg=b&&b.bg&&/^data:image\//.test(b.bg)?b.bg:"";if(!bg)return _b(b);
+  return _b(Object.assign({},b,{bg:""}))+`\nbody::before{content:"";position:fixed;left:0;right:0;top:0;bottom:0;z-index:0;pointer-events:none;background:url("${bg}") 50% 50%/min(78vw,440px) auto no-repeat;opacity:.17;mix-blend-mode:screen}#app{position:relative;z-index:1}`}}
+
+{const st=document.createElement("style");st.textContent=`
+#toast{top:calc(10px + env(safe-area-inset-top));transform:translate(-50%,calc(-100% - 60px));visibility:hidden;transition:transform .25s,visibility 0s linear .25s}
+#toast.on{transform:translate(-50%,0);visibility:visible;transition:transform .25s}
+.nav{left:0!important;right:0!important;margin:0 auto!important;transform:translateZ(0)!important;transition:transform .2s ease,opacity .2s ease}
+@media (hover:none) and (pointer:coarse){body.bwkb .nav,body.bwkbv .nav{transform:translateY(calc(100% + 30px))!important;opacity:0;pointer-events:none}}
+#bwov{position:fixed;inset:0;z-index:45;display:none;background:rgba(3,10,16,.72);align-items:flex-end;justify-content:center}#bwov.on{display:flex}
+.bwsh{gap:10px}.bwt{margin:0 40px 0 0;font:400 24px var(--fd)}.bwrows{display:grid;gap:8px}
+.bwr{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--c,var(--line));border-radius:14px;padding:10px 12px;color:inherit;font:inherit}
+.bwr.go{cursor:pointer}.bwr .dtx{flex:1;min-width:0}.bwr .dtx small{display:block;color:var(--mute);font-size:12.5px;font-weight:700}.bwr em{font-style:normal;font-weight:900;color:var(--amber);white-space:nowrap}.bwr .arr{font-style:normal;color:var(--mute);font-size:20px}
+.bwi{width:28px;text-align:center;font-size:18px;flex:none}.bwbt{display:flex;gap:6px;flex:none}
+.bwt.bwt,[data-bw]{cursor:pointer}.bwt{position:relative}.tiles>.bwt small::after,.pst>.bwt small::after,.bptiles>.bwt small::after,.tiles>button small::after{content:"\\00a0›";font-weight:900;opacity:.7}
+.tl:has(.backclub) .lgb{display:none}
+.bwt:active{transform:scale(.97)}h3.sec span.bwt{text-decoration:underline;text-underline-offset:3px}.bpo .bpch.hot.bwt{position:relative;z-index:3}
+.tiles>button{font:inherit;color:inherit;cursor:pointer}.tiles.bwct>button.on{outline:2.5px solid var(--amber);outline-offset:-2.5px}
+.bwfam{display:grid;gap:8px;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;color:inherit;font:inherit;cursor:pointer}
+.bwfh{display:flex;align-items:center;justify-content:space-between}.bwfh b{font:400 19px var(--fd)}.bwfh .arr{font-style:normal;color:var(--mute);font-size:22px}
+.bwchips{display:flex;flex-wrap:wrap;gap:6px}.bwpc{background:color-mix(in srgb,var(--c,var(--amber)) 22%,var(--card2,#000));border:1.5px solid color-mix(in srgb,var(--c,var(--amber)) 60%,transparent);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800}
+.bwpar{border:1.5px dashed var(--line);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--mute)}.bwpar.none{color:var(--amber)}
+.bwmon{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--mute);font-weight:700}.bwmon b{color:var(--ink,#fff)}.bwfam .xp{height:8px}
+.bwun{display:grid;gap:8px;background:var(--card);border:1.5px dashed var(--amber);border-radius:14px;padding:10px 12px}.bwun small{display:block;color:var(--mute);font-weight:700}.bwunf{display:flex;gap:8px}.bwunf select{flex:1;min-width:0}
+.bwpm{display:grid;gap:10px}
+.bwkind{margin:0 44px 4px 0}
+.bwfn{background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:900;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer}.bwfn.sm{font-size:inherit;font-weight:800}
+.bwsp{margin:2px 0 0;font-size:13.5px;font-weight:700;color:var(--mute)}.two.bw3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bwch{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px}.bwch .dtx{flex:1;min-width:0}.bwch small{display:block;color:var(--mute);font-weight:700;font-size:12.5px}.bwch .che{font-size:24px}.bwch.dim{opacity:.7}.bwch.done{border-color:color-mix(in srgb,var(--amber) 55%,var(--line))}
+.bwsc{font-style:normal;font:400 20px var(--fd);color:var(--amber);white-space:nowrap}.bwchips.wide .bwpc{font-size:14px;padding:5px 12px}
+.bwview{display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 10px 0 8px;border-radius:999px;background:var(--amber);color:#1B1026;font-weight:900;font-size:13.5px;box-shadow:0 3px 0 rgba(0,0,0,.3);white-space:nowrap;flex:none}
+.bwview span{font-size:16px}.bwview i{font-style:normal;font-size:11px;opacity:.75}.bwview.peek{background:#fff;color:#1B1026}
+.bwvw{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.bwvw button{display:grid;justify-items:center;gap:2px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 6px;color:inherit;font:inherit}
+.bwvw button span{font-size:26px}.bwvw button b{font-size:15px}.bwvw button small{font-size:11.5px;color:var(--mute);font-weight:700;text-align:center}.bwvw button.on{border-color:var(--amber);box-shadow:inset 0 0 0 1.5px var(--amber)}.bwvw button.on small{color:var(--amber)}
+.seg.six.bw7{grid-template-columns:repeat(4,1fr)}.seg.six.bw7 button{flex-direction:column;gap:2px;font-size:12px;padding:8px 2px}.seg.six.bw7 button span{font-size:18px}
+.bwpf{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:6px 0 10px}
+.bwpt{display:grid;justify-items:center;gap:6px;width:104px;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:4px}
+.bwav{position:relative;width:88px;height:88px;border-radius:22px;display:grid;place-items:center;font:800 italic 30px "Archivo",system-ui,sans-serif;color:#fff;background:linear-gradient(150deg,#3D8BFF,#1F4FB8);border:3px solid transparent}
+.bwpt:nth-child(3n+2) .bwav{background:linear-gradient(150deg,#FF8A3D,#C2531A)}.bwpt:nth-child(3n) .bwav{background:linear-gradient(150deg,#2EC4A0,#14806A)}
+.bwav i{position:absolute;right:-6px;bottom:-6px;font-style:normal;font-size:16px;background:#0C0F16;border-radius:999px;padding:4px}
+.bwpt.on .bwav{border-color:#F2F4F8}.bwpt b{font-size:16px}.bwpt small{font-size:12.5px;color:#9AA3B2;font-weight:600}.bwpt:active .bwav{transform:scale(.96)}
+#bwtb{position:fixed;left:0;right:0;top:0;z-index:95;display:flex;align-items:center;gap:10px;justify-content:space-between;background:#FF8A3D;color:#0C0F16;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#bwtb button{flex:none;background:#0C0F16;color:#fff;border:0;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px}body.bwtest{padding-top:calc(48px + env(safe-area-inset-top))}
+`;document.head.appendChild(st)}
 </script></body></html>
