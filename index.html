@@ -5162,7 +5162,7 @@ window.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("
 
 /* ===== BASEPATHS 3d: BigDawgz look = deep black with the logo glowing behind everything ===== */
 const bwIsBD=(o,b)=>!!((b&&b.preset==="bigdawgz")||(o&&/^bigdawgz/.test(String(o.name||"").toLowerCase().replace(/[^a-z0-9]/g,""))));
-function bwBlackCSS(img){return `:root{--bg:#050507;--bg2:#020203;--card:#121016;--card2:#1a1622;--deep:#0a080e;--blk:#000;--line:rgba(140,92,220,.30)}
+function bwBlackCSS(img){return `:root{--bg:#050507;--bg2:#020203;--card:#2B1650;--card2:#3A1F6B;--deep:#1C0E36;--blk:#000;--line:rgba(168,120,255,.42)}
 html{background:#020203}
 body{background:radial-gradient(120% 70% at 50% 45%,#0c0a12 0%,#050507 55%,#020203 100%) fixed!important}
 body::before{content:"";position:fixed;left:50%;top:50%;width:min(96vw,560px);height:min(96vw,560px);transform:translate(-50%,-50%);border-radius:50%;z-index:0;pointer-events:none;
@@ -5173,7 +5173,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;bottom:0;z-index:0;po
 #app{position:relative;z-index:1}
 nav,.nav{background:rgba(8,6,12,.94)!important}
 .top{background:#000!important}
-.sheet{background:linear-gradient(180deg,#1a1524,#0e0c13 220px)!important}`}
+.sheet{background:linear-gradient(180deg,#3A1F6B,#1C0E36 240px)!important}`}
 {const _a=bpApply;bpApply=function(o,b){_a(o,b);if(!bwIsBD(BP.org,b))return;const st=document.getElementById("bptheme");if(!st)return;
   const img=b&&b.bg&&/^data:image\//.test(b.bg)?b.bg:(b&&b.logo&&/^data:image\//.test(b.logo)?b.logo:BD_LOGO);
   st.textContent=st.textContent.replace(/body::before\{[^}]*\}#app\{position:relative;z-index:1\}/,"")+"\n"+bwBlackCSS(img);
