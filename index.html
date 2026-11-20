@@ -5142,17 +5142,19 @@ window.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("
 
 /* ===== BASEPATHS 3c: XP to spend in the top bar, Basepaths logo outside teams ===== */
 {const _t=topbar;topbar=function(title,sub){let h=_t(title,sub);const p=me();if(!p||isCoach()||isParent()||p.tmp)return h;let q=p;try{q=econ(p)||p}catch(e){}const L=level(q.xp||0),bank=+(q.bank||0);
-  return h.replace(/<button class="xpchip"[\s\S]*?<\/button>/,`<button class="bwxp" data-a="go:xp" aria-label="${bank} XP to spend. Level ${L.i+1}"><span class="bwlv">${xpRing(L.pct,32)}<b>${L.i+1}</b></span><span class="bwxt"><b>⚡ ${bank.toLocaleString("en-US")}</b><small>XP to spend</small></span></button>`)}}
+  h=h.replace(/<button class="xpchip"[\s\S]*?<\/button>/,"");
+  const row=`<div class="bwxprow"><button class="bwxp" data-a="go:xp" aria-label="${bank} XP to spend. Level ${L.i+1}"><span class="bwlv">${xpRing(L.pct,24)}<b>${L.i+1}</b></span><b class="bwxb">⚡ ${bank.toLocaleString("en-US")}</b><small>XP to spend</small></button></div>`;
+  return h.replace("</header>","</header>"+row)}}
 {const _c=bpClearTheme;bpClearTheme=function(){_c();if(!BP.legacy){LOGO="icon-192.png?v=3";LOGOF="icon-192.png?v=3"}}}
 {const st=document.createElement("style");st.textContent=`
-.bwxp{position:relative;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 12px 0 4px;border-radius:999px;border:0;color:#fff;cursor:pointer;flex:none;
- background:linear-gradient(#14101f,#14101f) padding-box,linear-gradient(120deg,#FFD25A,#FF8A3D 45%,#3D8BFF) border-box;border:2px solid transparent;box-shadow:0 0 16px rgba(255,138,61,.35),inset 0 0 12px rgba(61,139,255,.18);overflow:hidden}
-.bwxp::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(-120%);animation:bwsh 3.6s ease-in-out infinite;pointer-events:none}
-@keyframes bwsh{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
-.bwlv{position:relative;display:grid;place-items:center;width:32px;height:32px}.bwlv svg{position:absolute;inset:0}.bwlv b{position:relative;font:900 13px/1 system-ui;color:#FFD25A}
-.bwxt{display:grid;line-height:1.05;text-align:left}.bwxt b{font:900 16px/1 var(--fd,system-ui);color:#FFD25A;text-shadow:0 0 10px rgba(255,210,90,.5);letter-spacing:.01em}.bwxt small{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#cfd6e4;opacity:.85}
+.bwxprow{display:flex;justify-content:flex-end;padding:0 14px;margin:-4px 0 10px}
+.bwxp{position:relative;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px 0 4px;border-radius:999px;color:#fff;cursor:pointer;
+ background:linear-gradient(#14101f,#14101f) padding-box,linear-gradient(120deg,#FFD25A,#FF8A3D 45%,#3D8BFF) border-box;border:1.5px solid transparent;box-shadow:0 0 12px rgba(255,138,61,.28);overflow:hidden}
+.bwxp::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.16) 50%,transparent 70%);transform:translateX(-120%);animation:bwsh 4s ease-in-out infinite;pointer-events:none}
+@keyframes bwsh{0%,75%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.bwlv{position:relative;display:grid;place-items:center;width:24px;height:24px}.bwlv svg{position:absolute;inset:0}.bwlv b{position:relative;font:900 11px/1 system-ui;color:#FFD25A}
+.bwxb{font:900 15px/1 var(--fd,system-ui);color:#FFD25A;text-shadow:0 0 8px rgba(255,210,90,.45)}.bwxp small{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#cfd6e4;opacity:.85}
 @media(prefers-reduced-motion:reduce){.bwxp::after{animation:none}}
-@media(max-width:460px){.top:has(.bwxp) .tl .brand,.top:has(.bwxp) .tl .team{display:none}.top:has(.bwxp) .tbr{gap:6px}}
 .bwpin{display:grid;justify-items:center;gap:10px;margin-top:10px}.bwpin>b{font:800 italic 22px Archivo,system-ui;text-align:center}.bwpin>small{color:#9AA3B2;text-align:center}
 .bwdots{display:flex;gap:16px;margin:8px 0 6px}.bwdots i{width:16px;height:16px;border-radius:50%;border:2px solid #3D8BFF}.bwdots i.on{background:#3D8BFF;box-shadow:0 0 10px rgba(61,139,255,.7)}
 .bwpad{display:grid;grid-template-columns:repeat(3,76px);gap:12px}.bwpad button{height:76px;border-radius:50%;background:#151A24;border:1.5px solid #252C3A;color:#F2F4F8;font:700 28px Inter,system-ui;cursor:pointer}.bwpad button:active{background:#3D8BFF}
