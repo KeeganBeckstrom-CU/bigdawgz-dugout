@@ -144,20 +144,8 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
--- kid accounts join teams as players only, and can't make teams
-create or replace function dz_org_join(p_tok text, p_org uuid, p_role text) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare u dg_users; o dg_orgs;
-begin
-  u := dg_user(p_tok);
-  if p_role not in ('player','parent','coach') then raise exception 'bad_role'; end if;
-  if u.kid and p_role <> 'player' then raise exception 'kids_join_as_player'; end if;
-  select * into o from dg_orgs where id = p_org;
-  if o.id is null or o.status <> 'active' then raise exception 'no_team_found'; end if;
-  if exists (select 1 from dg_members where org_id = o.id and account_id = u.id) then raise exception 'already_asked'; end if;
-  insert into dg_members(org_id, account_id, role, status) values (o.id, u.id, p_role, 'pending');
-  return jsonb_build_object('ok', true);
-end $$;
+-- (dz_org_join now lives in basepaths-fans.sql: players join as Player or Fan)
+
 
 -- My teams also says whether this is a kid account and how many players a parent still needs to confirm
 create or replace function dz_home(p_tok text) returns jsonb
@@ -180,7 +168,7 @@ begin
 end $$;
 
 grant execute on function dz_login(text,text), dz_kids(text), dz_kid_add(text,text,text,text,boolean), dz_kid_ok(text,uuid,boolean),
-  dz_kid_pw(text,uuid,text), dz_kid_delete(text,uuid), dz_account_delete(text,text), dz_org_join(text,uuid,text), dz_home(text)
+  dz_kid_pw(text,uuid,text), dz_kid_delete(text,uuid), dz_account_delete(text,text), dz_home(text)
   to anon, authenticated;
 revoke execute on function dg_kid_email(text) from public, anon, authenticated;
 

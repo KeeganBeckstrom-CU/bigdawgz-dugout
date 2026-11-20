@@ -5031,7 +5031,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElement
 .bwchips{display:flex;flex-wrap:wrap;gap:6px}.bwpc{background:color-mix(in srgb,var(--c,var(--amber)) 22%,var(--card2,#000));border:1.5px solid color-mix(in srgb,var(--c,var(--amber)) 60%,transparent);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800}
 .bwpar{border:1.5px dashed var(--line);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700;color:var(--mute)}.bwpar.none{color:var(--amber)}
 .bwmon{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--mute);font-weight:700}.bwmon b{color:var(--ink,#fff)}.bwfam .xp{height:8px}
-.bwun{display:grid;gap:8px;background:var(--card);border:1.5px dashed var(--amber);border-radius:14px;padding:10px 12px}.bwun small{display:block;color:var(--mute);font-weight:700}.bwunf{display:flex;gap:8px}.bwunf select{flex:1;min-width:0}
+.bwun{display:grid;gap:8px;background:var(--card);border:1.5px dashed var(--amber);border-radius:14px;padding:10px 12px}.bwun small{display:block;color:var(--mute);font-weight:700}.bwunf{display:flex;gap:8px}.bwunf select{flex:1;min-width:0;background:var(--card2,#2a1060);color:inherit;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-weight:700}
 .bwpm{display:grid;gap:10px}
 .bwkind{margin:0 44px 4px 0}
 .bwfn{background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:900;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer}.bwfn.sm{font-size:inherit;font-weight:800}
@@ -5052,4 +5052,64 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElement
 #bwtb{position:fixed;left:0;right:0;top:0;z-index:95;display:flex;align-items:center;gap:10px;justify-content:space-between;background:#FF8A3D;color:#0C0F16;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #bwtb button{flex:none;background:#0C0F16;color:#fff;border:0;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px}body.bwtest{padding-top:calc(48px + env(safe-area-inset-top))}
 `;document.head.appendChild(st)}
+
+/* ===== BASEPATHS 3b: fans, head-coach-only family fundraising, screen time, no sample player ===== */
+Object.assign(NERR,{players_join_as_player_or_fan:"Player accounts join as a player or a fan.",grownups_join_as_parent_or_coach:"Grown-ups join as a parent or a coach.",not_on_team:"You're not on that team yet."});
+const bwIsKidAcct=u=>!!u&&(u.kid||u.role==="player");
+const bwHead=()=>{if(!NET||!isCoach()||S.peek)return false;const h=BP.home||{},o=(h.orgs||[]).find(x=>x.id===(BP.org&&BP.org.id));return !!((o&&o.head)||(h.user&&h.user.admin))};
+
+/* family fundraising amounts: only the head coach sees them (the team total stays public) */
+{const _fp=familiesPanel;familiesPanel=function(){let h=_fp();if(!bwOn())return h;const hd=bwHead();
+  if(!hd)h=h.replace(/<span>Fundraising <b>[^<]*<\/b><\/span>/g,"").replace(/ · Fundraising [^·<]*(?= ·)/g,"");
+  const F=accts().filter(a=>a.role==="fan"),act=F.filter(a=>a.status==="active");
+  const fans=`<h3 class="sec">📣 Fans <span>${act.length}</span></h3><p class="pgs">Brothers and sisters who follow the team. They only see the schedule.</p>${act.map(u=>`<div class="fam"><span class="dtx"><b>${esc(u.name)}</b><small>${esc(u.email||"")}</small></span><button class="lnk" data-a="xrm:${u.id}">${window._rm===u.id?"Tap again":"Remove"}</button></div>`).join("")||`<div class="empty">No fans yet. Players can ask to join your team as a fan.</div>`}`;
+  const i=h.indexOf('<h3 class="sec">🔗');return i<0?h+fans:h.slice(0,i)+fans+h.slice(i)}}
+{const _fs=bwFamSheet;bwFamSheet=function(id){_fs(id);if(bwHead())return;const o=document.querySelector("#bwov .sheet");if(!o)return;
+  o.querySelectorAll(".tiles > div").forEach(d=>{if(/fundraising/i.test(d.textContent))d.remove()});o.querySelectorAll(".bwr small").forEach(s=>{s.textContent=s.textContent.replace(/ · fundraising \$[\d,.]+/,"")});
+  o.querySelectorAll(".bwr").forEach(r=>{if(/· Fundraising/.test(r.textContent))r.remove()})}}
+{const _p=pprofHTML;pprofHTML=function(){let h=_p();if(!bwOn()||bwHead())return h;return h.replace(/<div><b>[^<]*<\/b><small>Fundraising<\/small><\/div>/,"").replace(/<div class="bwr"><span class="bwi">🎟️<\/span>[\s\S]*?<\/div>/g,"").replace("＋ Record dues or fundraising","＋ Record a payment")}}
+{const _m=moneyHTML;moneyHTML=function(){return _m().replace(/<h3 class="sec">🎟️ Your fundraising[\s\S]*?(?=<p class="fine">Only you and Coach)/,"")}}
+{const _ps=paySheet;paySheet=function(pid){if(bwOn()&&!bwHead())BW.pk="dues";const h=_ps(pid);return bwOn()&&!bwHead()?h.replace(/<div class="seg two bwkind">[\s\S]*?<\/div>/,""):h}}
+{const _f=fundCard;fundCard=function(coach){const h=_f(coach);return bwOn()&&!bwHead()?h.replace(/<button class="bwfn" data-a="bwfr">([^<]*)<\/button>/,"<b>$1</b>"):h}}
+
+/* parents' My Player tabs scroll with the page */
+{const st=document.createElement("style");st.textContent=`.ptabs{position:static!important;top:auto!important}.bwscr{display:flex;gap:8px;align-items:center;margin-top:8px}.bwscr input{width:96px;background:var(--card2,#2a1060);color:inherit;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-weight:800}.bwscr span{font-weight:800;color:var(--mute)}
+.bwfan{display:grid;gap:8px}.bwev{display:flex;gap:12px;align-items:center;background:#151A24;border:1px solid #252C3A;border-radius:14px;padding:12px 14px}.bwev .d{width:52px;text-align:center;flex:none}.bwev .d b{display:block;font:800 13px Archivo,sans-serif;color:#3D8BFF;text-transform:uppercase}.bwev .d small{color:#9AA3B2;font-weight:700}.bwev .t b{display:block}.bwev .t small{color:#9AA3B2}`;document.head.appendChild(st)}
+
+/* screen time: no "Recommended", and any number of minutes */
+{const _s=scrTabHTML;scrTabHTML=function(p){let h=_s(p).replace(" Recommended.","");const s=window._scrEd&&window._scrEd.id===p.id?window._scrEd:Object.assign({id:p.id},scrSet(p)),cust=window._scrC===p.id||(s.lim&&!SCR_LIM.includes(s.lim));
+  return h.replace(/(<h3 class="sec">Daily limit<\/h3><div class="fr">[\s\S]*?)(<\/div>)/,(x,a,b)=>a.replace(/class="fchip on"/g,cust?'class="fchip"':'class="fchip on"')+`<button class="fchip ${cust?"on":""}" data-a="bwscrc:${p.id}">✏️ Custom</button>`+b+(cust?`<div class="bwscr"><input id="bwscr" type="number" inputmode="numeric" min="5" max="600" step="5" value="${s.lim&&!SCR_LIM.includes(s.lim)?s.lim:""}" placeholder="75" aria-label="Minutes a day"><span>minutes a day</span><button class="ghost sm" data-a="bwscrs:${p.id}">Use this</button></div>`:""))}}
+
+/* join a team: player accounts pick Player or Fan, grown-ups pick Parent or Coach */
+{const _f=bpFindHTML;bpFindHTML=function(){const u=BP.home&&BP.home.user,kid=bwIsKidAcct(u),opts=kid?[["player","Player"],["fan","Fan (my brother or sister's team)"]]:[["parent","Parent"],["coach","Coach"]];
+  return _f().replace(/<select id="bpr-([^"]+)">[\s\S]*?<\/select>/g,(x,id)=>`<select id="bpr-${id}">${opts.map((o,i)=>`<option value="${o[0]}" ${i===0&&!(u&&u.role==="coach")?"selected":u&&u.role==="coach"&&o[0]==="coach"?"selected":""}>${o[1]}</option>`).join("")}</select>`).replace("Your coach sees your request and approves you.",kid?"Fans see the team's schedule. Your coach approves you.":"Your coach sees your request and approves you.")}}
+{const _c=bpTeamCard;bpTeamCard=function(o){return _c(o).replace('<em class="bpch"></em>',o.role==="fan"?'<em class="bpch">📣 Fan</em>':'<em class="bpch"></em>')}}
+{const _mp=masterPanel;masterPanel=function(){return _mp().replace(/wants to join as a <\/b>/g,"wants to join as a fan</b>")}}
+
+/* fans open a schedule page, not the team app */
+var BWF=null;
+async function bwFanOpen(id){BWF={id,busy:true};BP.out=true;view="bwfan";render();scrollTo(0,0);try{BWF=await rpc("dz_fan",{p_tok:TOK,p_org:id})}catch(e){toast(nmsg(e));BWF=null;view="bphome"}render()}
+function bwFanHTML(){if(!BWF||BWF.busy)return `<div class="bp">${bpHead("bwfanx")}<div class="bpspin"></div></div>`;const t=today(),keep=S.sched;
+  let L;try{S.sched=BWF.sched||(BWF.preset==="bigdawgz"?null:[]);L=schedList().filter(e=>e.d>=t).sort((a,b)=>(a.d+(a.time||"")).localeCompare(b.d+(b.time||"")))}finally{S.sched=keep}
+  return `<div class="bp">${bpHead("bwfanx")}<h1 class="bpt">${esc(BWF.name)}</h1><p class="bps">${esc([BWF.age,BWF.year].filter(Boolean).join(" · "))} · 📣 You're a fan of this team</p>
+   <h2 class="bpt3">Schedule</h2><div class="bwfan">${L.slice(0,40).map(e=>`<div class="bwev"><span class="d"><b>${new Date(e.d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short"})}</b><small>${nice(e.d).replace(/^\w+, /,"")}</small></span><span class="t"><b>${e.e||"📅"} ${esc(e.t)}</b><small>${esc(e.time||"")}${e.at?" · "+esc(e.at):""}</small></span></div>`).join("")||`<div class="bpempty">Nothing on the schedule yet.</div>`}</div></div>`}
+{const _e=bpEnter;bpEnter=async function(id,already){const o=((BP.home&&BP.home.orgs)||[]).find(x=>x.id===id);if(o&&o.role==="fan"&&!(BP.home.user&&BP.home.user.admin))return bwFanOpen(id);return _e(id,already)}}
+{const _r=render;render=function(){_r();if(bwOn()&&TOK&&BP.out&&!auth.busy&&view==="bwfan")$("#app").innerHTML=bwFanHTML()}}
+
+/* the View menu: no sample player; Player opens a real one */
+{const _s=pvSheet;pvSheet=function(){const h=_s();if(!bwOn())return h;const r=bwPL()[0];return h.replace('data-a="pv:sample"',r?`data-a="pv:${r.id}"`:'data-a="close"').replace("A brand-new player",r?esc(r.n.split(" ")[0])+"'s view":"No players yet")}}
+pvPanel=function(){const real=S.players.filter(p=>!p.tmp);return real.length?`<div class="pvp"><label for="pvs">👀 Player view</label><select id="pvs">${real.map(p=>`<option value="${p.id}">${esc(p.n)}${p.num?" · #"+p.num:""}</option>`).join("")}</select><button class="ghost sm" data-a="pv">See what they see</button></div>`:""};
+
+window.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-a]");if(!t)return;const a=t.dataset.a.split(":"),k=a[0],v=a.slice(1).join(":");
+  if(k==="bwfanx"){e.stopImmediatePropagation();BWF=null;view="bphome";render();bpLoadHome().then(render).catch(()=>{});return}
+  if(k==="bwscrc"||k==="bwscrs"){e.stopImmediatePropagation();const p=P(v);if(!p)return;const ed=window._scrEd&&window._scrEd.id===p.id?window._scrEd:(window._scrEd=Object.assign({id:p.id},scrSet(p)));
+    if(k==="bwscrc"){window._scrC=p.id;render();setTimeout(()=>{const i=$("#bwscr");if(i)i.focus()},50);return}
+    const n=Math.round(+(($("#bwscr")||{}).value||0));if(!(n>=5&&n<=600)){toast("Pick between 5 and 600 minutes.");return}ed.lim=n;window._scrC=p.id;render();toast(n+" minutes a day. Tap Save to keep it.");return}
+  if(k==="scrl"){window._scrC=null;setTimeout(render,0);return}
+  if(k==="bpjoin"&&bwOn()){e.stopImmediatePropagation();const s=$("#bpr-"+v),role=s?s.value:"player";
+    (async()=>{try{const r=await rpc("dz_org_join",{p_tok:TOK,p_org:v,p_role:role});let inNow=r.status==="active";
+      if(!inNow&&BW.test){try{await rpc("dz_test_approve",{p_tok:BW.test.tok,p_test:TOK,p_org:v});inNow=true}catch(x){}}
+      const o=(BP.res||[]).find(x=>x.id===v);if(o)o.mine=inNow?"active":"pending";toast(inNow?"You're in!":"Sent! "+(o&&o.coaches&&o.coaches[0]?"Coach "+o.coaches[0].split(" ")[0]:"The coach")+" will approve you.");await bpLoadHome();view="bphome";render();scrollTo(0,0)}
+    catch(x){toast(nmsg(x))}})();return}
+},true);
 </script></body></html>
