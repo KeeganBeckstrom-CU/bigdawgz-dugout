@@ -3,7 +3,7 @@
 <title>Basepaths</title><meta name="theme-color" content="#0C0F16">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100,500..700;1,100..125,700..800&family=Inter:wght@400;500;600;700&family=Bungee&family=Press+Start+2P&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" href="icon-180.png"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Basepaths"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="description" content="The team app for youth baseball coaches, players and families. Run practice. Teach the game."><meta property="og:type" content="website"><meta property="og:title" content="Basepaths"><meta property="og:description" content="The team app for youth baseball coaches, players and families. Run practice. Teach the game."><meta property="og:url" content="https://keeganbeckstrom-cu.github.io/bigdawgz-dugout/"><meta property="og:image" content="https://keeganbeckstrom-cu.github.io/bigdawgz-dugout/share.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://keeganbeckstrom-cu.github.io/bigdawgz-dugout/share.png"><style>:root{--bg:#6A3BD6;--bg2:#4A1F9E;--card:#7450D8;--card2:#8765E4;--deep:#421480;--line:rgba(255,255,255,.24);--ink:#FFFFFF;--mute:#E0D5FA;--amber:#FFC93D;--gold:#AC7519;--red:#F0484B;--grass:#3DDC84;--sky:#5CC8FF;--fd:"Bungee","Arial Black",system-ui,sans-serif;--fb:"Nunito",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3"><link rel="apple-touch-icon" href="icon-180.png?v=3"><link rel="manifest" href="manifest.webmanifest?v=3"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Basepaths"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="description" content="The team app for youth baseball coaches, players and families. Run practice. Teach the game."><meta property="og:type" content="website"><meta property="og:title" content="Basepaths"><meta property="og:description" content="The team app for youth baseball coaches, players and families. Run practice. Teach the game."><meta property="og:url" content="https://keeganbeckstrom-cu.github.io/bigdawgz-dugout/"><meta property="og:image" content="https://keeganbeckstrom-cu.github.io/bigdawgz-dugout/share.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://keeganbeckstrom-cu.github.io/bigdawgz-dugout/share.png"><style>:root{--bg:#6A3BD6;--bg2:#4A1F9E;--card:#7450D8;--card2:#8765E4;--deep:#421480;--line:rgba(255,255,255,.24);--ink:#FFFFFF;--mute:#E0D5FA;--amber:#FFC93D;--gold:#AC7519;--red:#F0484B;--grass:#3DDC84;--sky:#5CC8FF;--fd:"Bungee","Arial Black",system-ui,sans-serif;--fb:"Nunito",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{background:var(--bg2)}
 body{margin:0;color:var(--ink);font:600 16px/1.45 var(--fb);background:radial-gradient(120% 55% at 50% -8%,color-mix(in srgb,var(--amber) 38%,transparent),transparent 62%),repeating-linear-gradient(115deg,rgba(255,255,255,.045) 0 40px,transparent 40px 80px),linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%) fixed;min-height:100vh}
 body.lock{overflow:hidden}button,input,select{font:inherit;color:inherit}button{cursor:pointer;border:0;background:none;text-align:left}
@@ -4919,38 +4919,62 @@ function bwChRow(c){const g=GAMES.find(x=>x[0]===c.game)||["","🎮",c.game],ago
    <h3 class="sec">More</h3><div class="pvl"><button class="pvi" data-a="bpteams"><span class="av pvq"><b>⇄</b></span><span class="dtx"><b>Switch team</b><small>Back to My teams</small></span><span class="arr">›</span></button>
    ${adm?`<button class="pvi" data-a="bwtest"><span class="av pvq"><b>🧪</b></span><span class="dtx"><b>Test sign-up</b><small>Sign up like a new person. The account is deleted when you finish.</small></span><span class="arr">›</span></button>`:""}</div></div>`}}
 
-/* --- profiles: a parent and their kids on one phone --- */
-async function bwProfLoad(){const pt=bwPT()||TOK;BW.prof=null;try{BW.prof=await rpc("dz_profiles",{p_tok:pt})}catch(e){if(e.message==="signed_out"&&bwPT()){bwSetPT(null);BW.prof=await rpc("dz_profiles",{p_tok:TOK})}else throw e}return BW.prof}
-function bwWhoHTML(){const R=BW.prof,u=BP.home&&BP.home.user;if(!R)return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><div class="bpspin"></div></div>`;
-  const inKid=!!bwPT(),cur=u&&u.id,tiles=[{id:"me",n:R.me.name,s:R.me.role==="coach"?"Coach":"Parent",lock:inKid,on:!inKid}].concat(R.kids.map(k=>({id:k.id,n:k.name,s:"Player",on:cur===k.id})));
-  return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><h2 class="bpt2">Who's using Basepaths?</h2><p class="bps" style="text-align:center">Each kid gets their own profile, so their drills, games and cards stay theirs.</p>
-   <div class="bwpf">${tiles.map(t=>`<button class="bwpt ${t.on?"on":""}" data-a="bwpick:${t.id}"><span class="bwav">${esc(bpInit(t.n))}${t.lock?`<i aria-hidden="true">🔒</i>`:""}</span><b>${esc(t.n.split(" ")[0])}</b><small>${t.on?"Using now":t.s}</small></button>`).join("")}</div>
-   ${BW.pwFor?`<div class="bpform in"><label class="bpf">${esc(R.me.name.split(" ")[0])}'s password<input id="bwpw" type="password" autocomplete="current-password"></label><button class="bpb pri" data-a="bwpwgo" ${BW.busy?"disabled":""}>Switch to ${esc(R.me.name.split(" ")[0])}</button><p class="bpfine">So kids can't get into a parent's account.</p></div>`:""}
-   ${R.kids.length?"":`<p class="bpnote">No player profiles yet. Add your kid in My players, then they show up here.</p>`}
-   <button class="bpb" data-a="bwwhox">${inKid?"Stay as "+esc((u&&u.name||"").split(" ")[0]):"Not now"}</button></div>`}
-async function bwSwitch(tok){if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);TOK=tok;try{localStorage.setItem("dz-token",tok)}catch(e){}
-  ME=null;S=emptyS();sheet=null;G=null;BP.res=null;BP.lk=null;BP.sa=null;BP.home=null;BW.prof=null;BW.pwFor="";BW.busy=false;BW.un=null;bwClose();bpClearTheme();BP.out=true;view="bphome";render();scrollTo(0,0);
-  try{const h=await bpLoadHome(),act=(h.orgs||[]).filter(o=>o.status==="active"&&o.org_status==="active"),o=act.find(x=>x.id===h.cur)||(act.length===1?act[0]:null);
-    toast("Hi "+h.user.name.split(" ")[0]+"!");if(o){await bpEnter(o.id,o.id===h.cur);return}render()}catch(e){toast(nmsg(e));render()}}
-async function bwPick(id){const R=BW.prof,u=BP.home&&BP.home.user,pt=bwPT();if(!R||BW.busy)return;
-  if(id==="me"){if(!pt){view="bphome";render();return}BW.pwFor="me";render();setTimeout(()=>{const i=$("#bwpw");if(i)i.focus()},60);return}
-  if(u&&u.id===id){view="bphome";render();return}
-  BW.busy=true;render();try{const r=await rpc("dz_profile_open",{p_tok:pt||TOK,p_kid:id});if(pt){rpc("dz_logout",{p_tok:TOK}).catch(()=>{})}else bwSetPT(TOK);await bwSwitch(r.token)}catch(e){BW.busy=false;toast(nmsg(e));render()}}
-async function bwPwGo(){const pt=bwPT(),pw=(($("#bwpw")||{}).value||"");if(!pt)return;if(!pw){toast("Type the password.");return}BW.busy=true;render();
-  try{await rpc("dz_pw_check",{p_tok:pt,p_pw:pw});const kidTok=TOK;bwSetPT(null);rpc("dz_logout",{p_tok:kidTok}).catch(()=>{});await bwSwitch(pt)}catch(e){BW.busy=false;toast(nmsg(e));render();setTimeout(()=>{const i=$("#bwpw");if(i)i.focus()},60)}}
-async function bwWhoGo(){if(ME&&!BP.out)await bpGoHome(false);view="bwwho";BW.pwFor="";render();scrollTo(0,0);try{await bwProfLoad()}catch(e){toast(nmsg(e));view="bphome"}render()}
-{const _na=netAuth;netAuth=async function(up){if(!up){bwSetPT(null)}await _na(up);if(!bwOn()||up||!TOK||!BP.out||view!=="bphome")return;const u=BP.home&&BP.home.user;if(!u||u.kid||!u.kids)return;
-  try{const R=await bwProfLoad();if(R.kids.length){view="bwwho";render();scrollTo(0,0)}}catch(e){}}}
-{const _o=netOut;netOut=async function(skip){if(BW.test&&TOK&&TOK!==BW.test.tok&&!skip){return bwTestEnd()}const pt=bwPT();bwSetPT(null);BW.prof=null;BW.un=null;bwClose();if(pt&&pt!==TOK)rpc("dz_logout",{p_tok:pt}).catch(()=>{});return _o(skip)}}
-const bwCanSwitch=u=>u&&((u.kid||u.role==="player")&&bwPT()||!u.kid&&u.kids>0);
+/* --- profiles: every account on this phone, plus kids a parent gave permission for. Grown-ups need a PIN when the phone has more than one profile. --- */
+const bwAccts=()=>{try{return JSON.parse(localStorage.getItem("bp-accts")||"[]").filter(a=>a&&a.tok&&a.id)}catch(e){return[]}};
+const bwSaveAccts=A=>{try{localStorage.setItem("bp-accts",JSON.stringify(A.map(a=>({tok:a.tok,id:a.id,name:a.name,role:a.role,kid:!!a.kid,email:a.email||""}))))}catch(e){}};
+const bwAdult=a=>a&&!a.kid&&a.role!=="player";
+function bwRemember(tok,u){if(BW.test||!tok||!u)return;const A=bwAccts().filter(a=>a.id!==u.id&&a.tok!==tok);A.push({tok,id:u.id,name:u.name,role:u.role,kid:!!u.kid,email:u.email||""});bwSaveAccts(A)}
+function bwForget(id){bwSaveAccts(bwAccts().filter(a=>a.id!==id))}
+async function bwDevLoad(){const A=bwAccts(),out=[],seen=new Set(),dead=new Set();
+  for(const a of A){if(seen.has(a.id))continue;seen.add(a.id);const row=Object.assign({},a);out.push(row);
+    if(bwAdult(a)){try{const R=await rpc("dz_profiles",{p_tok:a.tok});row.name=R.me.name;row.pin=!!R.me.pin;R.kids.forEach(k=>{if(!seen.has(k.id)){seen.add(k.id);out.push({id:k.id,name:k.name,role:"player",kid:true,via:a.tok})}else{const r2=out.find(x=>x.id===k.id);if(r2)r2.via=a.tok}})}catch(e){if(e.message==="signed_out")dead.add(a.id)}}}
+  if(dead.size)bwSaveAccts(A.filter(a=>!dead.has(a.id)));BW.dev=out.filter(x=>!dead.has(x.id)).sort((a,b)=>(bwAdult(b)-bwAdult(a))||a.name.localeCompare(b.name));return BW.dev}
+const bwMulti=()=>(BW.dev||bwAccts()).length>1;
+function bwPinPad(title,sub,act){const v=BW.pinv||"";return `<div class="bwpin"><b>${esc(title)}</b>${sub?`<small>${esc(sub)}</small>`:""}<div class="bwdots">${[0,1,2,3].map(i=>`<i class="${i<v.length?"on":""}"></i>`).join("")}</div>
+  <div class="bwpad">${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(d=>d===""?`<span></span>`:`<button data-a="bwpn:${d==="⌫"?"del":d}:${act}" ${BW.busy?"disabled":""}>${d}</button>`).join("")}</div></div>`}
+function bwWhoHTML(){const D=BW.dev,cur=BW.cur;if(!D)return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><div class="bpspin"></div></div>`;
+  const f=BW.pinFor?D.find(x=>x.id===BW.pinFor):null;
+  if(f){const need=!f.pin;return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><button class="bpback" data-a="bwpinx">‹ Back</button>
+    ${need?(BW.setPw?bwPinPad(BW.pin1?"Type it again":"Make a 4-digit PIN for "+f.name.split(" ")[0],BW.pin1?"So we know it's right":"You'll use it to open your profile on this phone","set"):`<h2 class="bpt2">Set up a PIN</h2><p class="bps" style="text-align:center">This phone has more than one profile, so ${esc(f.name.split(" ")[0])} needs a PIN. Type your password once to make one.</p><div class="bpform"><label class="bpf">Password for ${esc(f.email||f.name)}<input id="bwpw" type="password" autocomplete="current-password"></label><button class="bpb pri" data-a="bwpwok" ${BW.busy?"disabled":""}>Next</button></div>`)
+     :bwPinPad("Hi "+f.name.split(" ")[0]+", type your PIN","","chk")}</div>`}
+  return `<div class="bp bpc"><div class="bpbrand sm">${BPMARK(44)}${BPWM}</div><h2 class="bpt2">Who's using Basepaths?</h2>
+   <div class="bwpf">${D.map(t=>`<button class="bwpt ${t.id===cur?"on":""}" data-a="bwpick:${t.id}"><span class="bwav">${esc(bpInit(t.name))}${bwAdult(t)&&bwMulti()?`<i aria-hidden="true">🔒</i>`:""}</span><b>${esc(t.name.split(" ")[0])}</b><small>${bwAdult(t)?(t.role==="coach"?"Coach":"Parent"):"Player"}</small></button>`).join("")}
+    <button class="bwpt add" data-a="bwadd"><span class="bwav">＋</span><b>Add</b><small>Another account</small></button></div>
+   <p class="bpfine">Grown-ups open with a PIN. Kids open their own profile, so their drills, games and cards stay theirs.</p></div>`}
+async function bwEnter(tok,row){clearTimeout(netT);TOK=tok;try{localStorage.setItem("dz-token",tok)}catch(e){}ME=null;S=emptyS();sheet=null;G=null;BP.res=null;BP.lk=null;BP.sa=null;BP.home=null;BW.un=null;BW.pinFor="";BW.pinv="";BW.pin1="";BW.setPw="";BW.busy=false;bwClose();bpClearTheme();
+  BP.out=true;view="bphome";render();scrollTo(0,0);try{const h=await bpLoadHome();bwRemember(tok,h.user);BW.cur=h.user.id;toast("Hi "+h.user.name.split(" ")[0]+"!")}catch(e){if(e.message==="signed_out"&&row){bwForget(row.id);toast("That sign-in expired. Sign in again.");return bwWhoGo()}toast(nmsg(e))}render()}
+async function bwOpenRow(r){if(r.tok)return bwEnter(r.tok,r);if(!r.via)return;BW.busy=true;render();try{const x=await rpc("dz_profile_open",{p_tok:r.via,p_kid:r.id});await bwEnter(x.token)}catch(e){BW.busy=false;toast(nmsg(e));render()}}
+async function bwPick(id){const r=(BW.dev||[]).find(x=>x.id===id);if(!r||BW.busy)return;if(bwAdult(r)&&bwMulti()){BW.pinFor=id;BW.pinv="";BW.pin1="";BW.setPw="";render();setTimeout(()=>{const i=$("#bwpw");if(i)i.focus()},60);return}bwOpenRow(r)}
+async function bwPinKey(d,act){if(BW.busy)return;const r=(BW.dev||[]).find(x=>x.id===BW.pinFor);if(!r)return;if(d==="del"){BW.pinv=(BW.pinv||"").slice(0,-1);render();return}
+  BW.pinv=((BW.pinv||"")+d).slice(0,4);render();if(BW.pinv.length<4)return;const v=BW.pinv;
+  if(act==="chk"){BW.busy=true;render();try{const x=await rpc("dz_pin_check",{p_tok:r.tok,p_pin:v});if(x.ok){await bwEnter(r.tok,r);return}BW.busy=false;BW.pinv="";toast(x.err==="pin_locked"?"Too many tries. Wait 5 minutes.":"Wrong PIN. Try again.");render()}catch(e){BW.busy=false;BW.pinv="";if(e.message==="signed_out"){bwForget(r.id);toast("That sign-in expired. Sign in again.");return bwWhoGo()}toast(nmsg(e));render()}return}
+  if(!BW.pin1){BW.pin1=v;BW.pinv="";render();return}
+  if(BW.pin1!==v){BW.pin1="";BW.pinv="";toast("Those didn't match. Start over.");render();return}
+  BW.busy=true;render();try{await rpc("dz_pin_set",{p_tok:r.tok,p_pw:BW.setPw,p_pin:v});r.pin=true;toast("PIN set.");await bwEnter(r.tok,r)}catch(e){BW.busy=false;BW.pin1="";BW.pinv="";if(e.message==="bad_password")BW.setPw="";toast(nmsg(e));render()}}
+async function bwWhoGo(){if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);const u=BP.home&&BP.home.user;if(u)BW.cur=u.id;
+  TOK=null;ME=null;S=emptyS();sheet=null;G=null;BP.home=null;BP.out=true;bwClose();bpClearTheme();BW.pinFor="";BW.dev=null;view="bwwho";render();scrollTo(0,0);
+  await bwDevLoad();if(!BW.dev.length){view="auth";auth={mode:"in",msg:"",busy:false,pw:"",role:null};render();return}render()}
+/* sign in: remember the account, and a grown-up on a shared phone sets a PIN first */
+{const _na=netAuth;netAuth=async function(up){const pw=auth.pw||(($("#ap")||{}).value||"");await _na(up);if(BW.test&&TOK&&TOK!==BW.test.tok&&!BW.test.main){BW.test.main=TOK;try{localStorage.setItem("bp-test",JSON.stringify(BW.test))}catch(e){}}if(!bwOn()||!TOK||!BP.out||BW.test)return;const u=BP.home&&BP.home.user;if(!u)return;bwRemember(TOK,u);BW.cur=u.id;
+  if(!bwAdult(u))return;await bwDevLoad();const me=BW.dev.find(x=>x.id===u.id);if(me&&!me.pin&&bwMulti()){BW.pinFor=u.id;BW.setPw=pw;BW.pinv="";BW.pin1="";view="bwwho";TOK=null;BP.home=null;render()}}}
+/* sign out: this account leaves the phone; the others stay */
+{const _o=netOut;netOut=async function(skip){if(BW.test&&TOK&&TOK!==BW.test.tok&&!skip){return bwTestEnd()}const u=BP.home&&BP.home.user;bwSetPT(null);BW.prof=null;BW.un=null;bwClose();if(u&&!BW.test)bwForget(u.id);const left=bwAccts().length;await _o(skip);if(left&&!BW.test)bwWhoGo()}}
+const bwCanSwitch=u=>!!u&&!BW.test;
 {const _h=bpHomeHTML;bpHomeHTML=function(){let h=_h();const u=BP.home&&BP.home.user;if(!bwCanSwitch(u))return h;
-  return h.replace('<div class="bpacts">',`<button class="bprow" data-a="bwwho"><span>👥</span><span class="bprt"><b>Switch profile</b><small>${bwPT()?"Back to a parent, or another kid on this phone":"Hand the phone to your kid. They get their own profile."}</small></span><i class="bparr">›</i></button><div class="bpacts">`)}}
+  return h.replace('<div class="bpacts">',`<button class="bprow" data-a="bwwho"><span>👥</span><span class="bprt"><b>Switch profile</b><small>${bwAccts().length>1||(u.kids>0&&!u.kid)?"Someone else using this phone? Pick their profile.":"Add another account on this phone"}</small></span><i class="bparr">›</i></button><div class="bpacts">`)}}
+/* opening the app: always start on Basepaths. Pick a profile (if there's more than one), then a team. */
+{const _b=netBoot;netBoot=async function(){bwBar();if(BW.test||BP.legacy)return _b();let cur=null;try{cur=localStorage.getItem("dz-token")}catch(e){}const old=bwPT();
+  if(!bwAccts().length&&!cur&&!old){render();return}auth.busy=true;auth.msg="Loading…";render();
+  for(const t of [cur,old].filter(Boolean)){if(bwAccts().some(a=>a.tok===t))continue;try{const h=await rpc("dz_home",{p_tok:t});bwRemember(t,h.user)}catch(e){if(bpMissing(e)){BP.legacy=true;auth.busy=false;auth.msg="";return _b()}}}
+  bwSetPT(null);auth.busy=false;auth.msg="";await bwDevLoad();if(!BW.dev.length){TOK=null;try{localStorage.removeItem("dz-token")}catch(e){}view="auth";render();return}
+  if(BW.dev.length===1&&BW.dev[0].tok)return bwEnter(BW.dev[0].tok,BW.dev[0]);TOK=null;BP.out=true;view="bwwho";render()}}
 
+{const _a=authHTML;authHTML=function(){const h=_a();if(!bwOn()||BW.test||TOK||!bwAccts().length||auth.busy)return h;return h.replace('<div class="bp bpc">','<div class="bp bpc"><button class="bpback" data-a="bwbackwho">‹ Back to profiles</button>')}}
 /* --- admin: test sign-up --- */
 {const _a=bpAdminHTML;bpAdminHTML=function(){return _a().replace('<h2 class="bpt3">Newest teams</h2>',`<button class="bprow" data-a="bwtest"><span>🧪</span><span class="bprt"><b>Test sign-up</b><small>Go through sign-up like a new coach, parent or player. The account and anything it makes are deleted when you end the test.</small></span><i class="bparr">›</i></button><h2 class="bpt3">Newest teams</h2>`)}}
 async function bwTestStart(){if(!TOK)return;let since;try{since=(await rpc("dz_test_start",{p_tok:TOK})).since}catch(e){toast(nmsg(e));return}if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);BW.test={tok:TOK,since};try{localStorage.setItem("bp-test",JSON.stringify(BW.test));localStorage.removeItem("dz-token")}catch(e){}bwSetPT(null);
   TOK=null;ME=null;S=emptyS();sheet=null;G=null;BP.out=false;BP.home=null;BP.sa=null;BP.res=null;BP.lk=null;bwClose();bpClearTheme();auth={mode:"up",msg:"",busy:false,pw:"",role:null,keep:{}};BK.by="";try{localStorage.removeItem("bp-u13")}catch(e){}view="auth";render();scrollTo(0,0)}
-async function bwTestEnd(){const t=BW.test;if(!t||BW.busy)return;BW.busy=true;bwBar();const tt=bwPT()||TOK;let msg="Test over. Nothing to delete.";
+async function bwTestEnd(){const t=BW.test;if(!t||BW.busy)return;BW.busy=true;bwBar();const tt=(BW.test&&BW.test.main)||TOK;let msg="Test over. Nothing to delete.";
   if(ME&&!BP.out){try{await netFlush()}catch(e){}}clearTimeout(netT);
   if(tt&&tt!==t.tok){try{const r=await rpc("dz_test_end",{p_tok:t.tok,p_test:tt,p_since:t.since});msg=r.deleted?"Test account deleted"+(r.teams?", with the team it made":"")+".":"Test over. That account was made before the test, so it wasn't deleted."}catch(e){msg=nmsg(e)}
     if(TOK&&TOK!==tt)rpc("dz_logout",{p_tok:TOK}).catch(()=>{})}
@@ -4963,7 +4987,7 @@ function bwBar(){let b=document.getElementById("bwtb");if(!BW.test){if(b)b.remov
 
 /* --- render hooks --- */
 {const _r=render;render=function(){_r();if(sheet&&sheet[0]==="pv"){const sh=$("#sheet");if(sh&&!sh.innerHTML){sh.innerHTML=pvSheet();sh.className="on";document.body.classList.add("lock")}}
-  if(bwOn()&&TOK&&BP.out&&!auth.busy&&view==="bwwho"){$("#app").innerHTML=bwWhoHTML()}
+  if(bwOn()&&!auth.busy&&view==="bwwho"){$("#app").innerHTML=bwWhoHTML();document.documentElement.classList.add("bpm");document.body.classList.add("bpm")}
   if(bwOn()&&ME&&!BP.out&&view==="acct"&&bwCanSwitch(BP.home&&BP.home.user)){const b=document.querySelector("#app .bpin");if(b&&!b.querySelector('[data-a="bwwho"]'))b.insertAdjacentHTML("afterbegin",`<button class="ghost" data-a="bwwho">👥 Switch profile</button>`)}
   if(bwOn()&&isCoach()&&view==="team"&&!S.peek){const sg=document.querySelector("#app .seg.six");if(sg&&!sg.querySelector('[data-a="ct:families"]')){sg.classList.add("bw7");const st=sg.querySelector('[data-a="ct:settings"]');if(st)st.insertAdjacentHTML("beforebegin",`<button class="${window._ct==="families"?"on":""}" data-a="ct:families"><span>👪</span>Families</button>`)}}
   try{bwTag()}catch(e){}bwBar()}}
@@ -4992,9 +5016,12 @@ document.addEventListener("click",e=>{const ov=document.getElementById("bwov");i
   if(k==="bwum"){const g=bwUnGroups()[+v],pid=(($("#bwum"+v)||{}).value||"");if(!g)return;if(!pid){toast("Pick their player first.");return}
     (async()=>{try{const r=await rpc("dz_unmatched_match",{p_tok:TOK,p_payer:g.payer,p_player:pid});toast("Moved "+r.moved+" payment"+(r.moved===1?"":"s")+" onto "+P(pid).n);BW.un=null;await netPull(false);render()}catch(x){toast(nmsg(x))}})();return}
   if(k==="bwwho"){bwWhoGo();return}
-  if(k==="bwwhox"){BW.pwFor="";view="bphome";render();return}
   if(k==="bwpick"){bwPick(v);return}
-  if(k==="bwpwgo"){bwPwGo();return}
+  if(k==="bwpn"){const q=v.split(":");bwPinKey(q[0],q[1]);return}
+  if(k==="bwpinx"){BW.pinFor="";BW.pinv="";BW.pin1="";BW.setPw="";render();return}
+  if(k==="bwpwok"){const pw=(($("#bwpw")||{}).value||"");if(!pw){toast("Type the password.");return}BW.setPw=pw;BW.pinv="";BW.pin1="";render();return}
+  if(k==="bwadd"){TOK=null;BP.home=null;view="auth";auth={mode:"in",msg:"",busy:false,pw:"",role:null,keep:{}};BK.by="";render();scrollTo(0,0);return}
+  if(k==="bwbackwho"){bwWhoGo();return}
   if(k==="bwtest"){sheet=null;bwTestStart();return}
   if(k==="bwtestend"){bwTestEnd();return}
 },true);
@@ -5112,4 +5139,22 @@ window.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("
       const o=(BP.res||[]).find(x=>x.id===v);if(o)o.mine=inNow?"active":"pending";toast(inNow?"You're in!":"Sent! "+(o&&o.coaches&&o.coaches[0]?"Coach "+o.coaches[0].split(" ")[0]:"The coach")+" will approve you.");await bpLoadHome();view="bphome";render();scrollTo(0,0)}
     catch(x){toast(nmsg(x))}})();return}
 },true);
+
+/* ===== BASEPATHS 3c: XP to spend in the top bar, Basepaths logo outside teams ===== */
+{const _t=topbar;topbar=function(title,sub){let h=_t(title,sub);const p=me();if(!p||isCoach()||isParent()||p.tmp)return h;let q=p;try{q=econ(p)||p}catch(e){}const L=level(q.xp||0),bank=+(q.bank||0);
+  return h.replace(/<button class="xpchip"[\s\S]*?<\/button>/,`<button class="bwxp" data-a="go:xp" aria-label="${bank} XP to spend. Level ${L.i+1}"><span class="bwlv">${xpRing(L.pct,32)}<b>${L.i+1}</b></span><span class="bwxt"><b>⚡ ${bank.toLocaleString("en-US")}</b><small>XP to spend</small></span></button>`)}}
+{const _c=bpClearTheme;bpClearTheme=function(){_c();if(!BP.legacy){LOGO="icon-192.png?v=3";LOGOF="icon-192.png?v=3"}}}
+{const st=document.createElement("style");st.textContent=`
+.bwxp{position:relative;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 12px 0 4px;border-radius:999px;border:0;color:#fff;cursor:pointer;flex:none;
+ background:linear-gradient(#14101f,#14101f) padding-box,linear-gradient(120deg,#FFD25A,#FF8A3D 45%,#3D8BFF) border-box;border:2px solid transparent;box-shadow:0 0 16px rgba(255,138,61,.35),inset 0 0 12px rgba(61,139,255,.18);overflow:hidden}
+.bwxp::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(-120%);animation:bwsh 3.6s ease-in-out infinite;pointer-events:none}
+@keyframes bwsh{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.bwlv{position:relative;display:grid;place-items:center;width:32px;height:32px}.bwlv svg{position:absolute;inset:0}.bwlv b{position:relative;font:900 13px/1 system-ui;color:#FFD25A}
+.bwxt{display:grid;line-height:1.05;text-align:left}.bwxt b{font:900 16px/1 var(--fd,system-ui);color:#FFD25A;text-shadow:0 0 10px rgba(255,210,90,.5);letter-spacing:.01em}.bwxt small{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#cfd6e4;opacity:.85}
+@media(prefers-reduced-motion:reduce){.bwxp::after{animation:none}}
+@media(max-width:460px){.top:has(.bwxp) .tl .brand,.top:has(.bwxp) .tl .team{display:none}.top:has(.bwxp) .tbr{gap:6px}}
+.bwpin{display:grid;justify-items:center;gap:10px;margin-top:10px}.bwpin>b{font:800 italic 22px Archivo,system-ui;text-align:center}.bwpin>small{color:#9AA3B2;text-align:center}
+.bwdots{display:flex;gap:16px;margin:8px 0 6px}.bwdots i{width:16px;height:16px;border-radius:50%;border:2px solid #3D8BFF}.bwdots i.on{background:#3D8BFF;box-shadow:0 0 10px rgba(61,139,255,.7)}
+.bwpad{display:grid;grid-template-columns:repeat(3,76px);gap:12px}.bwpad button{height:76px;border-radius:50%;background:#151A24;border:1.5px solid #252C3A;color:#F2F4F8;font:700 28px Inter,system-ui;cursor:pointer}.bwpad button:active{background:#3D8BFF}
+.bwpt.add .bwav{background:#151A24!important;border:2px dashed #3D4659;color:#9AA3B2;font-style:normal}`;document.head.appendChild(st)}
 </script></body></html>
