@@ -63,6 +63,16 @@ On days marked as team practice or another sport, only the weekly program's phys
 ## Videos from Coach on Home
 Videos the coach adds to the Film Room now show on every player's Home ("Videos from Coach"), not only in the Clubhouse.
 
+## Dugout Cards v3: the final set
+Nine base designs (Ticket Stub, Comic Panels, Leather Glove, Locker Room, Extra Edition, Postage Stamp, Arcade, Bobblehead Box, Trading Pin). Every new card gets one at random, and older cards get one based on their ID. Three special series:
+- Insert Burst: a foil-swirl insert, more common in bigger packs.
+- Rookie Card Series: only players rated 99 and Hall of Famers, numbered to 5.
+- Patch Series: a digital jersey relic numbered to 25, +3 OVR.
+All art is drawn in code: no photos, no team or league logos.
+
+## Coaches' cards save to the account
+Run `supabase/basepaths-coachcards.sql` once. A coach's collection, squad, gear and locker now follow their account to any device.
+
 ## Cards and packs (v2)
 New card design (rarity frame, parallel ribbon and serial stamp, on-card autographs, all six stats, explained back). Card guide in the Cards tab.
 Seven packs, each with its own opening: Rookie Rush, All-Star Surge, Bullpen Heat, Grand Slam, World Series Vault, Hall of Fame Vault (tiger), Cosmic Moonshot. The top three give 3 cards.
