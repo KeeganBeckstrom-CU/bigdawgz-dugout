@@ -1280,7 +1280,7 @@ function pickHTML(){return `<div class="pick"><div class="glow"></div><div class
   <button class="pc coachc" data-a="who:coach"><span class="av big coach"><b>C</b></span><b>Coach</b><small>Assign and track</small></button><button class="pc coachc" data-a="who:parent"><span class="av big coach"><b>P</b></span><b>Parent</b><small>Sample parent of Player 3 and 7</small></button></div>
   <p class="fine">Mock profiles for preview. Progress saves on this device only.</p></div>`}
 /* ===== HOME ===== */
-function homeHTML(){const p=me(),L=level(p.xp),w=WEEK[dayIdx()],dt=DAYTYPES[w[1]],t=today(),openAll=hwOpen(p),open=openAll.filter(h=>(!h.on||h.on<=t)&&!(isPhys(DR[h.id])&&busyOn(p,t).length)),later=openAll.filter(h=>h.on&&h.on>t);
+function homeHTML(){const p=me(),L=level(p.xp),w=WEEK[dayIdx()],dt=DAYTYPES[w[1]],t=today(),openAll=hwOpen(p),open=openAll.filter(h=>(!h.on||h.on<=t)&&!(h.wk&&isPhys(DR[h.id])&&busyOn(p,t).length)),later=openAll.filter(h=>h.on&&h.on>t);
   const dd=DV()[hash(t+p.id)%DV().length],tq=hash(t+"q")%TRIVIA.length,sh=p.shouts.slice(-2).reverse();
   return topbar()+`<main>
    <div class="todo-box"><h3 class="sec todo">To do today <span>${p.hw.filter(h=>h.done===t).length} of ${p.hw.filter(h=>h.done===t).length+open.length} done</span></h3>
@@ -2932,7 +2932,7 @@ function dowOf(d){return(new Date(d+"T12:00:00").getDay()+6)%7}
 function sportsOn(p,d){return((p&&p.sports)||[]).filter(s=>s.rec?(s.days||[]).includes(dowOf(d))&&(!s.from||d>=s.from)&&(!s.until||d<=s.until):s.date===d)}
 function teamPracOn(d){const t=S.tprac||{};return(t.days||[]).includes(dowOf(d))||(t.dates||[]).includes(d)}
 function busyOn(p,d){const L=sportsOn(p,d).map(s=>({e:s.e,n:s.n+" practice"}));if(teamPracOn(d))L.unshift({e:"⚾",n:"Team practice",team:1});return L}
-function hwOff(p,h){return !!h.on&&isPhys(DR[h.id])&&busyOn(p,h.on).length>0}
+function hwOff(p,h){return !!h.on&&!!h.wk&&isPhys(DR[h.id])&&busyOn(p,h.on).length>0}
 function spWhen(s){return s.rec?((s.days||[]).length===7?"Every day":(s.days||[]).slice().sort().map(i=>DNAME[i]).join(", "))+(s.until?" until "+nice(s.until):""):nice(s.date)}
 function busyBanner(p,d){const L=busyOn(p,d);if(!L.length)return"";const team=L.some(x=>x.team);
   return `<div class="busy"><span class="bse">${L.map(x=>x.e).join(" ")}</span><span class="dtx"><b>${esc(L.map(x=>x.n).join(" + "))} today</b><small>${team?"Save your body for practice. ":""}Baseball workouts are off today. Quizzes and games still count.</small></span></div>`}
@@ -5184,9 +5184,21 @@ nav,.nav{background:rgba(8,6,12,.94)!important}
 const LWP=[["xp150",{k:"xp",n:150,lbl:"150 XP"}],["xp300",{k:"xp",n:300,lbl:"300 XP"}],["xp500",{k:"xp",n:500,lbl:"500 XP"}],["xp1000",{k:"xp",n:1000,lbl:"1,000 XP"}],
   ["rookie",{k:"pack",pk:"rookie",lbl:"Rookie Rush"}],["allstar",{k:"pack",pk:"allstar",lbl:"All-Star Surge"}],["heat",{k:"pack",pk:"heat",lbl:"Bullpen Heat"}],["slam",{k:"pack",pk:"slam",lbl:"Grand Slam"}],
   ["series",{k:"pack",pk:"series",lbl:"World Series Vault"}],["hof",{k:"pack",pk:"hof",lbl:"Hall of Fame Vault"}],["galaxy",{k:"pack",pk:"galaxy",lbl:"Cosmic Moonshot"}]];
-const LC_DEF={src:"rand",n:10,secs:20,cats:[],places:3,prizes:["wheel","pack:allstar","pack:allstar","xp:75","xp:50"],rest:25,wheel:["xp300","xp500","heat","slam","series","hof"],fans:true};
+const LC_DEF={src:"rand",n:10,secs:20,cats:[],places:3,prizes:["wheel","pack:allstar","pack:allstar","xp:75","xp:50"],rest:25,wheel:["xp300","xp500","heat","slam","series","hof"],fans:true,teams:false,tnames:["Home","Visitors"],teamxp:50,power:true,belt:true,video:2};
 var LC=Object.assign({},LC_DEF);try{const x=JSON.parse(localStorage.getItem("dz-livecfg2")||"null");if(x)LC=Object.assign({},LC_DEF,x)}catch(e){}
 function lcSave(){try{localStorage.setItem("dz-livecfg2",JSON.stringify(LC))}catch(e){}}
+/* video round: real plays, asked before the clip, shown after the answer. [youtube id, clip title, question, options, right index, why] */
+const LVID=[
+ ["dOlihOEDXgE","2013 World Series, Game 3","Bottom of the 9th. The runner heading home trips over the third baseman, who is lying in the baseline after missing a throw. The runner is then tagged out at home. What's the call?",["Obstruction: the run scores","Out at home","Do-over","Runner goes back to third"],0,"A fielder who isn't making a play on the ball can't be in the runner's way. The Cardinals won Game 3 of the 2013 World Series on this exact call."],
+ ["X-6ujbLknUc","2012 NL Wild Card Game","Runners on first and second, one out. A high pop-up to shallow left that the shortstop can catch with ordinary effort. It drops. What's the call?",["Infield fly: batter is out","Bases loaded, nobody out","Double play","Foul ball"],0,"Infield fly rule: with runners on 1st and 2nd (or loaded) and fewer than two outs, the batter is out on an easy infield pop-up, caught or not. It stops infielders from dropping it on purpose for a double play."],
+ ["ApoJk9X7Vto","2001 ALDS, Game 3","A throw from right field sails over both cutoff men and rolls up the first-base line. Which fielder raced over, grabbed it, and flipped it home to get the runner?",["Shortstop","Pitcher","First baseman","Second baseman"],0,"Derek Jeter, the shortstop, read the play and was where nobody expected. Lesson: never stand still. Every player has a backup job on every play."],
+ ["9Tn5CQ9vyYQ","2005 ALCS, Game 2","Two outs, nobody on. The umpire rules the catcher didn't catch strike three cleanly. What can the batter do?",["Run to first","Nothing. He's out","Walk to first","Take second base"],0,"Uncaught third strike: with first base open (or two outs), the batter can run. The catcher has to tag him or throw to first. A.J. Pierzynski ran, was safe, and the White Sox won."],
+ ["FHITq05G2eQ","2013, Rays vs Dodgers","The third baseman keeps the ball hidden in his glove. The runner steps off the bag and gets tagged. Is he out?",["Yes, he's out","No, it's a balk","No, do the play over","Only in Little League"],0,"The hidden ball trick is legal, as long as the pitcher isn't standing on the rubber pretending to have the ball. Stay on the bag until you know where the ball is."],
+ ["YVNlvnsQ828","1996 ALCS, Game 1","A fan reaches over the wall and catches a fly ball the right fielder was about to catch. What should the call be?",["Fan interference","Home run","Foul ball","Ground-rule double"],0,"Fan interference: the umpire puts the batter where he thinks the play would have ended, here an out. In 1996 it was called a home run by mistake."],
+ ["4FP4DpHQApw","2014, Tigers at Indians","Runner on third. The pitcher starts his motion to the plate, then stops. What happens?",["Balk: every runner moves up a base","Nothing","Strike","Ball"],0,"Once a pitcher starts his motion he has to finish it. Stopping is a balk, so the runner on third scores. That's how this game ended."],
+ ["DviV7CYrc-E","2009, Phillies vs Mets","Runners on first and second are running on the pitch. The second baseman catches a line drive. What's the quickest way to finish the play?",["Step on second, tag the runner from first","Throw to first","Throw home","Hold the ball"],0,"Runners have to go back on a caught line drive. He stepped on second and tagged the other runner for an unassisted triple play to end the game."],
+ ["IJ5gBcva-4c","Phillies vs Red Sox","Bases loaded. The batter swings and his bat hits the catcher's glove. What's the call?",["Catcher's interference: batter to first","Strike","Foul ball","Batter is out"],0,"Catcher's interference: the batter goes to first, and with the bases loaded the run scores. That's a walk-off. Catchers, give the hitter room."],
+ ["09oNYkzuzfs","2015, Royals at Cubs","A hit rolls into the ivy on the outfield wall. The outfielder can't find it and puts both arms up. What's the call?",["Ground-rule double","Home run","Inside-the-park home run","Triple"],0,"When a ball gets stuck in the ivy, it's a ground-rule double. Arms up tells the umpire the ball is lost."]];
 const lvPack=k=>(PACKS.find(p=>p.k===k)||{n:k}).n;
 function lvPrizeTxt(z){if(!z)return"";if(z.k==="wheel")return"Prize wheel";if(z.k==="pack")return lvPack(z.pk)+" pack";return(+z.n||0).toLocaleString("en-US")+" XP"}
 function lcPrize(v){const[k,x]=String(v||"").split(":");return k==="wheel"?{k:"wheel"}:k==="pack"?{k:"pack",pk:x}:{k:"xp",n:+x||0}}
@@ -5227,53 +5239,80 @@ function lcHTML(){const pool=lcPool(),cats=lcCats(),B=lqBank(),sel=LQ.sel.map(id
     <div class="lcrow"><span><b>Everyone else who plays</b></span><select data-lc="rest">${[0,10,25,50,75,100].map(n=>`<option value="${n}" ${LC.rest===n?"selected":""}>${n?n+" XP":"Nothing"}</option>`).join("")}</select></div>
     ${hasWheel?`<p class="lclab">On the prize wheel <small>${LC.wheel.length} slices, each one equally likely</small></p>
      <div class="lcchk">${LWP.map(([id,z])=>{const on=LC.wheel.includes(id);return `<label class="${on?"on":""}"><input type="checkbox" data-lc="wheel" value="${id}" ${on?"checked":""}><span>${esc(z.k==="pack"?z.lbl+" pack":z.lbl)}</span></label>`}).join("")}</div>${LC.wheel.length<2?`<p class="amsg">Pick at least 2 prizes for the wheel.</p>`:""}`:""}</div>
+   <div class="lccard"><h3>Game modes</h3>
+    <div class="lcrow"><span><b>Team battle</b><small>Splits players into two teams when you hit Start. Highest average wins.</small></span><button class="tgl ${LC.teams?"on":""}" data-a="xlc:teams:1" aria-pressed="${LC.teams}"><i></i></button></div>
+    ${LC.teams?`<div class="two lctn"><label>Team 1<input data-lcin="tn0" maxlength="20" value="${esc(LC.tnames[0])}"></label><label>Team 2<input data-lcin="tn1" maxlength="20" value="${esc(LC.tnames[1])}"></label></div>
+     <div class="lcrow"><span><b>Bonus for the winning team</b></span><select data-lc="teamxp">${[0,25,50,100,150].map(n=>`<option value="${n}" ${LC.teamxp===n?"selected":""}>${n?n+" XP each":"Nothing"}</option>`).join("")}</select></div>`:""}
+    <div class="lcrow"><span><b>Power-ups</b><small>3 right in a row earns Double Down (x2 points) or 50/50 (2 wrong answers disappear)</small></span><button class="tgl ${LC.power?"on":""}" data-a="xlc:power:1" aria-pressed="${LC.power}"><i></i></button></div>
+    <div class="lcrow"><span><b>Video round</b><small>Real plays at the end of the game. Answer first, then the clip shows what happened.</small></span><select data-lc="video">${[0,1,2,3,5].map(n=>`<option value="${n}" ${LC.video===n?"selected":""}>${n?n+" clip"+(n>1?"s":""):"Off"}</option>`).join("")}</select></div>
+    <div class="lcrow"><span><b>Championship belt</b><small>${lvBeltLine()}</small></span><button class="tgl ${LC.belt?"on":""}" data-a="xlc:belt:1" aria-pressed="${LC.belt}"><i></i></button></div></div>
    <div class="lccard"><h3>Parents</h3><div class="lcrow"><span><b>Parents can watch</b><small>They see the questions, the leaderboard and the wheel. They can't answer.</small></span><button class="tgl ${LC.fans?"on":""}" data-a="xlc:fans:1" aria-pressed="${LC.fans}"><i></i></button></div></div>
-   <button class="cta" data-a="xlgo" ${ok&&!(hasWheel&&LC.wheel.length<2)?"":"disabled"}>Create game · ${pick?sel.length:n} question${(pick?sel.length:n)===1?"":"s"}</button>
+   <button class="cta" data-a="xlgo" ${ok&&!(hasWheel&&LC.wheel.length<2)?"":"disabled"}>Create game · ${(pick?sel.length:n)+LC.video} question${(pick?sel.length:n)+LC.video===1?"":"s"}</button>
    <p class="fine">${LC.places?Array.from({length:LC.places},(_,i)=>ORD[i]+": "+lvPrizeTxt(lcPrize(LC.prizes[i]))).join(" · ")+(LC.rest?" · Everyone else: "+LC.rest+" XP":""):"No prizes this game."}</p></main>`+nav()}
 function lcCreate(){const pick=LC.src==="pick",B=lqBank();let qs=pick?LQ.sel.map(id=>B.find(x=>x.id===id)).filter(Boolean).slice(0,30):lcPool().map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,LC.n);
   qs=qs.map(lqShuf);if(!qs.length){toast("Pick some questions first");return}
-  const cfg={places:LC.places,prizes:LC.prizes.slice(0,LC.places).map(lcPrize),rest:LC.rest,wheel:LC.wheel.map(id=>(LWP.find(x=>x[0]===id)||[])[1]).filter(Boolean),fans:LC.fans};
-  (async()=>{try{const r=await rpc("dz_live_host",{p_tok:TOK,p_qs:qs,p_secs:LC.secs,p_cfg:cfg});LV.spin=null;lvGo(r.pin);render()}catch(err){toast(/function|schema/i.test(err.message||"")?"Run supabase/dugout-live2.sql in Supabase first":nmsg(err))}})()}
+  if(LC.video){let seen=[];try{seen=JSON.parse(localStorage.getItem("dz-lvid")||"[]")}catch(e){}let pool=LVID.filter(v=>!seen.includes(v[0]));if(pool.length<LC.video){pool=LVID.slice();seen=[]}
+    const pick2=pool.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).slice(0,LC.video).map(x=>x[1]);try{localStorage.setItem("dz-lvid",JSON.stringify(seen.concat(pick2.map(v=>v[0])).slice(-8)))}catch(e){}
+    pick2.forEach(v=>{const q=lqShuf({q:v[2],o:v[3],a:v[4],why:v[5],cat:"Video play"});q.v=v[0];q.vt=v[1];qs.push(q)})}
+  const cfg={places:LC.places,prizes:LC.prizes.slice(0,LC.places).map(lcPrize),rest:LC.rest,wheel:LC.wheel.map(id=>(LWP.find(x=>x[0]===id)||[])[1]).filter(Boolean),fans:LC.fans,teams:LC.teams,tnames:LC.tnames,teamxp:LC.teamxp,power:LC.power,belt:LC.belt};
+  (async()=>{try{const r=await rpc("dz_live_host",{p_tok:TOK,p_qs:qs,p_secs:LC.secs,p_cfg:cfg});LV.spin=null;lvGo(r.pin);render()}catch(err){toast(/function|schema/i.test(err.message||"")?"Run supabase/dugout-live3.sql in Supabase first":nmsg(err))}})()}
 
 /* --- the prize wheel --- */
 const LWC=["#F0484B","#3B8FD9","#F5C542","#8E5BD6","#3DDC84","#FF8A3D","#22D3EE","#E879F9","#FCD34D","#60A5FA","#34D399","#FB923C"];
 function wheelSVG(sl){const n=sl.length,R=100,a=i=>(i/n)*Math.PI*2-Math.PI/2,pt=(i,r)=>[R+r*Math.cos(a(i)),R+r*Math.sin(a(i))];
   return `<svg viewBox="0 0 200 200" class="lwsvg">${sl.map((z,i)=>{const[x1,y1]=pt(i,98),[x2,y2]=pt(i+1,98),mid=((i+.5)/n)*360;return `<path d="M100 100 L${x1.toFixed(2)} ${y1.toFixed(2)} A98 98 0 ${n<2?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${LWC[i%LWC.length]}" stroke="#0b0b10" stroke-width="1.2"/>
    <text transform="rotate(${mid} 100 100)" x="100" y="22" text-anchor="middle" font-size="${n>8?7:8.5}" font-weight="900" fill="#111" font-family="Arial,sans-serif">${esc((z.lbl||lvPrizeTxt(z)).replace(/ pack$/,"")).slice(0,18)}</text>`}).join("")}<circle cx="100" cy="100" r="14" fill="#0b0b10" stroke="#fff" stroke-width="3"/></svg>`}
-function wheelHTML(S_){const sp=S_.spin,sl=(S_.cfg&&S_.cfg.wheel)||[];if(!sp||!sl.length)return"";const n=sl.length,target=360*6-((sp.i+.5)/n)*360;
+function wheelHTML(S_){const sp=S_.spin,sl=(S_.cfg&&S_.cfg.wheel)||[];if(!sp||sp.i==null||!sl.length)return"";const n=sl.length,target=360*6-((sp.i+.5)/n)*360;
   if(sp.at&&(!LV.spin||LV.spin.at!==sp.at))LV.spin={at:sp.at,t0:Date.now()};
   const run=LV.spin&&LV.spin.at===sp.at,el=run?Date.now()-LV.spin.t0:0,landed=run&&el>=5200;
-  return `<section class="lwheel ${landed?"landed":""}"><h3>${lvIco.wheel} Prize wheel for ${esc(sp.name)}</h3><div class="lwbox"><i class="lwptr"></i><div class="lwrot" id="lwrot" data-to="${target}" data-left="${run&&!landed?Math.max(300,5200-el):0}" style="transform:rotate(${landed?target:0}deg)">${wheelSVG(sl)}</div></div>
+  return `<section class="lvwhl ${landed?"landed":""}"><h3>${lvIco.wheel} Prize wheel for ${esc(sp.name)}</h3><div class="lwbox"><i class="lwptr"></i><div class="lwrot" id="lwrot" data-to="${target}" data-left="${run&&!landed?Math.max(300,5200-el):0}" style="transform:rotate(${landed?target:0}deg)">${wheelSVG(sl)}</div></div>
    ${landed?`<p class="lwwin"><b>${esc(sp.name)} won ${esc(lvPrizeTxt(sp.prize))}!</b><small>It's already in ${esc(sp.name)}'s app.</small></p>`:S_.host&&!sp.at?`<button class="cta" data-a="xlspin">Spin the wheel</button>`:!sp.at?`<p class="pgs ctr">Waiting for Coach to spin…</p>`:`<p class="pgs ctr">Spinning…</p>`}</section>`}
 function wheelRun(){const r=$("#lwrot");if(!r)return;const left=+r.dataset.left;if(!left)return;r.style.transition="none";r.style.transform="rotate(0deg)";r.getBoundingClientRect();
   r.style.transition=`transform ${left}ms cubic-bezier(.15,.65,.12,1)`;r.style.transform=`rotate(${r.dataset.to}deg)`;clearTimeout(LV.wt);LV.wt=setTimeout(()=>{if(view==="live"){render();burst()}},left+120)}
 
 /* --- the game screen, for the host, players and people watching --- */
-function lvGame(){const S_=LV.st,host=!!S_.host,me=S_.me,watch=!host&&!me,q=S_.q,ph=S_.phase,cfg=S_.cfg;
+function lvBeltLine(){const b=LV.belt;return b&&b.name?"Held by "+b.name+(b.defenses?" · "+b.defenses+" defense"+(b.defenses>1?"s":""):""):"Winner takes the team's belt. Win again to defend it."}
+function lvBeltHTML(b,big){if(!b||!b.name)return"";return `<div class="lvbelt ${big?"big":""}">${LV_BELT_SVG}<span class="dtx"><small>Championship belt</small><b>${esc(b.name)}</b>${b.defenses?`<small>${b.defenses} title defense${b.defenses>1?"s":""}</small>`:""}</span></div>`}
+const LV_BELT_SVG=`<svg viewBox="0 0 120 60" class="lvbsvg" aria-hidden="true"><rect x="0" y="18" width="120" height="24" rx="6" fill="#1b1b1b"/><rect x="0" y="22" width="120" height="16" fill="#2a2a2a"/><path d="M38 6h44l10 14-10 34H38L28 20z" fill="#e8c25a" stroke="#8a6a12" stroke-width="2"/><path d="M44 12h32l7 10-7 26H44l-7-26z" fill="#f6df8e"/><circle cx="60" cy="30" r="10" fill="#c8102e" stroke="#8a6a12" stroke-width="2"/><path d="M55 30l3 3 7-7" stroke="#fff" stroke-width="2.4" fill="none"/><circle cx="16" cy="30" r="5" fill="#e8c25a"/><circle cx="104" cy="30" r="5" fill="#e8c25a"/></svg>`;
+function lvTeams(S_){const T=S_.teams,cfg=S_.cfg;if(!T||!T.length||!cfg||!cfg.tnames)return"";const a=T.find(t=>t.t===0)||{avg:0,n:0},b=T.find(t=>t.t===1)||{avg:0,n:0},sum=(a.avg+b.avg)||1,my=S_.me&&S_.me.team!=null?S_.me.team:-1;
+  return `<div class="lvtm"><div class="lvtmn"><span class="${my===0?"me":""}"><b>${esc(cfg.tnames[0])}</b><small>${a.avg.toLocaleString("en-US")} avg · ${a.n}</small></span><span class="r ${my===1?"me":""}"><b>${esc(cfg.tnames[1])}</b><small>${b.avg.toLocaleString("en-US")} avg · ${b.n}</small></span></div><div class="lvtmb"><i style="width:${Math.round(a.avg/sum*100)}%"></i></div></div>`}
+function lvClip(S_){const c=S_.clip;if(!c||!c.v)return"";const host=!!S_.host,me=S_.me;if(me&&!host)return `<div class="lvclipm">🎬 Look at Coach's screen to see the real play</div>`;
+  return `<section class="lvclip"><small>🎬 The real play${c.t?" · "+esc(c.t):""}</small><div class="vframe"><iframe src="https://www.youtube-nocookie.com/embed/${esc(c.v)}?rel=0&modestbranding=1&playsinline=1&autoplay=1" title="The real play" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe></div><a class="lnk" href="https://www.youtube.com/watch?v=${esc(c.v)}" target="_blank" rel="noopener" data-ext="1">Open on YouTube</a></section>`}
+function lvPowers(S_){const me=S_.me;if(!me||S_.host||S_.phase!=="question"||me.answered||!S_.cfg||!S_.cfg.power)return"";const pu=me.pu||{},u=me.used;
+  if(u)return `<p class="lvpu on">${u.k==="x2"?"⚡ Double Down is on: a right answer counts twice":"✂️ 50/50 used: two wrong answers are gone"}</p>`;
+  const L=[["x2","⚡","Double Down"],["half","✂️","50/50"]].filter(x=>(+pu[x[0]]||0)>0&&!(x[0]==="half"&&S_.q.o.length<3));if(!L.length)return"";
+  return `<div class="lvpu">${L.map(x=>`<button data-a="xlpu:${x[0]}"><span>${x[1]}</span><b>${x[2]}</b><small>×${pu[x[0]]}</small></button>`).join("")}</div>`}
+function lvGame(){const S_=LV.st,host=!!S_.host,me=S_.me,watch=!host&&!me,q=S_.q,ph=S_.phase,cfg=S_.cfg;if(S_.belt!==undefined)LV.belt=S_.belt;
   const top=`<div class="lvtop"><span>PIN <b>${S_.pin}</b></span><span>${ph==="lobby"?S_.count+" in":ph==="done"?"Final":"Q "+(S_.idx+1)+" of "+S_.total}</span>${S_.fans?`<span class="lvfans">${lvIco.eye}${S_.fans} watching</span>`:""}${host?`<button class="lnk" data-a="xlend">${window._le?"Tap again to end":"End"}</button>`:watch?`<span class="lvwtag">Watching</span>`:""}</div>`;
-  const opts=show=>`<div class="lvopts">${q.o.map((o,i)=>{const tag=!host&&!watch&&ph==="question"?"button":"div";return `<${tag} class="lvo ${show&&S_.a===i?"ok":show?"no":""} ${me&&me.choice===i?"mine":""}" style="--oc:${LVC[i%4][1]}" ${tag==="button"?`data-a="xlans:${i}" ${me&&me.answered?"disabled":""}`:""}><span>${LVC[i%4][0]}</span><b>${esc(o)}</b>${show&&S_.dist?`<em>${S_.dist[i]}</em>`:""}</${tag}>`}).join("")}</div>`;
+  const hid=me&&me.used&&me.used.hide||[];
+  const opts=show=>`<div class="lvopts">${q.o.map((o,i)=>{if(!show&&hid.includes(i))return `<div class="lvo gone"><span>✂️</span><b>Gone</b></div>`;const tag=!host&&!watch&&ph==="question"?"button":"div";return `<${tag} class="lvo ${show&&S_.a===i?"ok":show?"no":""} ${me&&me.choice===i?"mine":""}" style="--oc:${LVC[i%4][1]}" ${tag==="button"?`data-a="xlans:${i}" ${me&&me.answered?"disabled":""}`:""}><span>${LVC[i%4][0]}</span><b>${esc(o)}</b>${show&&S_.dist?`<em>${S_.dist[i]}</em>`:""}</${tag}>`}).join("")}</div>`;
   const board=()=>`<div class="lvb">${(S_.board||[]).map((b,i)=>`<div class="lvbr ${i===0?"first":""}"><i>${b.rank}</i><b>${esc(b.name)}</b>${b.up>0?`<small>▲${b.up}</small>`:""}<span>${b.score.toLocaleString("en-US")}</span></div>`).join("")||`<p class="pgs">No scores yet.</p>`}</div>`;
   let h="";
-  if(ph==="lobby")h=host?`<section class="lvpin"><small>Join on your phone: Play → Dugout Live</small><b>${S_.pin}</b></section><div class="lvppl">${(S_.players||[]).map(n=>`<span>${esc(n)}</span>`).join("")||`<p class="pgs">Waiting for players…</p>`}</div><button class="cta" data-a="xlctl:start" ${S_.count?"":"disabled"}>Start (${S_.count} player${S_.count===1?"":"s"})</button>`
+  if(ph==="lobby")h=lvBeltHTML(S_.belt)+(host?`<section class="lvpin"><small>Join on your phone: Play → Dugout Live</small><b>${S_.pin}</b></section><div class="lvppl">${(S_.players||[]).map(n=>`<span>${esc(n)}</span>`).join("")||`<p class="pgs">Waiting for players…</p>`}</div><button class="cta" data-a="xlctl:start" ${S_.count?"":"disabled"}>Start (${S_.count} player${S_.count===1?"":"s"})</button>`
     :watch?`<section class="lvwait"><b>You're watching Coach's game</b><p>${S_.count} player${S_.count===1?"":"s"} in. It starts soon.</p></section><div class="lvppl">${(S_.players||[]).map(n=>`<span>${esc(n)}</span>`).join("")}</div>`
-    :`<section class="lvwait"><b>You're in, ${esc(me?me.name:"")}!</b><p>Look for your name on Coach's screen. The game starts soon.</p></section>`;
-  else if(ph==="question")h=`<section class="lvq"><div class="lvtimer"><i id="lvr" style="width:${S_.left_ms/(S_.secs*10)}%"></i></div><div class="lvqh"><b id="lvt">${Math.ceil(S_.left_ms/1000)}</b>${q.cat?`<small>${esc(q.cat)}</small>`:""}</div><h2>${esc(q.q)}</h2></section>${opts(false)}
+    :`<section class="lvwait"><b>You're in, ${esc(me?me.name:"")}!</b><p>Look for your name on Coach's screen. The game starts soon.</p></section>`)+(cfg&&cfg.teams?`<p class="pgs ctr">Team battle: ${esc(cfg.tnames[0])} vs ${esc(cfg.tnames[1])}. Teams are picked when Coach hits Start.</p>`:"");
+  else if(ph==="question")h=lvTeams(S_)+(q.vid?`<p class="lvvtag">🎬 Video play: answer first, then watch what really happened</p>`:"")+lvPowers(S_)+`<section class="lvq"><div class="lvtimer"><i id="lvr" style="width:${S_.left_ms/(S_.secs*10)}%"></i></div><div class="lvqh"><b id="lvt">${Math.ceil(S_.left_ms/1000)}</b>${q.cat?`<small>${esc(q.cat)}</small>`:""}</div><h2>${esc(q.q)}</h2></section>${opts(false)}
     ${host||watch?`<p class="lvans">${S_.answered} of ${S_.count} answered</p>${host?`<button class="ghost" data-a="xlctl:reveal">Skip the timer</button>`:""}`:me&&me.answered?`<p class="lvans">Locked in! Waiting for everyone…</p>`:""}`;
-  else if(ph==="reveal")h=`<section class="lvq"><h2>${esc(q.q)}</h2></section>${opts(true)}${S_.why?`<div class="tip"><small>Why</small>${esc(S_.why)}</div>`:""}
+  else if(ph==="reveal")h=`<section class="lvq"><h2>${esc(q.q)}</h2></section>${opts(true)}${S_.why?`<div class="tip"><small>Why</small>${esc(S_.why)}</div>`:""}${lvClip(S_)}
     ${host?`<button class="cta" data-a="xlctl:board">Leaderboard</button>`:me?`<section class="lvres ${me.correct?"ok":"no"}"><b>${me.answered?me.correct?"✅ Correct! +"+me.pts:"❌ Not this time":"⏰ Too slow!"}</b><small>${me.correct&&me.streak>1?"🔥 "+me.streak+" in a row · ":""}${me.score.toLocaleString("en-US")} points · ${ordinal(me.rank)} place</small></section>`:""}`;
-  else if(ph==="board")h=`<h3 class="sec">🏆 Leaderboard <span>after ${S_.idx+1} of ${S_.total}</span></h3>${board()}${host?`<button class="cta" data-a="xlctl:next">${S_.idx+1>=S_.total?"Final results":"Next question"}</button>`:me?`<p class="lvans">You're in ${ordinal(me.rank)} with ${me.score.toLocaleString("en-US")} points</p>`:""}`;
+  else if(ph==="board")h=lvTeams(S_)+`<h3 class="sec">🏆 Leaderboard <span>after ${S_.idx+1} of ${S_.total}</span></h3>${board()}${host?`<button class="cta" data-a="xlctl:next">${S_.idx+1>=S_.total?"Final results":"Next question"}</button>`:me?`<p class="lvans">You're in ${ordinal(me.rank)} with ${me.score.toLocaleString("en-US")} points</p>`:""}`;
   else{const B=S_.board||[],places=cfg?+cfg.places||0:3,won=B.filter(b=>b.rank<=places&&b.score>0);
     const prize=b=>cfg?lvPrizeTxt((cfg.prizes||[])[b.rank-1]):[150,100,75][b.rank-1]+" XP";
     h=`<section class="podium">${[1,0,2].map(i=>{const b=B[i];return b?`<div class="pod p${i+1}"><b>${esc(b.name)}</b><small>${b.score.toLocaleString("en-US")}</small><i>${["🥇","🥈","🥉"][i]}</i></div>`:`<div class="pod p${i+1} empty"></div>`}).join("")}</section>
      ${won.length?`<div class="lvprz">${won.map(b=>`<div><i>${ORD[b.rank-1]}</i><b>${esc(b.name)}</b><span>${esc(prize(b))}</span></div>`).join("")}${cfg&&cfg.rest?`<div class="rest"><i></i><b>Everyone else</b><span>${cfg.rest} XP</span></div>`:""}</div>`:""}
-     ${wheelHTML(S_)}
+     ${lvTeamResult(S_)}${lvBeltDone(S_)}${wheelHTML(S_)}
      ${B.length>3?`<details class="lvall"><summary>Full results</summary>${board()}</details>`:""}
-     ${host?`<button class="${S_.spin&&!S_.spin.at?"ghost":"cta"}" data-a="xlnew">New game</button>`:me?`<section class="lvres ok"><b>You finished ${ordinal(me.rank)}!</b><small>${me.score.toLocaleString("en-US")} points · prizes land in your app</small></section><button class="ghost" data-a="xlnew">Done</button>`:`<button class="ghost" data-a="xlnew">Done watching</button>`}`}
+     ${host?`<button class="${S_.spin&&S_.spin.i!=null&&!S_.spin.at?"ghost":"cta"}" data-a="xlnew">New game</button>`:me?`<section class="lvres ok"><b>You finished ${ordinal(me.rank)}!</b><small>${me.score.toLocaleString("en-US")} points · prizes land in your app</small></section><button class="ghost" data-a="xlnew">Done</button>`:`<button class="ghost" data-a="xlnew">Done watching</button>`}`}
   return topbar("Dugout Live")+`<main class="lvm">${top}${h}</main>`+(ph==="question"||ph==="reveal"?"":nav())}
 
+function lvTeamResult(S_){const T=S_.teams,cfg=S_.cfg;if(!T||T.length<2||!cfg||!cfg.tnames)return"";const a=T.find(t=>t.t===0),b=T.find(t=>t.t===1);if(!a||!b)return"";
+  if(a.avg===b.avg)return lvTeams(S_)+`<p class="lvtres">It's a tie! ${a.avg.toLocaleString("en-US")} each.</p>`;const w=a.avg>b.avg?0:1;
+  return lvTeams(S_)+`<p class="lvtres"><b>${esc(cfg.tnames[w])} win the team battle!</b>${cfg.teamxp?` Everyone on ${esc(cfg.tnames[w])} gets +${cfg.teamxp} XP.`:""}</p>`}
+function lvBeltDone(S_){const b=S_.spin&&S_.spin.belt;if(!b)return"";const t=b.kind==="defend"?`${esc(b.name)} defends the belt!`:b.kind==="take"?`${esc(b.name)} takes the belt from ${esc(b.from)}!`:`${esc(b.name)} is the first champion!`;
+  return `<section class="lvbeltw">${LV_BELT_SVG}<b>${t}</b><small>${b.kind==="defend"?b.n+" title defense"+(b.n>1?"s":""):"New Dugout Live champion"}</small></section>`}
 /* --- join screen (players) and watch screen (parents) --- */
 function lvJoinHTML(){const par=isParent(),f=LV.found&&LV.found.pin?LV.found:null;
-  return topbar("Dugout Live",par?"Watch Coach's game":"Join Coach's game")+`<main>${f?`<button class="lvjoin" data-a="${par?"xlw":"xlj"}:${f.pin}"><b>🔴 Coach is live now!</b><small>Tap to ${par?"watch":"join"} · PIN ${f.pin}</small></button>`:par?`<div class="empty">Coach isn't running a game right now. When Coach starts one, it shows up here and on My Player.</div>`:""}
+  return topbar("Dugout Live",par?"Watch Coach's game":"Join Coach's game")+`<main>${lvBeltHTML(LV.found&&LV.found.belt,true)}${f?`<button class="lvjoin" data-a="${par?"xlw":"xlj"}:${f.pin}"><b>🔴 Coach is live now!</b><small>Tap to ${par?"watch":"join"} · PIN ${f.pin}</small></button>`:par?`<div class="empty">Coach isn't running a game right now. When Coach starts one, it shows up here and on My Player.</div>`:""}
    <div class="form"><label>Game PIN<input id="lvpin" inputmode="numeric" maxlength="6" placeholder="123456" class="big" autocomplete="off"></label>${LV.err?`<p class="amsg">${esc(LV.err)}</p>`:""}<button class="cta" data-a="${par?"xlw":"xlj"}:">${par?"Watch":"Join"}</button></div>
    <button class="ghost" data-a="xlfind">↻ Check if Coach is live</button></main>`+nav()}
 
@@ -5285,17 +5324,20 @@ liveHTML=function(){if(!NET)return topbar("Dugout Live")+`<main><div class="empt
 /* poll: also redraw when the wheel spins or someone starts watching */
 lvPoll=async function(){if(!NET||!LV.pin||LV.busy)return;if(view!=="live"){lvStop();return}LV.busy=true;try{const r=await rpc("dz_live_state",{p_tok:TOK,p_pin:LV.pin}),o=LV.st;
   const ch=!o||o.phase!==r.phase||o.idx!==r.idx||o.answered!==r.answered||o.count!==r.count||o.fans!==r.fans||JSON.stringify(o.spin||null)!==JSON.stringify(r.spin||null)||(r.me&&o.me&&o.me.answered!==r.me.answered)||(r.phase==="lobby"&&JSON.stringify(o.players)!==JSON.stringify(r.players));
+  if(r.me&&r.me.newpu){toast(r.me.newpu==="x2"?"🔥 3 in a row! You earned Double Down":"🔥 3 in a row! You earned 50/50");rpc("dz_live_seen",{p_tok:TOK,p_pin:LV.pin}).catch(()=>{})}
+  if(r.belt!==undefined)LV.belt=r.belt;const ch2=o&&(JSON.stringify(o.teams||null)!==JSON.stringify(r.teams||null)||JSON.stringify((o.me||{}).pu||null)!==JSON.stringify((r.me||{}).pu||null)||JSON.stringify((o.me||{}).used||null)!==JSON.stringify((r.me||{}).used||null));
   LV.st=r;LV.dl=Date.now()+r.left_ms;
   if(r.host&&r.phase==="question"&&(r.left_ms<=0||(r.count>0&&r.answered>=r.count))){await rpc("dz_live_ctl",{p_tok:TOK,p_pin:LV.pin,p_action:"reveal"})}
-  if(ch&&view==="live"&&!sheet)render();
-  if(r.phase==="done"&&!r.host&&(!r.spin||r.spin.at))setTimeout(()=>{if(LV.st&&LV.st.phase==="done")lvStop()},6500)}catch(e){if(e.message==="no_game"){LV.pin="";lvStop();render()}}finally{LV.busy=false}};
+  if((ch||ch2)&&view==="live"&&!sheet)render();
+  if(r.phase==="done"&&!r.host&&(!r.spin||r.spin.i==null||r.spin.at))setTimeout(()=>{if(LV.st&&LV.st.phase==="done")lvStop()},6500)}catch(e){if(e.message==="no_game"){LV.pin="";lvStop();render()}}finally{LV.busy=false}};
 {const _r=render;render=function(){_r();if(view==="live")wheelRun()}}
 
 /* --- taps --- */
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0];
-  if(!/^(xlc|xlgo|xlw|xlspin|xgift|xlnew)$/.test(k))return;e.stopImmediatePropagation();
+  if(!/^(xlc|xlgo|xlw|xlspin|xgift|xlnew|xlpu)$/.test(k))return;e.stopImmediatePropagation();
+  if(k==="xlpu"){const kind=a[1];(async()=>{try{const r=await rpc("dz_live_power",{p_tok:TOK,p_pin:LV.pin,p_kind:kind});if(LV.st&&LV.st.me){LV.st.me.used={k:kind,hide:r.hide||[]};LV.st.me.pu=Object.assign({},LV.st.me.pu,{[kind]:Math.max(0,(+(LV.st.me.pu||{})[kind]||1)-1)})}render()}catch(err){toast(err.message==="already_answered"?"You already answered":err.message==="too_late"?"Time's up!":err.message==="one_per_question"?"One power-up per question":nmsg(err))}})();return}
   if(k==="xlc"){const f=a[1],v=a[2];
-    if(f==="src")LC.src=v;else if(f==="fans")LC.fans=!LC.fans;else if(f==="cats")LC.cats=[];
+    if(f==="src")LC.src=v;else if(f==="fans")LC.fans=!LC.fans;else if(f==="teams")LC.teams=!LC.teams;else if(f==="power")LC.power=!LC.power;else if(f==="belt")LC.belt=!LC.belt;else if(f==="cats")LC.cats=[];
     else if(f==="n")LC.n=Math.max(3,Math.min(30,LC.n+ +v));else if(f==="secs")LC.secs=Math.max(5,Math.min(60,LC.secs+ +v));
     else if(f==="places"){LC.places=Math.max(0,Math.min(5,LC.places+ +v));while(LC.prizes.length<LC.places)LC.prizes.push("xp:50")}
     lcSave();const y=scrollY;render();scrollTo(0,y);return}
@@ -5307,12 +5349,15 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t
   if(k==="xgift"){const p=cardOwner();if(!p)return;const i=(p.gifts||[]).findIndex(g=>g.id===a.slice(1).join(":"));if(i<0)return;const g=p.gifts.splice(i,1)[0],pk=PACKS.find(x=>x.k===g.pk)||PACKS[0];
     p.opened=(p.opened||0)+1;const cs=openPack(p,pk);(p.cards=p.cards||[]).push(...cs);save();pkStart(pk.n,pk,cs);return}},true);
 document.addEventListener("change",e=>{const el=e.target.closest("[data-lc]");if(!el)return;const[f,i]=el.dataset.lc.split(":");
-  if(f==="prize")LC.prizes[+i]=el.value;else if(f==="rest")LC.rest=+el.value;
+  if(f==="prize")LC.prizes[+i]=el.value;else if(f==="rest")LC.rest=+el.value;else if(f==="teamxp")LC.teamxp=+el.value;else if(f==="video")LC.video=+el.value;
   else if(f==="cat"){const all=lcCats();let s=LC.cats.length?LC.cats.slice():all.slice();if(el.checked){if(!s.includes(el.value))s.push(el.value)}else s=s.filter(c=>c!==el.value);LC.cats=s.length===all.length?[]:s;if(!s.length){LC.cats=[];toast("Pick at least one type")}}
   else if(f==="wheel"){let s=LC.wheel.filter(x=>x!==el.value);if(el.checked)s.push(el.value);LC.wheel=LWP.map(x=>x[0]).filter(x=>s.includes(x))}
   else if(f==="qcat"){LQ.cat=el.value;LQ.more=0}
   lcSave();const y=scrollY;render();scrollTo(0,y)});
 
+document.addEventListener("input",e=>{const el=e.target.closest("[data-lcin]");if(!el)return;const i=el.dataset.lcin==="tn0"?0:1;LC.tnames=LC.tnames.slice();LC.tnames[i]=el.value.slice(0,20);lcSave()});
+/* coach setup: fetch the belt holder once */
+{const _r=render;render=function(){_r();if(NET&&view==="live"&&isCoach()&&!LV.pin&&!LV.beltAt){LV.beltAt=1;rpc("dz_live_find",{p_tok:TOK}).then(r=>{LV.belt=r&&r.belt||null;if(view==="live"&&!LV.pin){const y=scrollY;render();scrollTo(0,y)}}).catch(()=>{})}}}
 /* --- prize packs reach the player through the inbox --- */
 {const _mi=mergeInbox;mergeInbox=function(p,items){let ch=false;(items||[]).forEach(it=>{if(!it||!it.aid||it.kind!=="pack"||(p.got&&p.got[it.aid]))return;
   (p.gifts=p.gifts||[]).push({id:it.aid,pk:it.pk,t:it.t||"Prize pack"});(p.shouts=p.shouts||[]).push({t:"🎁 You won a "+lvPack(it.pk)+" pack! "+(it.t||""),at:it.at||today(),aid:it.aid+"-s"});ch=true});return _mi(p,items)||ch}}
@@ -5339,13 +5384,21 @@ var lvFindAt=0;
 .lcbank summary{cursor:pointer;font-weight:900;padding:6px 0}.lcbank{display:grid;gap:8px}.lcbank[open]{gap:8px}.lcbank .lcsel{max-width:100%;width:100%;margin:6px 0}
 .lvi{width:16px;height:16px;vertical-align:-3px}.lvfans{display:inline-flex;align-items:center;gap:4px;color:var(--mute);font-weight:800}.lvwtag{font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--amber)}
 .lvprz{display:grid;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}.lvprz div{display:flex;align-items:center;gap:10px}.lvprz i{font-style:normal;font-weight:900;width:38px;color:var(--amber)}.lvprz b{flex:1}.lvprz span{font-weight:800;color:var(--mute);text-align:right}
-.lwheel{display:grid;gap:10px;justify-items:center;text-align:center}.lwheel h3{display:flex;align-items:center;gap:6px;font-size:17px}
+.lvwhl{display:grid;gap:10px;justify-items:center;text-align:center}.lvwhl h3{display:flex;align-items:center;gap:6px;font-size:17px}
 .lwbox{position:relative;width:min(78vw,320px);aspect-ratio:1}.lwrot{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 6px #0b0b10,0 0 0 9px var(--amber),0 14px 40px rgba(0,0,0,.5)}.lwsvg{display:block;width:100%;height:100%}
 .lwptr{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid #fff;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));z-index:2}
 .lwwin{display:grid;gap:2px}.lwwin b{font-size:20px;color:var(--amber)}.lwwin small{color:var(--mute);font-weight:700}
 .lvall summary{cursor:pointer;font-weight:900;color:var(--mute);padding:4px 0}
 .lvgift{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 22%,var(--card)),var(--card));border:1.5px solid var(--amber);border-radius:16px;padding:12px 14px;color:var(--ink);margin-bottom:10px}.lvgift>span:first-child{font-size:28px}.lvgift small{color:var(--mute);font-weight:700}
 .lvparb{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--ink)}.lvparb .dot{width:10px;height:10px;border-radius:50%;background:var(--mute);flex:none}.lvparb.live{border-color:#F0484B}.lvparb.live .dot{background:#F0484B;box-shadow:0 0 0 4px rgba(240,72,75,.25);animation:lvdot 1.4s ease-in-out infinite}.lvparb small{color:var(--mute);font-weight:700;font-size:12.5px}
+.lctn{gap:8px}.lctn input{width:100%;background:color-mix(in srgb,var(--blk) 40%,transparent);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-weight:800;font-size:16px}
+.lvtm{display:grid;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.lvtmn{display:flex;justify-content:space-between}.lvtmn span{display:grid}.lvtmn span.r{text-align:right}.lvtmn b{font-size:15px}.lvtmn small{color:var(--mute);font-weight:800;font-size:12px}.lvtmn span.me b::after{content:" · you";color:var(--amber);font-size:12px}
+.lvtmb{height:10px;border-radius:6px;background:#3B8FD9;overflow:hidden}.lvtmb i{display:block;height:100%;background:#F0484B;transition:width .6s}.lvtres{text-align:center;font-weight:800}.lvtres b{color:var(--amber);font-size:18px;display:block}
+.lvpu{display:flex;gap:8px;justify-content:center}.lvpu button{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:900;box-shadow:0 4px 14px rgba(219,39,119,.4)}.lvpu button span{font-size:18px}.lvpu button small{opacity:.85}
+p.lvpu.on{display:block;text-align:center;font-weight:900;color:#f0abfc}.lvo.gone{opacity:.25;filter:grayscale(1);pointer-events:none}.lvvtag{text-align:center;font-weight:900;color:var(--amber)}
+.lvclip{display:grid;gap:6px}.lvclip small{font-weight:900;color:var(--amber)}.lvclip .vframe{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000}.lvclip iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.lvclipm{text-align:center;font-weight:900;padding:10px;border:1px dashed var(--line);border-radius:12px}
+.lvbelt{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(232,194,90,.18),var(--card));border:1px solid #e8c25a;border-radius:14px;padding:8px 12px}.lvbsvg{width:64px;height:32px;flex:none}.lvbelt small{color:var(--mute);font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}.lvbelt b{font-size:16px}.lvbelt.big .lvbsvg{width:84px;height:42px}
+.lvbeltw{display:grid;justify-items:center;text-align:center;gap:4px;padding:14px;border-radius:16px;background:radial-gradient(circle at 50% 30%,rgba(232,194,90,.35),transparent 70%),var(--card);border:1.5px solid #e8c25a}.lvbeltw .lvbsvg{width:150px;height:75px;filter:drop-shadow(0 6px 14px rgba(232,194,90,.5))}.lvbeltw b{font-size:20px;color:#f6df8e}.lvbeltw small{color:var(--mute);font-weight:800}
 @keyframes lvdot{50%{box-shadow:0 0 0 8px rgba(240,72,75,0)}}@media(prefers-reduced-motion:reduce){.lvparb.live .dot{animation:none}}`;document.head.appendChild(st)}
 
 /* ===== VIDEOS FROM COACH ON HOME (Nov 2026): videos Coach adds to the Film Room show up on every player's Home,
@@ -5358,7 +5411,7 @@ function vidShelfHTML(p){const L=coachVids(p),todo=L.filter(x=>!x.seen);if(!L.le
      <b>${esc(f[1])}</b>${f[4]?`<small>${esc(f[4])}</small>`:""}${S.peek?"":`<button class="cvw ${seen?"on":""}" data-a="fseen:${f[0]}">${seen?"✓ Watched":"I watched it · +10 XP"}</button>`}</div>`).join("")}</div></section>`}
 {const _r=render;render=function(){_r();if(view!=="home"||isCoach()||isParent())return;const p=me(),m=document.querySelector("#app main");if(!p||!m||m.querySelector(".cvid"))return;
   const h=vidShelfHTML(p);if(!h)return;const td=m.querySelector(".todo-box");if(td)td.insertAdjacentHTML("afterend",h);else{const hero=m.firstElementChild;(hero||m).insertAdjacentHTML(hero?"afterend":"afterbegin",h)}
-  const t=today(),off=p.hw.filter(x=>!x.done&&DR[x.id]&&(!x.on||x.on<=t)&&isPhys(DR[x.id])&&busyOn(p,t).length).length;
+  const t=today(),off=p.hw.filter(x=>!x.done&&x.wk&&DR[x.id]&&(!x.on||x.on<=t)&&isPhys(DR[x.id])&&busyOn(p,t).length).length;
   if(off&&td&&!td.querySelector(".hwoff"))td.insertAdjacentHTML("beforeend",`<p class="hwoff">${off} drill${off===1?" is":"s are"} off today for ${esc(busyOn(p,t).map(b=>b.n).join(" and "))}. ${off===1?"It comes":"They come"} back tomorrow.</p>`)}}
 /* film items added from the Film Room card also count as "Coach's videos" for players who open the Film Room */
 {const st=document.createElement("style");st.textContent=`

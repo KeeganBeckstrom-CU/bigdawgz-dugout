@@ -50,6 +50,16 @@ Run `supabase/dugout-live2.sql` once in the Supabase SQL Editor (after `dugout-l
 - Packs won show up as "Open your pack" on the player's Home and Cards tab.
 - Parents can watch (coach can turn it off per game). Parents see "Dugout Live is on now" at the top of My Player.
 
+## Dugout Live v3: team battles, power-ups, video round, championship belt
+Run `supabase/dugout-live3.sql` once in the Supabase SQL Editor, after `dugout-live2.sql`. Safe to run again.
+- Team battle (on/off, name both teams, bonus XP for the winning team). Teams are split at random when the coach hits Start, and late joiners go to the smaller team. The higher average score wins, so uneven teams stay fair.
+- Power-ups (on/off): 3 right answers in a row earns Double Down (x2 points on one question) or 50/50 (two wrong answers disappear). One power-up per question.
+- Video round (off, 1, 2, 3 or 5 clips) at the end of the game: 10 real MLB plays (obstruction, infield fly, hidden ball trick, balk and more). Players answer first, then the clip plays on Coach's screen.
+- Championship belt (on/off): the winner takes the team's belt; winning while holding it counts as a title defense. Shown on the setup, join and final screens.
+
+## Assigned homework on practice days
+On days marked as team practice or another sport, only the weekly program's physical drills step aside. Homework the coach assigns directly always shows on the player's Home.
+
 ## Videos from Coach on Home
 Videos the coach adds to the Film Room now show on every player's Home ("Videos from Coach"), not only in the Clubhouse.
 
