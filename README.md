@@ -42,6 +42,17 @@ Every game: score = what you got × level (Easy ×1, Medium ×2, Hard ×3, Exper
 Players see Leaderboards and their high scores from Play and My Card. Coaches get a sortable table of every player's high scores in Coach's View.
 Dugout Live: the coach can pick the questions (or write their own) instead of using random ones.
 
+## Dugout Live v2: game settings, prize wheel, parents watching
+Run `supabase/dugout-live2.sql` once in the Supabase SQL Editor (after `dugout-live.sql` and `basepaths-orgs.sql`). Safe to run again.
+- Coach sets up each game: random or hand-picked questions, how many (3-30), which question types, seconds per question.
+- Prizes: how many places win (0-5) and what each place gets: the prize wheel (1st only), any pack, or XP. Plus XP for everyone else who played.
+- Prize wheel: the coach picks what's on the wheel. The server picks the result when the game ends and sends it right away; "Spin the wheel" plays the spin on every screen.
+- Packs won show up as "Open your pack" on the player's Home and Cards tab.
+- Parents can watch (coach can turn it off per game). Parents see "Dugout Live is on now" at the top of My Player.
+
+## Videos from Coach on Home
+Videos the coach adds to the Film Room now show on every player's Home ("Videos from Coach"), not only in the Clubhouse.
+
 ## Cards and packs (v2)
 New card design (rarity frame, parallel ribbon and serial stamp, on-card autographs, all six stats, explained back). Card guide in the Cards tab.
 Seven packs, each with its own opening: Rookie Rush, All-Star Surge, Bullpen Heat, Grand Slam, World Series Vault, Hall of Fame Vault (tiger), Cosmic Moonshot. The top three give 3 cards.

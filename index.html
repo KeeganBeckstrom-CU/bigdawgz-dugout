@@ -5178,4 +5178,294 @@ nav,.nav{background:rgba(8,6,12,.94)!important}
   const img=b&&b.bg&&/^data:image\//.test(b.bg)?b.bg:(b&&b.logo&&/^data:image\//.test(b.logo)?b.logo:BD_LOGO);
   st.textContent=st.textContent.replace(/body::before\{[^}]*\}#app\{position:relative;z-index:1\}/,"")+"\n"+bwBlackCSS(img);
   const m=document.querySelector('meta[name="theme-color"]');if(m)m.content="#000000"}}
+
+/* ===== DUGOUT LIVE v2 (Nov 2026): coach sets everything up (questions, types, time, who wins what), a prize wheel for 1st,
+   packs for 2nd and 3rd, and parents can watch. Backend: supabase/dugout-live2.sql ===== */
+const LWP=[["xp150",{k:"xp",n:150,lbl:"150 XP"}],["xp300",{k:"xp",n:300,lbl:"300 XP"}],["xp500",{k:"xp",n:500,lbl:"500 XP"}],["xp1000",{k:"xp",n:1000,lbl:"1,000 XP"}],
+  ["rookie",{k:"pack",pk:"rookie",lbl:"Rookie Rush"}],["allstar",{k:"pack",pk:"allstar",lbl:"All-Star Surge"}],["heat",{k:"pack",pk:"heat",lbl:"Bullpen Heat"}],["slam",{k:"pack",pk:"slam",lbl:"Grand Slam"}],
+  ["series",{k:"pack",pk:"series",lbl:"World Series Vault"}],["hof",{k:"pack",pk:"hof",lbl:"Hall of Fame Vault"}],["galaxy",{k:"pack",pk:"galaxy",lbl:"Cosmic Moonshot"}]];
+const LC_DEF={src:"rand",n:10,secs:20,cats:[],places:3,prizes:["wheel","pack:allstar","pack:allstar","xp:75","xp:50"],rest:25,wheel:["xp300","xp500","heat","slam","series","hof"],fans:true};
+var LC=Object.assign({},LC_DEF);try{const x=JSON.parse(localStorage.getItem("dz-livecfg2")||"null");if(x)LC=Object.assign({},LC_DEF,x)}catch(e){}
+function lcSave(){try{localStorage.setItem("dz-livecfg2",JSON.stringify(LC))}catch(e){}}
+const lvPack=k=>(PACKS.find(p=>p.k===k)||{n:k}).n;
+function lvPrizeTxt(z){if(!z)return"";if(z.k==="wheel")return"Prize wheel";if(z.k==="pack")return lvPack(z.pk)+" pack";return(+z.n||0).toLocaleString("en-US")+" XP"}
+function lcPrize(v){const[k,x]=String(v||"").split(":");return k==="wheel"?{k:"wheel"}:k==="pack"?{k:"pack",pk:x}:{k:"xp",n:+x||0}}
+function lcCats(){return lqCats().filter(c=>c!=="all")}
+function lcPool(){const B=lqBank(),cs=LC.cats.length?LC.cats:lcCats();return B.filter(x=>cs.includes(x.cat))}
+const ORD=["1st","2nd","3rd","4th","5th"];
+const lvIco={wheel:`<svg viewBox="0 0 24 24" class="lvi"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4" stroke="currentColor" stroke-width="1.4"/></svg>`,
+  eye:`<svg viewBox="0 0 24 24" class="lvi"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`};
+
+/* --- setup screen (coach) --- */
+function lcStep(key,val,min,max,step,unit){return `<div class="lcstep"><button data-a="xlc:${key}:${-step}" ${val<=min?"disabled":""} aria-label="Less">−</button><b>${val}${unit||""}</b><button data-a="xlc:${key}:${step}" ${val>=max?"disabled":""} aria-label="More">+</button></div>`}
+function lcPrizeSel(i){const v=LC.prizes[i]||"xp:50";const o=(i===0?[["wheel","Prize wheel"]]:[]).concat(PACKS.map(p=>["pack:"+p.k,p.n+" pack"]),[25,50,75,100,150,200,300,500,1000].map(n=>["xp:"+n,n.toLocaleString("en-US")+" XP"]));
+  return `<select data-lc="prize:${i}">${o.map(x=>`<option value="${x[0]}" ${x[0]===v?"selected":""}>${x[1]}</option>`).join("")}</select>`}
+function lcHTML(){const pool=lcPool(),cats=lcCats(),B=lqBank(),sel=LQ.sel.map(id=>B.find(x=>x.id===id)).filter(Boolean),n=Math.min(LC.n,pool.length),pick=LC.src==="pick";
+  const ok=pick?sel.length>0&&sel.length<=30:n>0;
+  const qsec=pick?`<div class="lqh"><b>Your questions</b><span>${sel.length} picked${sel.length>30?" · 30 max":""}</span>${sel.length?`<button class="lnk" data-a="xlqclr">Clear</button>`:""}</div>
+     ${sel.length?`<ol class="lqsel">${sel.map((x,i)=>`<li><span>${i+1}.</span><b>${esc(x.q)}</b><button aria-label="Move up" data-a="xlqup:${x.id}" ${i?"":"disabled"}>▲</button><button aria-label="Remove" data-a="xlqt:${x.id}">✕</button></li>`).join("")}</ol>`:`<p class="pgs">Tap questions in the bank below to add them.</p>`}
+     <details class="lcbank" ${LQ.add||LQ.q?"open":""}><summary>Question bank · ${B.length}</summary>
+      <button class="lnk" data-a="xlqadd">${LQ.add?"Close":"Write your own question"}</button>
+      ${LQ.add?`<div class="lqw"><label>Question<input id="lqq" maxlength="160" placeholder="What base is the hot corner?"></label><label>Right answer<input id="lqa0" maxlength="60" placeholder="Third base"></label><div class="two"><label>Wrong answer<input id="lqa1" maxlength="60"></label><label>Wrong answer<input id="lqa2" maxlength="60"></label></div><label>Wrong answer (optional)<input id="lqa3" maxlength="60"></label><label>Fun fact after (optional)<input id="lqy" maxlength="140"></label><button class="cta alt" data-a="xlqsave">Save and add to my game</button></div>`:""}
+      <input id="lqs" class="lqsrch" placeholder="Search questions" value="${esc(LQ.q)}" autocomplete="off">
+      <select class="lcsel" data-lc="qcat"><option value="all">All types</option>${lqCats().filter(c=>c!=="all").map(c=>`<option value="${esc(c)}" ${LQ.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+      <div id="lqlist" class="lql">${lqListHTML()}</div></details>`
+   :`<div class="lcrow"><span><b>How many questions</b><small>${pool.length} available with these types</small></span>${lcStep("n",LC.n,3,30,1)}</div>
+     <p class="lclab">Question types <button class="lnk" data-a="xlc:cats:all">${LC.cats.length?"Use all":"All on"}</button></p>
+     <div class="lcchk">${cats.map(c=>{const on=!LC.cats.length||LC.cats.includes(c),cnt=B.filter(x=>x.cat===c).length;return `<label class="${on?"on":""}"><input type="checkbox" data-lc="cat" value="${esc(c)}" ${on?"checked":""}><span>${esc(c)}</span><small>${cnt}</small></label>`}).join("")}</div>`;
+  const prizes=Array.from({length:LC.places},(_,i)=>`<div class="lcrow"><span><b>${ORD[i]} place</b></span>${lcPrizeSel(i)}</div>`).join("");
+  const hasWheel=LC.places>0&&LC.prizes[0]==="wheel";
+  return topbar("Dugout Live","Set up your game")+`<main class="lcm">
+   <section class="lvhero"><b>Host a live game</b><p>Put this screen where the team can see it. Players join on their phones from Play. Parents can watch from their own app. Faster right answers score more.</p></section>
+   <div class="lccard"><h3>Questions</h3>
+    <div class="lcseg"><button class="${pick?"":"on"}" data-a="xlc:src:rand">Random</button><button class="${pick?"on":""}" data-a="xlc:src:pick">I'll pick them</button></div>
+    ${qsec}
+    <div class="lcrow"><span><b>Seconds per question</b></span>${lcStep("secs",LC.secs,5,60,5,"s")}</div></div>
+   <div class="lccard"><h3>Prizes</h3>
+    <div class="lcrow"><span><b>Places that win</b><small>Only players who score points can win</small></span>${lcStep("places",LC.places,0,5,1)}</div>
+    ${prizes}
+    <div class="lcrow"><span><b>Everyone else who plays</b></span><select data-lc="rest">${[0,10,25,50,75,100].map(n=>`<option value="${n}" ${LC.rest===n?"selected":""}>${n?n+" XP":"Nothing"}</option>`).join("")}</select></div>
+    ${hasWheel?`<p class="lclab">On the prize wheel <small>${LC.wheel.length} slices, each one equally likely</small></p>
+     <div class="lcchk">${LWP.map(([id,z])=>{const on=LC.wheel.includes(id);return `<label class="${on?"on":""}"><input type="checkbox" data-lc="wheel" value="${id}" ${on?"checked":""}><span>${esc(z.k==="pack"?z.lbl+" pack":z.lbl)}</span></label>`}).join("")}</div>${LC.wheel.length<2?`<p class="amsg">Pick at least 2 prizes for the wheel.</p>`:""}`:""}</div>
+   <div class="lccard"><h3>Parents</h3><div class="lcrow"><span><b>Parents can watch</b><small>They see the questions, the leaderboard and the wheel. They can't answer.</small></span><button class="tgl ${LC.fans?"on":""}" data-a="xlc:fans:1" aria-pressed="${LC.fans}"><i></i></button></div></div>
+   <button class="cta" data-a="xlgo" ${ok&&!(hasWheel&&LC.wheel.length<2)?"":"disabled"}>Create game · ${pick?sel.length:n} question${(pick?sel.length:n)===1?"":"s"}</button>
+   <p class="fine">${LC.places?Array.from({length:LC.places},(_,i)=>ORD[i]+": "+lvPrizeTxt(lcPrize(LC.prizes[i]))).join(" · ")+(LC.rest?" · Everyone else: "+LC.rest+" XP":""):"No prizes this game."}</p></main>`+nav()}
+function lcCreate(){const pick=LC.src==="pick",B=lqBank();let qs=pick?LQ.sel.map(id=>B.find(x=>x.id===id)).filter(Boolean).slice(0,30):lcPool().map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,LC.n);
+  qs=qs.map(lqShuf);if(!qs.length){toast("Pick some questions first");return}
+  const cfg={places:LC.places,prizes:LC.prizes.slice(0,LC.places).map(lcPrize),rest:LC.rest,wheel:LC.wheel.map(id=>(LWP.find(x=>x[0]===id)||[])[1]).filter(Boolean),fans:LC.fans};
+  (async()=>{try{const r=await rpc("dz_live_host",{p_tok:TOK,p_qs:qs,p_secs:LC.secs,p_cfg:cfg});LV.spin=null;lvGo(r.pin);render()}catch(err){toast(/function|schema/i.test(err.message||"")?"Run supabase/dugout-live2.sql in Supabase first":nmsg(err))}})()}
+
+/* --- the prize wheel --- */
+const LWC=["#F0484B","#3B8FD9","#F5C542","#8E5BD6","#3DDC84","#FF8A3D","#22D3EE","#E879F9","#FCD34D","#60A5FA","#34D399","#FB923C"];
+function wheelSVG(sl){const n=sl.length,R=100,a=i=>(i/n)*Math.PI*2-Math.PI/2,pt=(i,r)=>[R+r*Math.cos(a(i)),R+r*Math.sin(a(i))];
+  return `<svg viewBox="0 0 200 200" class="lwsvg">${sl.map((z,i)=>{const[x1,y1]=pt(i,98),[x2,y2]=pt(i+1,98),mid=((i+.5)/n)*360;return `<path d="M100 100 L${x1.toFixed(2)} ${y1.toFixed(2)} A98 98 0 ${n<2?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${LWC[i%LWC.length]}" stroke="#0b0b10" stroke-width="1.2"/>
+   <text transform="rotate(${mid} 100 100)" x="100" y="22" text-anchor="middle" font-size="${n>8?7:8.5}" font-weight="900" fill="#111" font-family="Arial,sans-serif">${esc((z.lbl||lvPrizeTxt(z)).replace(/ pack$/,"")).slice(0,18)}</text>`}).join("")}<circle cx="100" cy="100" r="14" fill="#0b0b10" stroke="#fff" stroke-width="3"/></svg>`}
+function wheelHTML(S_){const sp=S_.spin,sl=(S_.cfg&&S_.cfg.wheel)||[];if(!sp||!sl.length)return"";const n=sl.length,target=360*6-((sp.i+.5)/n)*360;
+  if(sp.at&&(!LV.spin||LV.spin.at!==sp.at))LV.spin={at:sp.at,t0:Date.now()};
+  const run=LV.spin&&LV.spin.at===sp.at,el=run?Date.now()-LV.spin.t0:0,landed=run&&el>=5200;
+  return `<section class="lwheel ${landed?"landed":""}"><h3>${lvIco.wheel} Prize wheel for ${esc(sp.name)}</h3><div class="lwbox"><i class="lwptr"></i><div class="lwrot" id="lwrot" data-to="${target}" data-left="${run&&!landed?Math.max(300,5200-el):0}" style="transform:rotate(${landed?target:0}deg)">${wheelSVG(sl)}</div></div>
+   ${landed?`<p class="lwwin"><b>${esc(sp.name)} won ${esc(lvPrizeTxt(sp.prize))}!</b><small>It's already in ${esc(sp.name)}'s app.</small></p>`:S_.host&&!sp.at?`<button class="cta" data-a="xlspin">Spin the wheel</button>`:!sp.at?`<p class="pgs ctr">Waiting for Coach to spin…</p>`:`<p class="pgs ctr">Spinning…</p>`}</section>`}
+function wheelRun(){const r=$("#lwrot");if(!r)return;const left=+r.dataset.left;if(!left)return;r.style.transition="none";r.style.transform="rotate(0deg)";r.getBoundingClientRect();
+  r.style.transition=`transform ${left}ms cubic-bezier(.15,.65,.12,1)`;r.style.transform=`rotate(${r.dataset.to}deg)`;clearTimeout(LV.wt);LV.wt=setTimeout(()=>{if(view==="live"){render();burst()}},left+120)}
+
+/* --- the game screen, for the host, players and people watching --- */
+function lvGame(){const S_=LV.st,host=!!S_.host,me=S_.me,watch=!host&&!me,q=S_.q,ph=S_.phase,cfg=S_.cfg;
+  const top=`<div class="lvtop"><span>PIN <b>${S_.pin}</b></span><span>${ph==="lobby"?S_.count+" in":ph==="done"?"Final":"Q "+(S_.idx+1)+" of "+S_.total}</span>${S_.fans?`<span class="lvfans">${lvIco.eye}${S_.fans} watching</span>`:""}${host?`<button class="lnk" data-a="xlend">${window._le?"Tap again to end":"End"}</button>`:watch?`<span class="lvwtag">Watching</span>`:""}</div>`;
+  const opts=show=>`<div class="lvopts">${q.o.map((o,i)=>{const tag=!host&&!watch&&ph==="question"?"button":"div";return `<${tag} class="lvo ${show&&S_.a===i?"ok":show?"no":""} ${me&&me.choice===i?"mine":""}" style="--oc:${LVC[i%4][1]}" ${tag==="button"?`data-a="xlans:${i}" ${me&&me.answered?"disabled":""}`:""}><span>${LVC[i%4][0]}</span><b>${esc(o)}</b>${show&&S_.dist?`<em>${S_.dist[i]}</em>`:""}</${tag}>`}).join("")}</div>`;
+  const board=()=>`<div class="lvb">${(S_.board||[]).map((b,i)=>`<div class="lvbr ${i===0?"first":""}"><i>${b.rank}</i><b>${esc(b.name)}</b>${b.up>0?`<small>▲${b.up}</small>`:""}<span>${b.score.toLocaleString("en-US")}</span></div>`).join("")||`<p class="pgs">No scores yet.</p>`}</div>`;
+  let h="";
+  if(ph==="lobby")h=host?`<section class="lvpin"><small>Join on your phone: Play → Dugout Live</small><b>${S_.pin}</b></section><div class="lvppl">${(S_.players||[]).map(n=>`<span>${esc(n)}</span>`).join("")||`<p class="pgs">Waiting for players…</p>`}</div><button class="cta" data-a="xlctl:start" ${S_.count?"":"disabled"}>Start (${S_.count} player${S_.count===1?"":"s"})</button>`
+    :watch?`<section class="lvwait"><b>You're watching Coach's game</b><p>${S_.count} player${S_.count===1?"":"s"} in. It starts soon.</p></section><div class="lvppl">${(S_.players||[]).map(n=>`<span>${esc(n)}</span>`).join("")}</div>`
+    :`<section class="lvwait"><b>You're in, ${esc(me?me.name:"")}!</b><p>Look for your name on Coach's screen. The game starts soon.</p></section>`;
+  else if(ph==="question")h=`<section class="lvq"><div class="lvtimer"><i id="lvr" style="width:${S_.left_ms/(S_.secs*10)}%"></i></div><div class="lvqh"><b id="lvt">${Math.ceil(S_.left_ms/1000)}</b>${q.cat?`<small>${esc(q.cat)}</small>`:""}</div><h2>${esc(q.q)}</h2></section>${opts(false)}
+    ${host||watch?`<p class="lvans">${S_.answered} of ${S_.count} answered</p>${host?`<button class="ghost" data-a="xlctl:reveal">Skip the timer</button>`:""}`:me&&me.answered?`<p class="lvans">Locked in! Waiting for everyone…</p>`:""}`;
+  else if(ph==="reveal")h=`<section class="lvq"><h2>${esc(q.q)}</h2></section>${opts(true)}${S_.why?`<div class="tip"><small>Why</small>${esc(S_.why)}</div>`:""}
+    ${host?`<button class="cta" data-a="xlctl:board">Leaderboard</button>`:me?`<section class="lvres ${me.correct?"ok":"no"}"><b>${me.answered?me.correct?"✅ Correct! +"+me.pts:"❌ Not this time":"⏰ Too slow!"}</b><small>${me.correct&&me.streak>1?"🔥 "+me.streak+" in a row · ":""}${me.score.toLocaleString("en-US")} points · ${ordinal(me.rank)} place</small></section>`:""}`;
+  else if(ph==="board")h=`<h3 class="sec">🏆 Leaderboard <span>after ${S_.idx+1} of ${S_.total}</span></h3>${board()}${host?`<button class="cta" data-a="xlctl:next">${S_.idx+1>=S_.total?"Final results":"Next question"}</button>`:me?`<p class="lvans">You're in ${ordinal(me.rank)} with ${me.score.toLocaleString("en-US")} points</p>`:""}`;
+  else{const B=S_.board||[],places=cfg?+cfg.places||0:3,won=B.filter(b=>b.rank<=places&&b.score>0);
+    const prize=b=>cfg?lvPrizeTxt((cfg.prizes||[])[b.rank-1]):[150,100,75][b.rank-1]+" XP";
+    h=`<section class="podium">${[1,0,2].map(i=>{const b=B[i];return b?`<div class="pod p${i+1}"><b>${esc(b.name)}</b><small>${b.score.toLocaleString("en-US")}</small><i>${["🥇","🥈","🥉"][i]}</i></div>`:`<div class="pod p${i+1} empty"></div>`}).join("")}</section>
+     ${won.length?`<div class="lvprz">${won.map(b=>`<div><i>${ORD[b.rank-1]}</i><b>${esc(b.name)}</b><span>${esc(prize(b))}</span></div>`).join("")}${cfg&&cfg.rest?`<div class="rest"><i></i><b>Everyone else</b><span>${cfg.rest} XP</span></div>`:""}</div>`:""}
+     ${wheelHTML(S_)}
+     ${B.length>3?`<details class="lvall"><summary>Full results</summary>${board()}</details>`:""}
+     ${host?`<button class="${S_.spin&&!S_.spin.at?"ghost":"cta"}" data-a="xlnew">New game</button>`:me?`<section class="lvres ok"><b>You finished ${ordinal(me.rank)}!</b><small>${me.score.toLocaleString("en-US")} points · prizes land in your app</small></section><button class="ghost" data-a="xlnew">Done</button>`:`<button class="ghost" data-a="xlnew">Done watching</button>`}`}
+  return topbar("Dugout Live")+`<main class="lvm">${top}${h}</main>`+(ph==="question"||ph==="reveal"?"":nav())}
+
+/* --- join screen (players) and watch screen (parents) --- */
+function lvJoinHTML(){const par=isParent(),f=LV.found&&LV.found.pin?LV.found:null;
+  return topbar("Dugout Live",par?"Watch Coach's game":"Join Coach's game")+`<main>${f?`<button class="lvjoin" data-a="${par?"xlw":"xlj"}:${f.pin}"><b>🔴 Coach is live now!</b><small>Tap to ${par?"watch":"join"} · PIN ${f.pin}</small></button>`:par?`<div class="empty">Coach isn't running a game right now. When Coach starts one, it shows up here and on My Player.</div>`:""}
+   <div class="form"><label>Game PIN<input id="lvpin" inputmode="numeric" maxlength="6" placeholder="123456" class="big" autocomplete="off"></label>${LV.err?`<p class="amsg">${esc(LV.err)}</p>`:""}<button class="cta" data-a="${par?"xlw":"xlj"}:">${par?"Watch":"Join"}</button></div>
+   <button class="ghost" data-a="xlfind">↻ Check if Coach is live</button></main>`+nav()}
+
+liveHTML=function(){if(!NET)return topbar("Dugout Live")+`<main><div class="empty">Dugout Live needs team accounts. It works on the live app when everyone is signed in.</div></main>`+nav();
+  if(!LV.pin)return isCoach()?lcHTML():lvJoinHTML();
+  if(!LV.st)return topbar("Dugout Live")+`<main><div class="empty">Connecting…</div></main>`+nav();
+  return lvGame()};
+
+/* poll: also redraw when the wheel spins or someone starts watching */
+lvPoll=async function(){if(!NET||!LV.pin||LV.busy)return;if(view!=="live"){lvStop();return}LV.busy=true;try{const r=await rpc("dz_live_state",{p_tok:TOK,p_pin:LV.pin}),o=LV.st;
+  const ch=!o||o.phase!==r.phase||o.idx!==r.idx||o.answered!==r.answered||o.count!==r.count||o.fans!==r.fans||JSON.stringify(o.spin||null)!==JSON.stringify(r.spin||null)||(r.me&&o.me&&o.me.answered!==r.me.answered)||(r.phase==="lobby"&&JSON.stringify(o.players)!==JSON.stringify(r.players));
+  LV.st=r;LV.dl=Date.now()+r.left_ms;
+  if(r.host&&r.phase==="question"&&(r.left_ms<=0||(r.count>0&&r.answered>=r.count))){await rpc("dz_live_ctl",{p_tok:TOK,p_pin:LV.pin,p_action:"reveal"})}
+  if(ch&&view==="live"&&!sheet)render();
+  if(r.phase==="done"&&!r.host&&(!r.spin||r.spin.at))setTimeout(()=>{if(LV.st&&LV.st.phase==="done")lvStop()},6500)}catch(e){if(e.message==="no_game"){LV.pin="";lvStop();render()}}finally{LV.busy=false}};
+{const _r=render;render=function(){_r();if(view==="live")wheelRun()}}
+
+/* --- taps --- */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t||e.target.closest("a"))return;const a=t.dataset.a.split(":"),k=a[0];
+  if(!/^(xlc|xlgo|xlw|xlspin|xgift|xlnew)$/.test(k))return;e.stopImmediatePropagation();
+  if(k==="xlc"){const f=a[1],v=a[2];
+    if(f==="src")LC.src=v;else if(f==="fans")LC.fans=!LC.fans;else if(f==="cats")LC.cats=[];
+    else if(f==="n")LC.n=Math.max(3,Math.min(30,LC.n+ +v));else if(f==="secs")LC.secs=Math.max(5,Math.min(60,LC.secs+ +v));
+    else if(f==="places"){LC.places=Math.max(0,Math.min(5,LC.places+ +v));while(LC.prizes.length<LC.places)LC.prizes.push("xp:50")}
+    lcSave();const y=scrollY;render();scrollTo(0,y);return}
+  if(k==="xlgo"){lcCreate();return}
+  if(k==="xlspin"){lvCtl("spin");return}
+  if(k==="xlnew"){lvStop();LV.pin="";LV.st=null;LV.spin=null;render();return}
+  if(k==="xlw"){const pin=(a[1]||(($("#lvpin")||{}).value||"")).replace(/\D/g,"");if(pin.length!==6){LV.err="The PIN is 6 numbers.";render();return}
+    (async()=>{try{await rpc("dz_live_watch",{p_tok:TOK,p_pin:pin});LV.err="";lvGo(pin);render()}catch(err){LV.err=err.message==="no_game"?"No game with that PIN right now.":err.message==="no_fans"?"Coach turned off watching for this game.":/function|schema/i.test(err.message||"")?"Coach's app needs an update first.":nmsg(err);render()}})();return}
+  if(k==="xgift"){const p=cardOwner();if(!p)return;const i=(p.gifts||[]).findIndex(g=>g.id===a.slice(1).join(":"));if(i<0)return;const g=p.gifts.splice(i,1)[0],pk=PACKS.find(x=>x.k===g.pk)||PACKS[0];
+    p.opened=(p.opened||0)+1;const cs=openPack(p,pk);(p.cards=p.cards||[]).push(...cs);save();pkStart(pk.n,pk,cs);return}},true);
+document.addEventListener("change",e=>{const el=e.target.closest("[data-lc]");if(!el)return;const[f,i]=el.dataset.lc.split(":");
+  if(f==="prize")LC.prizes[+i]=el.value;else if(f==="rest")LC.rest=+el.value;
+  else if(f==="cat"){const all=lcCats();let s=LC.cats.length?LC.cats.slice():all.slice();if(el.checked){if(!s.includes(el.value))s.push(el.value)}else s=s.filter(c=>c!==el.value);LC.cats=s.length===all.length?[]:s;if(!s.length){LC.cats=[];toast("Pick at least one type")}}
+  else if(f==="wheel"){let s=LC.wheel.filter(x=>x!==el.value);if(el.checked)s.push(el.value);LC.wheel=LWP.map(x=>x[0]).filter(x=>s.includes(x))}
+  else if(f==="qcat"){LQ.cat=el.value;LQ.more=0}
+  lcSave();const y=scrollY;render();scrollTo(0,y)});
+
+/* --- prize packs reach the player through the inbox --- */
+{const _mi=mergeInbox;mergeInbox=function(p,items){let ch=false;(items||[]).forEach(it=>{if(!it||!it.aid||it.kind!=="pack"||(p.got&&p.got[it.aid]))return;
+  (p.gifts=p.gifts||[]).push({id:it.aid,pk:it.pk,t:it.t||"Prize pack"});(p.shouts=p.shouts||[]).push({t:"🎁 You won a "+lvPack(it.pk)+" pack! "+(it.t||""),at:it.at||today(),aid:it.aid+"-s"});ch=true});return _mi(p,items)||ch}}
+function giftHTML(p){const G=(p&&p.gifts)||[];if(!G.length||isCoach()||isParent())return"";return G.map(g=>`<button class="lvgift" data-a="xgift:${esc(g.id)}"><span>🎁</span><span class="dtx"><b>Open your ${esc(lvPack(g.pk))} pack</b><small>${esc(g.t)}</small></span><span class="arr">›</span></button>`).join("")}
+{const _c=cardsHTML;cardsHTML=function(){const h=_c(),g=giftHTML(cardOwner());return g?h.replace("<main>","<main>"+g):h}}
+{const _r=render;render=function(){_r();if(view!=="home"||isCoach()||isParent())return;const p=me(),m=document.querySelector("#app main");if(!p||!m||m.querySelector(".lvgift"))return;const g=giftHTML(p);if(g){const hero=m.firstElementChild;(hero||m).insertAdjacentHTML(hero?"afterend":"afterbegin",g)}}}
+
+/* --- parents: see when Coach is live, and watch --- */
+var lvFindAt=0;
+{const _r=render;render=function(){_r();if(!NET||!isParent()||view!=="fam")return;if(Date.now()-lvFindAt>20000){lvFindAt=Date.now();lvFind().then(()=>{if(view==="fam"&&LV.found&&LV.found.pin&&!document.querySelector(".lvparb"))render()})}
+  const m=document.querySelector("#app main");if(!m||m.querySelector(".lvparb"))return;const f=LV.found&&LV.found.pin;
+  m.insertAdjacentHTML("afterbegin",`<button class="lvparb ${f?"live":""}" data-a="xlive"><span class="dot"></span><span class="dtx"><b>${f?"Dugout Live is on now":"Dugout Live"}</b><small>${f?"Tap to watch the team play":"Watch the team's live trivia when Coach runs a game"}</small></span><span class="arr">›</span></button>`)}}
+{const _o=lvFind;lvFind=async function(){await _o();if(view==="fam"||view==="live")render()}}
+
+{const st=document.createElement("style");st.textContent=`
+.lcm{display:grid;gap:12px}.lccard{display:grid;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.lccard h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:900}
+.lcseg{display:grid;grid-template-columns:1fr 1fr;background:color-mix(in srgb,var(--blk) 45%,transparent);border-radius:12px;padding:3px}.lcseg button{padding:10px;border-radius:10px;font-weight:900;color:var(--mute)}.lcseg button.on{background:var(--ink);color:var(--blk,#111)}
+.lcrow{display:flex;align-items:center;gap:12px;justify-content:space-between}.lcrow>span{display:grid;gap:2px}.lcrow>span b{font-size:15px}.lcrow>span small{color:var(--mute);font-size:12.5px;font-weight:700}
+.lcrow select,.lcsel{background:color-mix(in srgb,var(--blk) 40%,transparent);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-weight:800;font-size:14px;max-width:58%}
+.lcstep{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}.lcstep button{width:40px;height:40px;font-size:20px;font-weight:900;color:var(--ink)}.lcstep button:disabled{opacity:.3}.lcstep b{min-width:44px;text-align:center;font-size:16px}
+.lclab{display:flex;align-items:baseline;gap:8px;font-weight:900;font-size:14px}.lclab small{color:var(--mute);font-weight:700;font-size:12px;flex:1}.lclab .lnk{margin-left:auto}
+.lcchk{display:grid;grid-template-columns:1fr 1fr;gap:6px}.lcchk label{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;font-weight:800;font-size:13.5px;cursor:pointer}.lcchk label.on{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,transparent)}.lcchk input{accent-color:var(--amber);width:18px;height:18px;flex:none}.lcchk span{flex:1;line-height:1.2}.lcchk small{color:var(--mute);font-weight:800}
+.lcbank summary{cursor:pointer;font-weight:900;padding:6px 0}.lcbank{display:grid;gap:8px}.lcbank[open]{gap:8px}.lcbank .lcsel{max-width:100%;width:100%;margin:6px 0}
+.lvi{width:16px;height:16px;vertical-align:-3px}.lvfans{display:inline-flex;align-items:center;gap:4px;color:var(--mute);font-weight:800}.lvwtag{font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--amber)}
+.lvprz{display:grid;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}.lvprz div{display:flex;align-items:center;gap:10px}.lvprz i{font-style:normal;font-weight:900;width:38px;color:var(--amber)}.lvprz b{flex:1}.lvprz span{font-weight:800;color:var(--mute);text-align:right}
+.lwheel{display:grid;gap:10px;justify-items:center;text-align:center}.lwheel h3{display:flex;align-items:center;gap:6px;font-size:17px}
+.lwbox{position:relative;width:min(78vw,320px);aspect-ratio:1}.lwrot{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 6px #0b0b10,0 0 0 9px var(--amber),0 14px 40px rgba(0,0,0,.5)}.lwsvg{display:block;width:100%;height:100%}
+.lwptr{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid #fff;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));z-index:2}
+.lwwin{display:grid;gap:2px}.lwwin b{font-size:20px;color:var(--amber)}.lwwin small{color:var(--mute);font-weight:700}
+.lvall summary{cursor:pointer;font-weight:900;color:var(--mute);padding:4px 0}
+.lvgift{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 22%,var(--card)),var(--card));border:1.5px solid var(--amber);border-radius:16px;padding:12px 14px;color:var(--ink);margin-bottom:10px}.lvgift>span:first-child{font-size:28px}.lvgift small{color:var(--mute);font-weight:700}
+.lvparb{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--ink)}.lvparb .dot{width:10px;height:10px;border-radius:50%;background:var(--mute);flex:none}.lvparb.live{border-color:#F0484B}.lvparb.live .dot{background:#F0484B;box-shadow:0 0 0 4px rgba(240,72,75,.25);animation:lvdot 1.4s ease-in-out infinite}.lvparb small{color:var(--mute);font-weight:700;font-size:12.5px}
+@keyframes lvdot{50%{box-shadow:0 0 0 8px rgba(240,72,75,0)}}@media(prefers-reduced-motion:reduce){.lvparb.live .dot{animation:none}}`;document.head.appendChild(st)}
+
+/* ===== VIDEOS FROM COACH ON HOME (Nov 2026): videos Coach adds to the Film Room show up on every player's Home,
+   not only inside the Clubhouse. Drills taken off for a practice day say so instead of vanishing. ===== */
+function coachVids(p){const seen=(p&&p.seen)||{};return(S.fadd||[]).filter(f=>f&&f[3]).map(f=>({f,seen:!!seen[f[0]]}))}
+function vidShelfHTML(p){const L=coachVids(p),todo=L.filter(x=>!x.seen);if(!L.length)return"";
+  const show=(todo.length?todo:L).slice(0,4);
+  return `<section class="cvid"><div class="cvh"><b>Videos from Coach</b><span>${todo.length?todo.length+" to watch":"All watched ✓"}</span><button class="lnk" data-a="go:film">Film Room ›</button></div>
+   <div class="cvrow">${show.map(({f,seen})=>`<div class="cvc ${seen?"seen":""}"><a class="cvth" href="${esc(f[3])}" target="_blank" rel="noopener noreferrer" aria-label="Watch ${esc(f[1])}">${thumb(f[3])?`<img src="${thumb(f[3])}" alt="" loading="lazy">`:""}<span>▶</span></a>
+     <b>${esc(f[1])}</b>${f[4]?`<small>${esc(f[4])}</small>`:""}${S.peek?"":`<button class="cvw ${seen?"on":""}" data-a="fseen:${f[0]}">${seen?"✓ Watched":"I watched it · +10 XP"}</button>`}</div>`).join("")}</div></section>`}
+{const _r=render;render=function(){_r();if(view!=="home"||isCoach()||isParent())return;const p=me(),m=document.querySelector("#app main");if(!p||!m||m.querySelector(".cvid"))return;
+  const h=vidShelfHTML(p);if(!h)return;const td=m.querySelector(".todo-box");if(td)td.insertAdjacentHTML("afterend",h);else{const hero=m.firstElementChild;(hero||m).insertAdjacentHTML(hero?"afterend":"afterbegin",h)}
+  const t=today(),off=p.hw.filter(x=>!x.done&&DR[x.id]&&(!x.on||x.on<=t)&&isPhys(DR[x.id])&&busyOn(p,t).length).length;
+  if(off&&td&&!td.querySelector(".hwoff"))td.insertAdjacentHTML("beforeend",`<p class="hwoff">${off} drill${off===1?" is":"s are"} off today for ${esc(busyOn(p,t).map(b=>b.n).join(" and "))}. ${off===1?"It comes":"They come"} back tomorrow.</p>`)}}
+/* film items added from the Film Room card also count as "Coach's videos" for players who open the Film Room */
+{const st=document.createElement("style");st.textContent=`
+.cvid{display:grid;gap:10px}.cvh{display:flex;align-items:baseline;gap:8px}.cvh b{font-size:17px}.cvh span{flex:1;color:var(--mute);font-weight:800;font-size:13px}
+.cvrow{display:grid;grid-auto-flow:column;grid-auto-columns:min(72%,260px);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}
+.cvc{scroll-snap-align:start;display:grid;gap:6px;align-content:start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px}
+.cvc b{font-size:14px;line-height:1.25}.cvc small{color:var(--mute);font-size:12px;font-weight:700;line-height:1.3}
+.cvth{position:relative;display:block;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}.cvth img{width:100%;height:100%;object-fit:cover;display:block}.cvth span{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.cvc.seen .cvth{opacity:.7}.cvw{padding:8px;border-radius:10px;border:1px solid var(--line);font-weight:900;font-size:13px;color:var(--ink)}.cvw.on{color:var(--grass,#3DDC84);border-color:currentColor}
+.hwoff{color:var(--mute);font-size:13px;font-weight:700;margin-top:4px}`;document.head.appendChild(st)}
+
+
+/* ===== PARENT VIEW, MODERNIZED (Nov 2026): flat dark surfaces, line icons instead of emoji, dropdowns and segmented controls
+   instead of bubble chips, underline tabs, a cleaner stat row and a cheer list. Only changes how the parent screens look. ===== */
+const PVI=(d)=>`<svg viewBox="0 0 24 24" class="pvic" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const PV_ICONS={
+  fam:PVI('<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/>'),
+  lib:PVI('<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>'),
+  money:PVI('<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h4"/>'),
+  sched:PVI('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  acct:PVI('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  today:PVI('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  week:PVI('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2M16 14h0"/>'),
+  arm:PVI('<path d="M3 12h4l2-5 4 10 2-5h6"/>'),
+  screen:PVI('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>'),
+  chev:PVI('<path d="M9 6l6 6-6 6"/>'),send:PVI('<path d="M4 12l16-8-6 16-2.5-6.5z"/>')};
+const PV_EMO=/^(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}][\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]*\s*)+/u;
+function pvStrip(el){const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);const n=w.nextNode();if(n&&PV_EMO.test(n.nodeValue))n.nodeValue=n.nodeValue.replace(PV_EMO,"")}
+function pvChips(root){root.querySelectorAll(".fr").forEach(fr=>{if(fr.dataset.pv)return;const ch=[...fr.querySelectorAll(":scope > .fchip")];if(ch.length<2)return;fr.dataset.pv=1;
+  const keys=new Set(ch.map(c=>(c.dataset.a||"").split(":")[0])),on=ch.filter(c=>c.classList.contains("on"));
+  if(on.length===1){
+    if(ch.length>3){const sel=document.createElement("select");sel.className="pvsel";ch.forEach((c,i)=>{const o=document.createElement("option");o.value=i;o.textContent=c.textContent.trim();if(c.classList.contains("on"))o.selected=true;sel.appendChild(o)});
+      sel.addEventListener("change",()=>ch[+sel.value].click());fr.classList.add("pvhide");fr.after(sel)}
+    else fr.classList.add("pvseg")}
+  else fr.classList.add("pvtog")})}
+function pvCheers(root){const q=root.querySelector(".shq");if(!q||q.dataset.pv)return;q.dataset.pv=1;q.classList.add("pvlist");q.querySelectorAll("button").forEach(b=>{b.innerHTML=`<span>${esc(b.textContent.replace(PV_EMO,"").replace(/\s*[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]️?$/u,"").trim())}</span>${PV_ICONS.send}`})}
+function pvApply(){const app=$("#app");if(!app)return;
+  app.querySelectorAll("nav.nav button").forEach(b=>{const k=(b.dataset.a||"").split(":")[1],s=b.querySelector("span");if(s&&PV_ICONS[k]&&!s.dataset.pv){s.dataset.pv=1;s.innerHTML=PV_ICONS[k]}});
+  app.querySelectorAll(".ptabs button").forEach(b=>{const k=(b.dataset.a||"").split(":")[1],s=b.querySelector("span");if(s&&PV_ICONS[k]&&!s.dataset.pv){s.dataset.pv=1;s.innerHTML=PV_ICONS[k]}});
+  app.querySelectorAll("h3.sec,.tgrp h4,.ptab2 b,.armst b,.hurt b").forEach(pvStrip);
+  app.querySelectorAll(".tiles.four b").forEach(b=>{if(/^[✅⏸]/.test(b.textContent))b.textContent=b.textContent.startsWith("✅")?"Ready":"Resting"});
+  app.querySelectorAll(".arr").forEach(a=>{if(!a.dataset.pv){a.dataset.pv=1;a.innerHTML=PV_ICONS.chev}});
+  pvChips(app);pvCheers(app)}
+{const _r=render;render=function(){_r();const on=!!(S&&S.who)&&isParent();document.body.classList.toggle("pv",on);if(on)pvApply()}}
+{const st=document.createElement("style");st.textContent=`
+body.pv{--pvbg:#0c0e12;--pvs:#15181e;--pvs2:#1c2027;--pvl:#272c35;--pvt:#eef0f3;--pvm:#9298a3;--pva:var(--amber);background:var(--pvbg)!important;background-image:none!important;font-family:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+body.pv::before,body.pv::after{display:none!important}
+body.pv #app main{gap:14px}
+body.pv .top{background:rgba(12,14,18,.92)!important;backdrop-filter:blur(12px);border-bottom:1px solid var(--pvl)!important;box-shadow:none!important}
+body.pv h1,body.pv .ttl{font-weight:700;letter-spacing:-.02em}
+body.pv h3.sec{font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--pvt)}body.pv h3.sec span{color:var(--pvm);font-weight:600;font-size:13px;letter-spacing:0;text-transform:none}
+/* surfaces: flat, one border, no glow */
+body.pv .form,body.pv .todo-box,body.pv .phero,body.pv .rowb,body.pv .ann,body.pv .annrow,body.pv .tiles.four button,body.pv .wsum div,body.pv .ptab2,body.pv .scrch,body.pv .scrmode button,body.pv .xtc,body.pv .tutc,body.pv .lvparb,body.pv .card,body.pv .nextev,body.pv .wkr,body.pv .tgrp,body.pv .hw,body.pv .drill,body.pv .pay,body.pv .fundc,body.pv section.wkc,body.pv .osbtn{background:var(--pvs)!important;border:1px solid var(--pvl)!important;box-shadow:none!important;border-radius:14px!important;background-image:none!important}
+body.pv .todo-box{padding:14px!important}body.pv .tgrp{background:transparent!important;border:0!important;padding:0!important}
+body.pv .phero{padding:14px!important}body.pv .phero .streak{background:var(--pvs2)!important;border:1px solid var(--pvl)!important;box-shadow:none!important}
+body.pv .xtc{background:var(--pvs)!important}body.pv .cta{border-radius:12px!important;box-shadow:none!important;font-weight:700}body.pv .ghost{border-radius:12px!important}
+/* stats: one row with dividers instead of four bubbles */
+body.pv .tiles.four{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--pvs);border:1px solid var(--pvl);border-radius:14px;overflow:hidden}
+body.pv .tiles.four button,body.pv .tiles.four>div{background:transparent!important;border:0!important;border-left:1px solid var(--pvl)!important;border-radius:0!important;padding:12px 4px!important}body.pv .tiles.four>:first-child{border-left:0!important}
+body.pv .tiles.four b{font-size:20px;font-weight:700;letter-spacing:-.02em}body.pv .tiles.four small{color:var(--pvm);font-size:11.5px;font-weight:600}
+/* tabs: underline, line icons */
+body.pv .ptabs{background:var(--pvbg)!important;border-radius:0!important;padding:0!important;border-bottom:1px solid var(--pvl);gap:0}
+body.pv .ptabs button{border-radius:0!important;background:none!important;color:var(--pvm)!important;font-weight:600;padding:10px 2px 9px!important;border-bottom:2px solid transparent}
+body.pv .ptabs button.on{color:var(--pvt)!important;border-bottom-color:var(--pva)}body.pv .ptabs button span{font-size:0;line-height:0}
+body.pv .pvic{width:22px;height:22px;display:block}
+body.pv .seg.kids{background:none!important;border-radius:0;padding:0;gap:18px;justify-content:flex-start;border-bottom:1px solid var(--pvl);display:flex}
+body.pv .seg.kids button{flex:none;background:none!important;color:var(--pvm)!important;border-radius:0!important;padding:8px 0!important;font-weight:600;border-bottom:2px solid transparent;box-shadow:none!important}body.pv .seg.kids button.on{color:var(--pvt)!important;border-bottom-color:var(--pva)}
+/* option chips become dropdowns, segmented controls or flat toggles */
+body.pv .pvhide{display:none!important}
+body.pv .pvsel{width:100%;appearance:none;-webkit-appearance:none;background:var(--pvs2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239298a3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center/18px;color:var(--pvt);border:1px solid var(--pvl);border-radius:12px;padding:12px 40px 12px 14px;font:600 16px/1.2 inherit}
+body.pv .fr.pvseg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;background:var(--pvs2);border:1px solid var(--pvl);border-radius:12px;padding:3px}
+body.pv .fr.pvseg .fchip{border:0!important;border-radius:9px!important;background:none!important;color:var(--pvm)!important;box-shadow:none!important;font-weight:600;padding:9px 6px}body.pv .fr.pvseg .fchip.on{background:var(--pvt)!important;color:#0c0e12!important}
+body.pv .fr.pvtog{gap:8px}body.pv .fr.pvtog .fchip{border-radius:10px!important;background:var(--pvs)!important;border:1px solid var(--pvl)!important;color:var(--pvt)!important;font-weight:600;box-shadow:none!important;padding:9px 12px}
+body.pv .fr.pvtog .fchip.on{border-color:var(--pva)!important;color:var(--pva)!important;background:color-mix(in srgb,var(--pva) 10%,var(--pvs))!important}
+body.pv .fchip{border-radius:10px!important}
+/* cheers: a list, not bubbles */
+body.pv .shq.pvlist{display:grid;gap:0;background:var(--pvs);border:1px solid var(--pvl);border-radius:14px;overflow:hidden}
+body.pv .shq.pvlist button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:none!important;border:0!important;border-top:1px solid var(--pvl)!important;border-radius:0!important;padding:13px 14px!important;color:var(--pvt)!important;font-weight:600;font-size:15px;box-shadow:none!important}
+body.pv .shq.pvlist button:first-child{border-top:0!important}body.pv .shq.pvlist .pvic{width:18px;height:18px;color:var(--pvm)}body.pv .shq.pvlist button:active .pvic{color:var(--pva)}
+/* rows, arrows, small things */
+body.pv .rowb{padding:13px 14px!important}body.pv .rowb small,body.pv .pgs,body.pv .fine{color:var(--pvm)!important}
+body.pv .arr{display:grid;place-items:center;color:var(--pvm)}body.pv .arr .pvic{width:18px;height:18px}
+body.pv .rowb>span:first-child,body.pv .xth>span,body.pv .scrmode button>span:first-child{filter:grayscale(1);opacity:.85}
+body.pv .scrmode button.on{border-color:var(--pva)!important;box-shadow:inset 0 0 0 1px var(--pva)!important}
+body.pv .scrch .scrb{border-radius:4px 4px 1px 1px}
+/* bottom bar: line icons, no pill */
+body.pv nav.nav,body.pv .nav{background:rgba(12,14,18,.96)!important;border-top:1px solid var(--pvl)!important;box-shadow:none!important;backdrop-filter:blur(12px)}
+body.pv nav.nav button{background:none!important;border-radius:0!important;color:var(--pvm)!important;box-shadow:none!important}body.pv nav.nav button.on{color:var(--pvt)!important}body.pv nav.nav button.on span{color:var(--pva)}
+body.pv nav.nav button span{font-size:0;line-height:0;display:grid;place-items:center;height:24px}body.pv nav.nav small{font-weight:600;letter-spacing:0}
+body.pv .tutc,body.pv .tut{border-style:solid!important}
+body.pv .hurt{background:rgba(240,72,75,.08)!important;border:1px solid rgba(240,72,75,.5)!important;border-radius:14px!important}
+body.pv .armst{border-radius:14px!important;border-width:1px!important}
+body.pv .pvic,body.pv .pvic *{fill:none!important;stroke:currentColor!important}
+body.pv nav.nav button span,body.pv .ptabs button span,body.pv .arr{background:none!important;box-shadow:none!important;border:0!important;width:auto!important;min-width:0!important;border-radius:0!important}
+body.pv .seg.kids{border:0!important;border-bottom:1px solid var(--pvl)!important}
+body.pv .tutc,body.pv .tuttip,body.pv .qsport,body.pv .fhero,body.pv .mhero,body.pv .nxt,body.pv .venmo,body.pv .fund,body.pv .ev,body.pv .acc,body.pv .hi,body.pv .si,body.pv .cat,body.pv .shelf,body.pv input.search{background:var(--pvs)!important;background-image:none!important;border:1px solid var(--pvl)!important;box-shadow:none!important;color:var(--pvt)}
+body.pv .tutc,body.pv .qsport,body.pv .fhero,body.pv .mhero,body.pv .nxt,body.pv .venmo,body.pv .fund,body.pv .acc{border-radius:16px!important}
+body.pv .fhero{color:var(--pvt)!important}body.pv .fhero h2,body.pv .fhero p,body.pv .fhero small{color:inherit!important}body.pv .fhero small{color:var(--pva)!important}
+body.pv .fgoals button,body.pv .fhero .rowb{background:var(--pvs2)!important;border:1px solid var(--pvl)!important;color:var(--pvt)!important;border-radius:12px!important;box-shadow:none!important}
+body.pv .fhero .cta{background:var(--pvt)!important;color:#0c0e12!important}
+body.pv .si{border-radius:10px!important}body.pv .si.next{border-color:var(--pva)!important}body.pv .si.ok{opacity:.75}
+body.pv .nxt{border-left:3px solid var(--pva)!important}body.pv .nxt>span:first-child{filter:grayscale(1)}
+body.pv .cat{border-radius:14px!important}body.pv .cat>span:first-child,body.pv .cats .cat span:first-child{filter:grayscale(1);opacity:.8}
+body.pv .tuttip{border-radius:12px!important;color:var(--pvt)!important}
+body.pv .qsb button,body.pv .qsport .fchip{background:var(--pvs2)!important;border:1px solid var(--pvl)!important;border-radius:10px!important;color:var(--pvt)!important}
+body.pv .tutr .cta,body.pv .tutr button{border-radius:10px!important}
+body.pv .evd{background:var(--pvs2)!important;border-radius:10px!important;color:var(--pvt)!important}
+body.pv input:not([type=checkbox]):not([type=radio]),body.pv textarea,body.pv select:not(.pvsel){background:var(--pvs2)!important;border:1px solid var(--pvl)!important;color:var(--pvt)!important;border-radius:12px!important;box-shadow:none!important}`;document.head.appendChild(st)}
+
 </script></body></html>
