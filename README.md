@@ -35,6 +35,9 @@ XP: drills and drill homework pay 3x what they used to (Level 1 drill 30 XP, Lev
 ## Every drill is open
 Skill Paths no longer lock: players can open any step. The first unfinished step is marked as next, and each one still checks off after 3 reps. Players don't see Beginner / Middle / Advanced labels or a level filter anymore. Drills keep their level behind the scenes (coaches still set it when editing a drill), and harder drills still pay more XP.
 
+## Leaderboards: top 3 + your score
+Players and parents see only the top 3 on each leaderboard, then "Your score" with a ⭐ and no rank number. On a player's high-score page the Rank column is now "Top 3" (👑 🥈 🥉 or blank). Coaches still see every row and every rank.
+
 ## Team look (coaches)
 More → Team look and info. Upload a team logo, a big logo, a banner photo and a background photo; type hex colors or pull them from the logo; set the team's Venmo for dues. Press **Update my team's look** and the app re-themes for everyone on that team. Everything outside a team stays Basepaths-branded.
 

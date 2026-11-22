@@ -6348,6 +6348,18 @@ function bpNoLvFilter(h){return String(h).replace(/<p class="lfl">Level<\/p><div
 {const _l=libHTML;libHTML=function(){libX.lv=0;return bpNoLvFilter(_l.apply(this,arguments))}}
 {const _f=finderHTML;finderHTML=function(){if(fin&&fin.lv){fin.lv=0}return bpNoLvFilter(_f.apply(this,arguments))}}
 
+/* 9. Leaderboards: players and parents see the top 3, then their own score with no rank number. Coaches still see full boards. */
+function bpTop3(h){if(isCoach())return h;const tp=document.createElement("template");tp.innerHTML=h;
+  tp.content.querySelectorAll(".bdl").forEach(list=>{const rows=[...list.children].filter(r=>r.classList.contains("bdr")&&/^hsp:/.test(r.dataset.a||""));if(rows.length<=3)return;
+    const mi=rows.findIndex(r=>r.classList.contains("me"));const mine=mi>=3?rows[mi]:null;rows.slice(3).forEach(r=>r.remove());
+    if(mine){const n=mine.querySelector(".bdn");if(n)n.textContent="⭐";mine.classList.remove("t0","t1","t2");mine.classList.add("bpyou");
+      list.insertAdjacentHTML("beforeend",`<p class="bpyoul">Your score</p>`);list.appendChild(mine)}});
+  return tp.innerHTML}
+{const _b=boardsHTML;boardsHTML=function(){return bpTop3(_b())}}
+{const _h=hspHTML;hspHTML=function(){const h=_h();if(isCoach())return h;
+  return h.replace(/<td class="n">#(\d+)<\/td>/g,(m,n)=>`<td class="n">${["","","🥈","🥉"][+n]||""}</td>`).replace('<th class="n">Rank</th>','<th class="n">Top 3</th>')}}
+{const st=document.createElement("style");st.textContent=`.bpyoul{margin:14px 2px 6px;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:.7}.bdr.bpyou .bdn{font-size:20px}`;document.head.appendChild(st)}
+
 /* ===== BASEPATHS 5: drill videos. Coach picks what homework asks for (watch / do / do + video),
    players upload a short clip, coach reviews it and the file is deleted.
    Live backend: supabase/basepaths-videos.sql + the drill-videos Edge Function. Demo mode keeps clips in memory. ===== */
