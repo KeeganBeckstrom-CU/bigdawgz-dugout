@@ -6256,4 +6256,179 @@ async function ccLoad(){if(CCS.loaded||CCS.busy||!NET||!TOK||!isCoach())return;C
 {const _s=saveCoachCards;saveCoachCards=function(){_s();ccPush()}}
 {const _r=render;render=function(){_r();if(NET&&TOK&&S&&S.who==="coach"&&!CCS.loaded&&!CCS.busy)ccLoad()}}
 
+
+/* ===== BASEPATHS 4: kid-brain playbook (effort praise, forgiving streaks, growth over rank, external-focus cues, kid bedtime default) ===== */
+
+/* 1. Drill cues: say where the ball goes, not what the body part does (external focus). Arm care and safety cues are left alone. */
+{const CUE_FIX={
+  "t2|Front shoulder on target":"Point your glove at the target",
+  "t2|Chest comes forward":"Finish moving toward the target",
+  "v14|Turn your chest":"Throw it through your partner's chest",
+  "v22|Head on the target":"Eyes on the catcher's mitt the whole way",
+  "v23|Chin over your core":"Stride straight at the target",
+  "v27|Head over your body":"Throw straight down the line to the target",
+  "v32|Hips go first":"Drive the ball back up the middle",
+  "v40|Knees bent, back flat":"Get the glove down to the bounce",
+  "v46|Hands out front":"Meet the ball out in front",
+  "f1|Top hand closes":"Trap the ball like a clam shell",
+  "p11|Flick with your wrist":"Make the ball spin straight backward",
+  "h9|Soft hands":"Catch the ball with the bat",
+  "v61|Angle your chest to the plate":"Block the ball back toward the plate"
+};
+const fix=x=>{if(x&&Array.isArray(x.cues))x.cues=x.cues.map(c=>CUE_FIX[x.id+"|"+c]||c)};
+Object.values(DR).forEach(fix);D.forEach(x=>{if(DR[x.id]!==x)fix(x)})}
+
+/* helpers */
+function bpWeekStart(t){t=t||today();const wd=(new Date(t+"T12:00:00").getDay()+6)%7;return addDays(t,-wd)}
+function bpInWeek(d,start){return d>=start&&d<=addDays(start,6)}
+function bpActSum(p,start){const a=(p&&p.act)||{};let n=0;for(let i=0;i<7;i++)n+=a[addDays(start,i)]||0;return n}
+
+/* 2. Praise the work, not the kid: drill and homework toasts report effort and progress */
+var BP4={last:null};
+{const _dd=doDrill;doDrill=function(p,id,hwI){BP4.last={id,hw:hwI!=null};try{_dd(p,id,hwI)}finally{BP4.last=null}}}
+{const _a=award;award=function(p,xp,msg){
+  if(p&&!p.tmp&&BP4.last&&(msg==="Nice work!"||msg==="Homework done!")){
+    const x=DR[BP4.last.id],ws=bpWeekStart();
+    if(msg==="Homework done!"){const n=(p.hw||[]).filter(h=>h.done&&bpInWeek(h.done,ws)).length;msg="Homework done! That's "+n+" this week."}
+    else if(x&&CAT[x.c]){const n=(p.log||[]).filter(l=>DR[l.id]&&DR[l.id].c===x.c&&bpInWeek(l.d,ws)).length;msg=CAT[x.c].e+" "+CAT[x.c].n+" rep #"+n+" this week."}
+  }
+  _a(p,xp,msg)}}
+
+/* 3. Forgiving streaks: one rest day every 7 days doesn't break the streak */
+touch=function(p){const t=today();if(p.last===t)return;
+  if(p.last===addDays(t,-1))p.streak=(p.streak||0)+1;
+  else if(p.last===addDays(t,-2)&&p.streak&&!(p.rest&&p.rest>addDays(t,-7))){p.streak=(p.streak||0)+1;p.rest=addDays(t,-1);setTimeout(()=>toast("🛌 Rest day used. Your streak is safe."),2600)}
+  else p.streak=1;
+  p.last=t};
+
+/* 4. Growth over rank: This week card compares you to your own last week */
+{const _w=weekHTML;weekHTML=function(p){const h=_w(p),ws=bpWeekStart(),now=bpActSum(p,ws),prev=bpActSum(p,addDays(ws,-7));
+  let line="";if(now||prev){
+    if(now>prev)line=`<b>📈 ${now-prev} more than last week</b><small>Last week: ${prev}. You're getting more work in.</small>`;
+    else if(now===prev)line=`<b>🤝 Even with last week (${prev})</b><small>One more and you beat it.</small>`;
+    else line=`<b>🎯 ${prev-now+1} more beats last week</b><small>Last week: ${prev}. You've got days left.</small>`}
+  return line?h.replace(/<\/section>\s*$/,`<div class="bpgrow">${line}</div></section>`):h}}
+
+/* 5. Most improved board: a kid at the bottom of the high scores can still top this */
+{const _b=boardsHTML;boardsHTML=function(){let h=_b();if(BD.g!=="all"||NET||!S||!S.players)return h;
+  const ws=bpWeekStart(),rows=S.players.map(p=>({id:p.id,name:p.n,num:p.num,now:bpActSum(p,ws),prev:bpActSum(p,addDays(ws,-7))})).map(x=>Object.assign(x,{g:x.now-x.prev})).filter(x=>x.g>0).sort((a,c)=>c.g-a.g||c.now-a.now);
+  const sec=`<h3 class="sec">📈 Most improved <span>this week vs last week</span></h3><div class="bdl">${rows.map((x,i)=>bdRow(i,x,"+"+x.g+"<small>more</small>",x.now+" this week · "+x.prev+" last week")).join("")||`<div class="empty">Nobody has passed last week yet. Be the first!</div>`}</div>`;
+  return h.replace('<h3 class="sec">🎮 Most games played',sec+'<h3 class="sec">🎮 Most games played')}}
+
+/* 6. App bedtime defaults to 9 PM for under-13 kid accounts until a parent changes it */
+{const _s=scrSet;scrSet=function(p){const o=_s(p);if(p&&!(p.scrl&&"bed" in p.scrl)){let kid=!!(p.kid||p.u13);try{if(!kid&&NET&&scrMe()===p&&typeof BP!=="undefined"&&BP.home)kid=bwIsKidAcct(BP.home.user)&&BP.home.user.kid}catch(e){}if(kid)o.bed="21:00"}return o}}
+
+/* 7. Styles */
+{const st=document.createElement("style");st.textContent=`.bpgrow{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.25)}.bpgrow b{display:block;font-size:14px}.bpgrow small{display:block;font-size:12px;opacity:.75;margin-top:2px}
+#bpdemo{position:sticky;top:0;z-index:60;text-align:center;font:800 11px/1.2 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;background:#1b1030;color:#FFC53D;border-bottom:1px solid rgba(255,197,61,.35)}`;document.head.appendChild(st)}
+
+/* ===== BASEPATHS 5: drill videos. Coach picks what homework asks for (watch / do / do + video),
+   players upload a short clip, coach reviews it and the file is deleted.
+   Live backend: supabase/basepaths-videos.sql + the drill-videos Edge Function. Demo mode keeps clips in memory. ===== */
+var BPV={mode:"do",pre:null,busy:false,list:null,loading:false,open:false,cur:null,url:{},blobs:{}};
+const BPV_MODES=[["watch","👀","Just watch the video"],["do","💪","Do the drill"],["video","🎥","Do it + send me a video"]];
+const BPV_MAXMB=100,BPV_MAXSEC=60;
+function bpvMode(h){return (h&&h.mode)||"do"}
+
+/* --- talking to the backend (live) --- */
+async function bpvCall(body){const r=await fetch(NET.url.replace(/\/$/,"")+"/functions/v1/drill-videos",{method:"POST",headers:{"Content-Type":"application/json",apikey:NET.key},body:JSON.stringify(Object.assign({tok:TOK},body))});
+  const j=await r.json().catch(()=>({}));if(!r.ok||j.error)throw new Error(j.error||"video_failed");return j}
+function bpvPut(url,f){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open("PUT",url);x.setRequestHeader("x-upsert","false");if(NET)x.setRequestHeader("apikey",NET.key);const fd=new FormData();fd.append("cacheControl","3600");fd.append("",f);
+  x.upload.onprogress=e=>{if(e.lengthComputable)toast("Sending your video… "+Math.round(e.loaded/e.total*100)+"%")};
+  x.onload=()=>x.status<300?res():rej(new Error("upload_failed"));x.onerror=()=>rej(new Error("upload_failed"));x.send(fd)})}
+const BPV_ERR={too_big:"That video is too big. Keep it under "+BPV_MAXSEC+" seconds.",players_only:"Only players can send drill videos.",not_claimed:"Make your player profile first.",not_coach:"Only coaches can do that.",storage_full:"Coach's video space is full. Tell your coach.",too_many:"That's 10 videos today. Try again tomorrow.",signed_out:"Sign in again."};
+const bpvMsg=e=>BPV_ERR[e&&e.message]||"Couldn't send the video. Try again on Wi-Fi.";
+
+/* --- player: pick and send a clip --- */
+function bpvDur(f){return new Promise(res=>{const v=document.createElement("video");v.preload="metadata";const u=URL.createObjectURL(f);v.onloadedmetadata=()=>{res(v.duration||0);URL.revokeObjectURL(u)};v.onerror=()=>{res(0);URL.revokeObjectURL(u)};v.src=u})}
+function bpvPick(hwI,id){const inp=document.createElement("input");inp.type="file";inp.accept="video/*";inp.style.display="none";document.body.appendChild(inp);
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.remove();if(f)bpvUpload(f,hwI,id)};inp.click()}
+async function bpvUpload(f,hwI,id){const p=me();if(!p||p.tmp||BPV.busy)return;
+  if(!/^video\//.test(f.type||"")){toast("That's not a video. Pick a video from your camera roll.");return}
+  if(f.size>BPV_MAXMB*1048576){toast(BPV_ERR.too_big);return}
+  const sec=await bpvDur(f);if(sec>BPV_MAXSEC+1){toast("That clip is "+Math.round(sec)+" seconds. Trim it under "+BPV_MAXSEC+" and try again.");return}
+  const h=hwI!=null&&hwI>=0?p.hw[hwI]:null;BPV.busy=true;toast("Sending your video…");
+  try{let vid;
+    if(NET){const j=await bpvCall({action:"upload",drill:id,hw:(h&&h.aid)||"",type:f.type,size:f.size});await bpvPut(j.url,f);await bpvCall({action:"sent",id:j.id});vid=j.id}
+    else{vid="v"+Date.now().toString(36);BPV.blobs[vid]=URL.createObjectURL(f)}
+    const rec={id:vid,d:id,at:today(),st:"sent"};sheet=null;
+    if(h){h.vid=rec;if(!h.done)doDrill(p,id,hwI);else save();setTimeout(()=>toast("🎥 Sent to Coach!"),2400)}
+    else{(p.vids=p.vids||[]).unshift(rec);p.vids=p.vids.slice(0,20);award(p,5,"🎥 Video sent to Coach!")}
+    render()}
+  catch(e){toast(bpvMsg(e))}finally{BPV.busy=false}}
+function bpvWatched(p,i){const h=p.hw[i];if(!h||h.done)return;h.done=today();h.watched=1;award(p,10,"Film study!")}
+
+/* --- coach: the review list --- */
+function bpvLocal(){const L=[];(S.players||[]).forEach(p=>{(p.hw||[]).forEach(h=>{if(h.vid&&h.vid.st==="sent")L.push({id:h.vid.id,pid:p.id,name:p.n,num:p.num,drill:h.id,at:h.vid.at,hw:1,note:h.note||""})});
+  (p.vids||[]).forEach(v=>{if(v.st==="sent")L.push({id:v.id,pid:p.id,name:p.n,num:p.num,drill:v.d,at:v.at,hw:0})})});return L.sort((a,b)=>a.at<b.at?1:-1)}
+async function bpvLoad(){if(!NET){BPV.list=bpvLocal();return}if(BPV.loading)return;BPV.loading=true;
+  try{const j=await bpvCall({action:"list"});BPV.list=(j.videos||[]).map(v=>({id:v.id,pid:v.player_id,name:v.player_name,num:v.num,drill:v.drill,at:(v.created_at||"").slice(0,10),hw:v.hw?1:0}))}
+  catch(e){if(BPV.list==null)BPV.list=[];if(BPV.open)toast(bpvMsg(e))}finally{BPV.loading=false}}
+function bpvBtn(){const n=NET?(BPV.list?BPV.list.length:0):bpvLocal().length;return `<button class="rowb vadd" data-a="bpvopen"><span>🎥</span><span class="dtx"><b>Player videos${n?" · "+n+" to watch":""}</b><small>Clips your players sent. Watch, send a note, and the video is deleted</small></span><span class="arr">›</span></button>`}
+async function bpvOpen(){BPV.open=true;BPV.cur=null;bpvDraw();await bpvLoad();bpvDraw()}
+function bpvClose(){BPV.open=false;BPV.cur=null;const o=$("#bpvov");if(o)o.remove();document.body.classList.remove("bpvon");render()}
+async function bpvSrc(id){if(!NET)return BPV.blobs[id]||"";if(BPV.url[id])return BPV.url[id];const j=await bpvCall({action:"view",id});BPV.url[id]=j.url;return j.url}
+function bpvDraw(){if(!BPV.open)return;let o=$("#bpvov");if(!o){o=document.createElement("div");o.id="bpvov";document.body.appendChild(o);document.body.classList.add("bpvon")}
+  const L=BPV.list,c=BPV.cur&&L&&L.find(v=>v.id===BPV.cur);
+  o.innerHTML=`<div class="bpvp"><div class="bpvh"><b>🎥 Player videos</b><button class="ghost sm" data-a="bpvclose">Close</button></div>
+  ${L==null?`<div class="empty">Loading videos…</div>`:!L.length?`<div class="empty">No videos to watch. When you assign a drill with "Do it + send me a video", clips show up here.</div>`:
+    L.map(v=>{const x=DR[v.drill];return `<div class="bpvr ${c&&c.id===v.id?"on":""}"><button class="bpvrow" data-a="bpvpick:${v.id}"><span class="dic">${x?CAT[x.c].e:"🎥"}</span><span class="dtx"><b>${esc(v.name)}${v.num?" · #"+v.num:""}</b><small>${esc(x?x.n:"Drill")} · ${nice(v.at)}${v.hw?" · homework":" · sent on their own"}</small></span><span class="arr">${c&&c.id===v.id?"▾":"›"}</span></button>
+      ${c&&c.id===v.id?`<div class="bpvbody"><video id="bpvvid" controls playsinline preload="metadata"></video><p class="bpvload">Loading video…</p>
+      <label class="bpvlab">Note back to ${esc(v.name)} <small>optional · shows on their Home</small><input id="bpvnote" maxlength="140" placeholder="e.g. Great finish. Now stride straight at me."></label>
+      <button class="cta" data-a="bpvdone:${v.id}">✓ Watched. Send note and delete video</button></div>`:""}</div>`}).join("")}
+  <p class="fine">Videos are private to your team's coaches and are deleted as soon as you mark them watched.</p></div>`;
+  if(c){const vEl=$("#bpvvid");bpvSrc(c.id).then(u=>{if(vEl&&u){vEl.src=u;const l=o.querySelector(".bpvload");if(l)l.remove()}else{const l=o.querySelector(".bpvload");if(l)l.textContent="This video isn't here anymore."}}).catch(e=>{const l=o.querySelector(".bpvload");if(l)l.textContent=bpvMsg(e)})}}
+async function bpvDone(id){const v=(BPV.list||[]).find(x=>x.id===id);if(!v)return;const note=(($("#bpvnote")||{}).value||"").trim(),pl=P(v.pid),x=DR[v.drill];
+  try{if(NET){await bpvCall({action:"reviewed",id});try{await rpc("dz_push",{p_tok:TOK,p_uids:[v.pid],p_items:[{aid:nid(),kind:"vidok",ref:id}]})}catch(e){}}
+    else{if(BPV.blobs[id]){URL.revokeObjectURL(BPV.blobs[id]);delete BPV.blobs[id]}if(pl)bpvMark(pl,id)}
+    if(note&&pl){pl.shouts.push({t:"🎥 "+(x?x.n:"Your video")+": "+note,at:today()});save()}
+    delete BPV.url[id];BPV.list=BPV.list.filter(y=>y.id!==id);BPV.cur=null;toast(note?"Note sent. Video deleted.":"Marked watched. Video deleted.");bpvDraw()}
+  catch(e){toast(bpvMsg(e))}}
+function bpvMark(p,id){(p.hw||[]).forEach(h=>{if(h.vid&&h.vid.id===id){h.vid.st="seen";h.vid.seen=today()}});(p.vids||[]).forEach(v=>{if(v.id===id){v.st="seen";v.seen=today()}})}
+{const _m=mergeInbox;mergeInbox=function(p,items){let ch=false;(items||[]).forEach(it=>{if(it&&it.kind==="vidok"&&!(p.got||{})[it.aid]){bpvMark(p,it.ref);ch=true}});return _m(p,items)||ch}}
+
+/* --- screens --- */
+{const _a=assignHTML;assignHTML=function(){return _a().replace('<h3 class="sec">3 · Details</h3><div class="form">',`<h3 class="sec">3 · What should they do?</h3><div class="fr bpvmodes">${BPV_MODES.map(m=>`<button class="fchip ${BPV.mode===m[0]?"on":""}" data-a="bpvmode:${m[0]}">${m[1]} ${m[2]}</button>`).join("")}</div>${BPV.mode==="video"?`<p class="fine">Players upload a clip up to ${BPV_MAXSEC} seconds. It shows up in Coach's View under Player videos.</p>`:BPV.mode==="watch"?`<p class="fine">Players just watch the drill's video and tap Watched. No reps needed.</p>`:""}<h3 class="sec">4 · Details</h3><div class="form">`)}}
+{const _t=teamHTML;teamHTML=function(){if(BPV.list==null&&!BPV.loading)setTimeout(()=>bpvLoad().then(()=>{if(view==="team")render()}),30);return _t().replace('<button class="rowb vadd" data-a="go:qdrill">',bpvBtn()+'<button class="rowb vadd" data-a="go:qdrill">')}}
+const BPV_TAG={watch:"👀 Just watch the video",video:"🎥 Video for Coach"};
+function bpvMine(p){const L=[];(p.hw||[]).forEach(h=>{if(h.vid)L.push(Object.assign({d:h.id},h.vid))});(p.vids||[]).forEach(v=>L.push(v));return L.sort((a,b)=>a.at<b.at?1:-1).slice(0,3)}
+{const _r=render;render=function(){_r();try{const p=!isCoach()&&!isParent()?me():null;
+  if(p&&view==="home"){document.querySelectorAll('#app [data-a^="hw:"]').forEach(b=>{const i=+b.dataset.a.split(":")[1],h=p.hw[i],m=bpvMode(h);if(m==="do")return;
+      b.textContent=m==="watch"?"Watched":"🎥 Upload";b.classList.add("bpvb");const row=b.closest(".hw"),dt=row&&row.querySelector(".dtx");if(dt&&!dt.querySelector(".bpvtag"))dt.insertAdjacentHTML("afterbegin",`<span class="bpvtag">${BPV_TAG[m]}</span>`)});
+    const mine=bpvMine(p),td=$("#app .todo-box");if(mine.length&&td&&!$("#app .bpvmine"))td.insertAdjacentHTML("afterend",`<section class="bpvmine"><h3 class="sec">My videos <span>for Coach</span></h3>${mine.map(v=>`<div class="bpvm"><span>🎥</span><span class="dtx"><b>${esc((DR[v.d]||{}).n||"Drill")}</b><small>${v.st==="sent"?"Sent "+nice(v.at)+" · waiting for Coach":"✓ Coach watched it"}</small></span></div>`).join("")}</section>`)}
+  if(p&&sheet&&sheet[0]==="drill"){const b=document.querySelector('#sheet [data-a^="did:"]');if(b){const a=b.dataset.a.split(":"),i=+a[2],h=i>=0?p.hw[i]:null,m=bpvMode(h),id=a[1];
+      if(m==="video")b.textContent="🎥 Do it, then upload your video";else if(m==="watch")b.textContent="👀 I watched it +10 XP";
+      if(m!=="video"&&!document.querySelector('#sheet [data-a^="bpvsend:"]'))b.insertAdjacentHTML("afterend",`<button class="ghost bpvsend" data-a="bpvsend:${id}">🎥 Send Coach a video of this drill</button>`)}}
+  if(isCoach()&&view==="team"&&NET&&BPV.list==null&&!BPV.loading)bpvLoad().then(()=>{if(view==="team"&&!BPV.open)render()});
+  if(isCoach()&&view==="team"&&!$('#app [data-a="bpvopen"]')){const t=$("#app main > .tiles")||$("#app main > .seg");if(t)t.insertAdjacentHTML("afterend",bpvBtn())}
+  if(BPV.open)bpvDraw()}catch(e){}}}
+
+/* --- taps --- */
+window.addEventListener("click",e=>{const el=e.target.closest&&e.target.closest("[data-a]");if(!el)return;const a=el.dataset.a.split(":"),k=a[0],v=a[1];
+  const stop=()=>{e.preventDefault();e.stopImmediatePropagation()};
+  if(k==="bpvmode"){stop();BPV.mode=v;render();return}
+  if(k==="send"&&view==="assign"){BPV.pre={};(asg.who||[]).forEach(pid=>{const p=P(pid);if(p)BPV.pre[pid]=p.hw.length});
+    if(BPV.mode==="watch"){const no=(asg.what||[]).filter(id=>DR[id]&&!vid(DR[id]));if(no.length)setTimeout(()=>toast("No video yet for "+no.map(id=>DR[id].n).join(", ")+". Add one or they'll have nothing to watch."),2400)}
+    setTimeout(()=>{BPV.pre=null;BPV.mode="do"},0);return}
+  if(k==="bpvopen"){stop();bpvOpen();return}
+  if(k==="bpvclose"){stop();bpvClose();return}
+  if(k==="bpvpick"){stop();BPV.cur=BPV.cur===v?null:v;bpvDraw();return}
+  if(k==="bpvdone"){stop();bpvDone(v);return}
+  if(k==="bpvsend"){stop();bpvPick(-1,v);return}
+  const p=!isCoach()&&!isParent()?me():null;if(!p)return;
+  if(k==="hw"){const i=+v,h=p.hw[i],m=bpvMode(h);if(m==="watch"){stop();bpvWatched(p,i);render()}else if(m==="video"){stop();bpvPick(i,h.id)}return}
+  if(k==="did"){const i=+a[2],h=i>=0?p.hw[i]:null,m=bpvMode(h);if(m==="watch"){stop();bpvWatched(p,i);sheet=null;render()}else if(m==="video"){stop();bpvPick(i,v)}return}
+},true);
+/* stamp the chosen mode on the homework that the Assign button just created */
+{const _s=save;save=function(){if(BPV.pre&&BPV.mode!=="do")Object.keys(BPV.pre).forEach(pid=>{const p=P(pid);if(p)p.hw.slice(BPV.pre[pid]).forEach(h=>{if(!h.mode)h.mode=BPV.mode})});return _s.apply(this,arguments)}}
+
+{const st=document.createElement("style");st.textContent=`.bpvtag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:999px;background:rgba(255,197,61,.18);color:#FFC53D;margin-bottom:4px}
+.bpvb{white-space:nowrap}.bpvsend{width:100%;margin-top:10px}.bpvmodes .fchip{font-weight:700}
+.bpvmine{margin:14px 0}.bpvm{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.25);margin-top:8px}.bpvm>span:first-child{font-size:20px}.bpvm small{display:block;opacity:.75}
+body.bpvon{overflow:hidden}#bpvov{position:fixed;inset:0;z-index:80;background:rgba(12,6,22,.97);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.bpvp{max-width:560px;margin:0 auto;padding:16px 14px 40px;color:#f3eefc}.bpvh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.bpvh b{font-size:20px}
+.bpvr{border-radius:16px;background:#1d1230;border:1px solid rgba(255,255,255,.08);margin-bottom:10px;overflow:hidden}.bpvr.on{border-color:#FFC53D}
+.bpvrow{display:flex;gap:12px;align-items:center;width:100%;padding:12px;background:none;border:0;color:inherit;text-align:left;font:inherit;cursor:pointer}.bpvrow .dic{font-size:22px}.bpvrow small{display:block;opacity:.7}.bpvrow .arr{margin-left:auto}
+.bpvbody{padding:0 12px 14px}.bpvbody video{width:100%;max-height:56vh;border-radius:12px;background:#000;display:block}.bpvload{opacity:.7;font-size:13px}
+.bpvlab{display:block;margin:12px 0;font-weight:700;font-size:14px}.bpvlab small{font-weight:500;opacity:.65}.bpvlab input{display:block;width:100%;margin-top:6px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:#120a1f;color:#f3eefc;font-size:16px}`;document.head.appendChild(st)}
 </script></body></html>
