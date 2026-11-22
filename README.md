@@ -30,7 +30,7 @@ Then deploy the Edge Function: Supabase → Edge Functions → Deploy a new func
 - Space: a team can hold about 900 MB of unwatched clips (free plan storage is 1 GB). Each player can send 10 a day.
 
 ## Kid-brain playbook changes
-Drill and homework messages report effort ("Hitting rep #3 this week"), streaks allow one rest day a week, the This week card compares to last week, a Most improved board (sample data only until the server sends weekly activity), 13 drill cues rewritten to point at the ball or target, and a 9 PM app bedtime by default for under-13 kid accounts.
+XP: drills and drill homework pay 3x what they used to (Level 1 drill 30 XP, Level 3 drill 90 XP, homework adds 45), and app games pay 20% less. Drill and homework messages report effort ("Hitting rep #3 this week"), streaks allow one rest day a week, the This week card compares to last week, a Most improved board (sample data only until the server sends weekly activity), 13 drill cues rewritten to point at the ball or target, and a 9 PM app bedtime by default for under-13 kid accounts.
 
 ## Team look (coaches)
 More → Team look and info. Upload a team logo, a big logo, a banner photo and a background photo; type hex colors or pull them from the logo; set the team's Venmo for dues. Press **Update my team's look** and the app re-themes for everyone on that team. Everything outside a team stays Basepaths-branded.
