@@ -20,6 +20,18 @@ Run `supabase/basepaths-kids.sql` after `basepaths-orgs.sql`.
 - Anyone can delete their account: My teams → Delete my account (an only coach on a team with people must add another coach first).
 - `privacy.html` and `terms.html` — fill in the support email before submitting to the App Store, and have a lawyer look them over.
 
+## Drill videos (run with the Edge Function)
+Run `supabase/basepaths-videos.sql` once in the Supabase SQL Editor, after `basepaths-orgs.sql` and `basepaths-kids.sql`. Safe to run again. It makes a private `drill-videos` storage bucket.
+Then deploy the Edge Function: Supabase → Edge Functions → Deploy a new function → name it `drill-videos` → paste `supabase/functions/drill-videos/index.ts` → Deploy. In the function's settings, turn **Verify JWT** off (the app uses its own sign-in, and every action checks it in the database).
+- Assign → step 3 "What should they do?": 👀 Just watch the video, 💪 Do the drill, or 🎥 Do it + send me a video.
+- Players see the tag on Home. "Just watch" gives a Watched button (+10 XP). "Video" gives an Upload button: up to 60 seconds and 100 MB.
+- Any drill's page also has "Send Coach a video of this drill."
+- Coach's View → 🎥 Player videos: watch, send an optional note (shows on the player's Home), and the file is deleted.
+- Space: a team can hold about 900 MB of unwatched clips (free plan storage is 1 GB). Each player can send 10 a day.
+
+## Kid-brain playbook changes
+Drill and homework messages report effort ("Hitting rep #3 this week"), streaks allow one rest day a week, the This week card compares to last week, a Most improved board (sample data only until the server sends weekly activity), 13 drill cues rewritten to point at the ball or target, and a 9 PM app bedtime by default for under-13 kid accounts.
+
 ## Team look (coaches)
 More → Team look and info. Upload a team logo, a big logo, a banner photo and a background photo; type hex colors or pull them from the logo; set the team's Venmo for dues. Press **Update my team's look** and the app re-themes for everyone on that team. Everything outside a team stays Basepaths-branded.
 
