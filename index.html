@@ -6283,15 +6283,26 @@ function bpWeekStart(t){t=t||today();const wd=(new Date(t+"T12:00:00").getDay()+
 function bpInWeek(d,start){return d>=start&&d<=addDays(start,6)}
 function bpActSum(p,start){const a=(p&&p.act)||{};let n=0;for(let i=0;i<7;i++)n+=a[addDays(start,i)]||0;return n}
 
-/* 2. Praise the work, not the kid: drill and homework toasts report effort and progress */
+/* 2. Praise the work, not the kid: drill and homework toasts report effort and progress.
+   The original message still goes to award() so homework rewards and daily caps keep working; only the toast text changes. */
 var BP4={last:null};
 {const _dd=doDrill;doDrill=function(p,id,hwI){BP4.last={id,hw:hwI!=null};try{_dd(p,id,hwI)}finally{BP4.last=null}}}
 {const _a=award;award=function(p,xp,msg){
+  let label="";
   if(p&&!p.tmp&&BP4.last&&(msg==="Nice work!"||msg==="Homework done!")){
     const x=DR[BP4.last.id],ws=bpWeekStart();
-    if(msg==="Homework done!"){const n=(p.hw||[]).filter(h=>h.done&&bpInWeek(h.done,ws)).length;msg="Homework done! That's "+n+" this week."}
-    else if(x&&CAT[x.c]){const n=(p.log||[]).filter(l=>DR[l.id]&&DR[l.id].c===x.c&&bpInWeek(l.d,ws)).length;msg=CAT[x.c].e+" "+CAT[x.c].n+" rep #"+n+" this week."}
+    if(msg==="Homework done!"){const n=(p.hw||[]).filter(h=>h.done&&bpInWeek(h.done,ws)).length;label="Homework done! That's "+n+" this week."}
+    else if(x&&CAT[x.c]){const n=(p.log||[]).filter(l=>DR[l.id]&&DR[l.id].c===x.c&&bpInWeek(l.d,ws)).length;label=CAT[x.c].e+" "+CAT[x.c].n+" rep #"+n+" this week."}
   }
+  _a(p,xp,msg);
+  if(label){const t=$("#toast");if(t)t.textContent=label+" +"+xp+" XP"}}}
+
+/* 2b. XP weighting: real practice pays much more, screen games a little less */
+const BP_XP={drill:3,game:0.8};
+function bpDrillXP(x,hw){return Math.round((10*x.lv+(hw?15:0))*BP_XP.drill)}
+{const _a=award;award=function(p,xp,msg){
+  if(BP4.last)xp=Math.round(xp*BP_XP.drill);
+  else if(typeof G!=="undefined"&&G&&view==="game")xp=Math.max(1,Math.round(xp*BP_XP.game));
   _a(p,xp,msg)}}
 
 /* 3. Forgiving streaks: one rest day every 7 days doesn't break the streak */
@@ -6365,7 +6376,7 @@ async function bpvLoad(){if(!NET){BPV.list=bpvLocal();return}if(BPV.loading)retu
   try{const j=await bpvCall({action:"list"});BPV.list=(j.videos||[]).map(v=>({id:v.id,pid:v.player_id,name:v.player_name,num:v.num,drill:v.drill,at:(v.created_at||"").slice(0,10),hw:v.hw?1:0}))}
   catch(e){if(BPV.list==null)BPV.list=[];if(BPV.open)toast(bpvMsg(e))}finally{BPV.loading=false}}
 function bpvBtn(){const n=NET?(BPV.list?BPV.list.length:0):bpvLocal().length;return `<button class="rowb vadd" data-a="bpvopen"><span>🎥</span><span class="dtx"><b>Player videos${n?" · "+n+" to watch":""}</b><small>Clips your players sent. Watch, send a note, and the video is deleted</small></span><span class="arr">›</span></button>`}
-async function bpvOpen(){BPV.open=true;BPV.cur=null;bpvDraw();await bpvLoad();bpvDraw()}
+async function bpvOpen(){BPV.open=true;BPV.cur=null;BPV.url={};bpvDraw();await bpvLoad();bpvDraw()}
 function bpvClose(){BPV.open=false;BPV.cur=null;const o=$("#bpvov");if(o)o.remove();document.body.classList.remove("bpvon");render()}
 async function bpvSrc(id){if(!NET)return BPV.blobs[id]||"";if(BPV.url[id])return BPV.url[id];const j=await bpvCall({action:"view",id});BPV.url[id]=j.url;return j.url}
 function bpvDraw(){if(!BPV.open)return;let o=$("#bpvov");if(!o){o=document.createElement("div");o.id="bpvov";document.body.appendChild(o);document.body.classList.add("bpvon")}
@@ -6398,6 +6409,7 @@ function bpvMine(p){const L=[];(p.hw||[]).forEach(h=>{if(h.vid)L.push(Object.ass
     const mine=bpvMine(p),td=$("#app .todo-box");if(mine.length&&td&&!$("#app .bpvmine"))td.insertAdjacentHTML("afterend",`<section class="bpvmine"><h3 class="sec">My videos <span>for Coach</span></h3>${mine.map(v=>`<div class="bpvm"><span>🎥</span><span class="dtx"><b>${esc((DR[v.d]||{}).n||"Drill")}</b><small>${v.st==="sent"?"Sent "+nice(v.at)+" · waiting for Coach":"✓ Coach watched it"}</small></span></div>`).join("")}</section>`)}
   if(p&&sheet&&sheet[0]==="drill"){const b=document.querySelector('#sheet [data-a^="did:"]');if(b){const a=b.dataset.a.split(":"),i=+a[2],h=i>=0?p.hw[i]:null,m=bpvMode(h),id=a[1];
       if(m==="video")b.textContent="🎥 Do it, then upload your video";else if(m==="watch")b.textContent="👀 I watched it +10 XP";
+      else if(DR[id]&&typeof bpDrillXP==="function")b.textContent="I did it! +"+bpDrillXP(DR[id],!!h)+" XP";
       if(m!=="video"&&!document.querySelector('#sheet [data-a^="bpvsend:"]'))b.insertAdjacentHTML("afterend",`<button class="ghost bpvsend" data-a="bpvsend:${id}">🎥 Send Coach a video of this drill</button>`)}}
   if(isCoach()&&view==="team"&&NET&&BPV.list==null&&!BPV.loading)bpvLoad().then(()=>{if(view==="team"&&!BPV.open)render()});
   if(isCoach()&&view==="team"&&!$('#app [data-a="bpvopen"]')){const t=$("#app main > .tiles")||$("#app main > .seg");if(t)t.insertAdjacentHTML("afterend",bpvBtn())}
